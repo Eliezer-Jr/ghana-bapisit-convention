@@ -14,45 +14,245 @@ export type Database = {
   }
   public: {
     Tables: {
-      ministers: {
+      educational_qualifications: {
         Row: {
           created_at: string
-          date_joined: string
-          email: string | null
-          full_name: string
           id: string
-          location: string | null
-          notes: string | null
-          phone: string | null
-          role: string
-          status: string
-          updated_at: string
+          institution: string | null
+          minister_id: string
+          qualification: string
+          year_obtained: number | null
         }
         Insert: {
           created_at?: string
-          date_joined?: string
-          email?: string | null
-          full_name: string
           id?: string
-          location?: string | null
-          notes?: string | null
-          phone?: string | null
-          role: string
-          status?: string
-          updated_at?: string
+          institution?: string | null
+          minister_id: string
+          qualification: string
+          year_obtained?: number | null
         }
         Update: {
           created_at?: string
-          date_joined?: string
-          email?: string | null
-          full_name?: string
           id?: string
+          institution?: string | null
+          minister_id?: string
+          qualification?: string
+          year_obtained?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "educational_qualifications_minister_id_fkey"
+            columns: ["minister_id"]
+            isOneToOne: false
+            referencedRelation: "ministers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emergency_contacts: {
+        Row: {
+          contact_name: string
+          created_at: string
+          id: string
+          minister_id: string
+          phone_number: string
+          relationship: string
+        }
+        Insert: {
+          contact_name: string
+          created_at?: string
+          id?: string
+          minister_id: string
+          phone_number: string
+          relationship: string
+        }
+        Update: {
+          contact_name?: string
+          created_at?: string
+          id?: string
+          minister_id?: string
+          phone_number?: string
+          relationship?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_contacts_minister_id_fkey"
+            columns: ["minister_id"]
+            isOneToOne: false
+            referencedRelation: "ministers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      minister_children: {
+        Row: {
+          child_name: string
+          created_at: string
+          id: string
+          minister_id: string
+        }
+        Insert: {
+          child_name: string
+          created_at?: string
+          id?: string
+          minister_id: string
+        }
+        Update: {
+          child_name?: string
+          created_at?: string
+          id?: string
+          minister_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minister_children_minister_id_fkey"
+            columns: ["minister_id"]
+            isOneToOne: false
+            referencedRelation: "ministers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ministerial_history: {
+        Row: {
+          association: string | null
+          church_name: string
+          created_at: string
+          id: string
+          minister_id: string
+          period_end: number | null
+          period_start: number | null
+          position: string
+          sector: string | null
+        }
+        Insert: {
+          association?: string | null
+          church_name: string
+          created_at?: string
+          id?: string
+          minister_id: string
+          period_end?: number | null
+          period_start?: number | null
+          position: string
+          sector?: string | null
+        }
+        Update: {
+          association?: string | null
+          church_name?: string
+          created_at?: string
+          id?: string
+          minister_id?: string
+          period_end?: number | null
+          period_start?: number | null
+          position?: string
+          sector?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ministerial_history_minister_id_fkey"
+            columns: ["minister_id"]
+            isOneToOne: false
+            referencedRelation: "ministers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ministers: {
+        Row: {
+          areas_of_ministry: string[] | null
+          association: string | null
+          church_address: string | null
+          created_at: string
+          current_church_name: string | null
+          date_joined: string
+          date_of_birth: string | null
+          email: string | null
+          fellowship: string | null
+          full_name: string
+          gps_address: string | null
+          id: string
+          licensing_year: number | null
+          location: string | null
+          marital_status: string | null
+          marriage_type: string | null
+          notes: string | null
+          number_of_children: number | null
+          ordination_year: number | null
+          phone: string | null
+          photo_url: string | null
+          position_at_church: string | null
+          recognition_year: number | null
+          role: string
+          sector: string | null
+          spouse_name: string | null
+          status: string
+          titles: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          areas_of_ministry?: string[] | null
+          association?: string | null
+          church_address?: string | null
+          created_at?: string
+          current_church_name?: string | null
+          date_joined?: string
+          date_of_birth?: string | null
+          email?: string | null
+          fellowship?: string | null
+          full_name: string
+          gps_address?: string | null
+          id?: string
+          licensing_year?: number | null
           location?: string | null
+          marital_status?: string | null
+          marriage_type?: string | null
           notes?: string | null
+          number_of_children?: number | null
+          ordination_year?: number | null
           phone?: string | null
-          role?: string
+          photo_url?: string | null
+          position_at_church?: string | null
+          recognition_year?: number | null
+          role: string
+          sector?: string | null
+          spouse_name?: string | null
           status?: string
+          titles?: string | null
           updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          areas_of_ministry?: string[] | null
+          association?: string | null
+          church_address?: string | null
+          created_at?: string
+          current_church_name?: string | null
+          date_joined?: string
+          date_of_birth?: string | null
+          email?: string | null
+          fellowship?: string | null
+          full_name?: string
+          gps_address?: string | null
+          id?: string
+          licensing_year?: number | null
+          location?: string | null
+          marital_status?: string | null
+          marriage_type?: string | null
+          notes?: string | null
+          number_of_children?: number | null
+          ordination_year?: number | null
+          phone?: string | null
+          photo_url?: string | null
+          position_at_church?: string | null
+          recognition_year?: number | null
+          role?: string
+          sector?: string | null
+          spouse_name?: string | null
+          status?: string
+          titles?: string | null
+          updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: []
       }
