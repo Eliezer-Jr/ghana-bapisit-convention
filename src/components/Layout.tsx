@@ -36,7 +36,7 @@ const Layout = ({ children }: LayoutProps) => {
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-8">
-              <h1 className="text-xl font-semibold text-primary">Church Management</h1>
+              <h1 className="text-xl font-semibold text-primary">Ghana Bapisit Convention</h1>
               <div className="flex gap-1">
                 {navItems.map((item) => {
                   const Icon = item.icon;

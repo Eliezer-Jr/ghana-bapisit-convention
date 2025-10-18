@@ -78,7 +78,7 @@ const Auth = () => {
               <Church className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Church Management</CardTitle>
+          <CardTitle className="text-2xl font-bold">Ghana Bapisit Convention</CardTitle>
           <CardDescription>Minister Data Management System</CardDescription>
         </CardHeader>
         <CardContent>

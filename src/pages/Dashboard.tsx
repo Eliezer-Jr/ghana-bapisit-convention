@@ -108,7 +108,7 @@ const Dashboard = () => {
 
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle>Welcome to Church Management System</CardTitle>
+            <CardTitle>Welcome to Ghana Bapisit Convention System</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-muted-foreground">
             <p>
