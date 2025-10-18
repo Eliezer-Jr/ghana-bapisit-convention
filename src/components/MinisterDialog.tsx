@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,30 +13,30 @@ import { Plus, Trash2 } from "lucide-react";
 
 const ministerSchema = z.object({
   full_name: z.string().trim().min(1, "Name is required").max(100),
-  email: z.string().email("Invalid email").max(255).optional().or(z.literal("")),
-  phone: z.string().trim().max(20).optional().or(z.literal("")),
-  whatsapp: z.string().trim().max(20).optional().or(z.literal("")),
+  email: z.string().trim().max(255).refine((val) => !val || z.string().email().safeParse(val).success, "Invalid email").optional(),
+  phone: z.string().trim().max(20).optional(),
+  whatsapp: z.string().trim().max(20).optional(),
   role: z.string().trim().min(1, "Role is required").max(100),
-  location: z.string().trim().max(100).optional().or(z.literal("")),
+  location: z.string().trim().max(100).optional(),
   date_joined: z.string().min(1, "Date is required"),
   status: z.enum(["active", "inactive", "retired"]),
-  notes: z.string().max(1000).optional().or(z.literal("")),
-  titles: z.string().trim().max(200).optional().or(z.literal("")),
-  date_of_birth: z.string().optional().or(z.literal("")),
-  gps_address: z.string().trim().max(200).optional().or(z.literal("")),
-  marital_status: z.enum(["married", "single", "divorced", "widowed"]).optional().or(z.literal("")),
-  spouse_name: z.string().trim().max(100).optional().or(z.literal("")),
-  marriage_type: z.enum(["ordinance", "customary"]).optional().or(z.literal("")),
-  number_of_children: z.number().min(0).optional(),
-  current_church_name: z.string().trim().max(200).optional().or(z.literal("")),
-  position_at_church: z.string().trim().max(100).optional().or(z.literal("")),
-  church_address: z.string().trim().max(300).optional().or(z.literal("")),
-  association: z.string().trim().max(100).optional().or(z.literal("")),
-  sector: z.string().trim().max(100).optional().or(z.literal("")),
-  fellowship: z.string().trim().max(100).optional().or(z.literal("")),
-  ordination_year: z.number().min(1900).max(2100).optional().or(z.literal(null)),
-  recognition_year: z.number().min(1900).max(2100).optional().or(z.literal(null)),
-  licensing_year: z.number().min(1900).max(2100).optional().or(z.literal(null)),
+  notes: z.string().max(1000).optional(),
+  titles: z.string().trim().max(200).optional(),
+  date_of_birth: z.string().optional(),
+  gps_address: z.string().trim().max(200).optional(),
+  marital_status: z.string().max(20).optional(),
+  spouse_name: z.string().trim().max(100).optional(),
+  marriage_type: z.string().max(20).optional(),
+  number_of_children: z.number().min(0).default(0),
+  current_church_name: z.string().trim().max(200).optional(),
+  position_at_church: z.string().trim().max(100).optional(),
+  church_address: z.string().trim().max(300).optional(),
+  association: z.string().trim().max(100).optional(),
+  sector: z.string().trim().max(100).optional(),
+  fellowship: z.string().trim().max(100).optional(),
+  ordination_year: z.number().min(1900).max(2100).nullable().optional(),
+  recognition_year: z.number().min(1900).max(2100).nullable().optional(),
+  licensing_year: z.number().min(1900).max(2100).nullable().optional(),
 });
 
 interface MinisterDialogProps {
@@ -189,23 +189,23 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
       // Convert empty strings to null for optional fields
       const dataToSubmit = {
         ...validated,
-        email: validated.email || null,
-        phone: validated.phone || null,
-        whatsapp: validated.whatsapp || null,
-        location: validated.location || null,
-        notes: validated.notes || null,
-        titles: validated.titles || null,
-        date_of_birth: validated.date_of_birth || null,
-        gps_address: validated.gps_address || null,
-        marital_status: validated.marital_status || null,
-        spouse_name: validated.spouse_name || null,
-        marriage_type: validated.marriage_type || null,
-        current_church_name: validated.current_church_name || null,
-        position_at_church: validated.position_at_church || null,
-        church_address: validated.church_address || null,
-        association: validated.association || null,
-        sector: validated.sector || null,
-        fellowship: validated.fellowship || null,
+        email: validated.email?.trim() || null,
+        phone: validated.phone?.trim() || null,
+        whatsapp: validated.whatsapp?.trim() || null,
+        location: validated.location?.trim() || null,
+        notes: validated.notes?.trim() || null,
+        titles: validated.titles?.trim() || null,
+        date_of_birth: validated.date_of_birth?.trim() || null,
+        gps_address: validated.gps_address?.trim() || null,
+        marital_status: validated.marital_status?.trim() || null,
+        spouse_name: validated.spouse_name?.trim() || null,
+        marriage_type: validated.marriage_type?.trim() || null,
+        current_church_name: validated.current_church_name?.trim() || null,
+        position_at_church: validated.position_at_church?.trim() || null,
+        church_address: validated.church_address?.trim() || null,
+        association: validated.association?.trim() || null,
+        sector: validated.sector?.trim() || null,
+        fellowship: validated.fellowship?.trim() || null,
         areas_of_ministry: areasOfMinistry.length > 0 ? areasOfMinistry : null,
       };
 
@@ -294,6 +294,9 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{minister ? "Edit Minister" : "Add New Minister"}</DialogTitle>
+          <DialogDescription>
+            Fill in the minister's information. Fields marked with * are required.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Tabs defaultValue="bio" className="w-full">
