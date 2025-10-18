@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+jspm_packages/
 dist
 dist-ssr
 *.local
@@ -25,3 +26,12 @@ dist-ssr
 
 # Env files
 .env
+
+
+# Build output
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
