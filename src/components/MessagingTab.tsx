@@ -7,12 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Loader2, Send, History, DollarSign, Plus, Trash2 } from "lucide-react";
+import { Loader2, Send, History, DollarSign, Plus, Trash2, Upload, Users } from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface Destination {
   destination: string;
   msgid?: string;
   message?: string;
+}
+
+interface ExcelContact {
+  name: string;
+  phone_number: string;
 }
 
 const MessagingTab = () => {
@@ -23,6 +29,8 @@ const MessagingTab = () => {
   const [generalSenderId, setGeneralSenderId] = useState("");
   const [generalMessage, setGeneralMessage] = useState("");
   const [generalDestinations, setGeneralDestinations] = useState<Destination[]>([{ destination: "" }]);
+  const [useAllMinisters, setUseAllMinisters] = useState(false);
+  const [excelContacts, setExcelContacts] = useState<ExcelContact[]>([]);
   
   // Personalized SMS
   const [personalizedSenderId, setPersonalizedSenderId] = useState("");
@@ -54,13 +62,82 @@ const MessagingTab = () => {
     }
   };
 
+  const fetchAllMinisters = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ministers')
+        .select('phone, whatsapp, full_name');
+      
+      if (error) throw error;
+      
+      const phoneNumbers: Destination[] = [];
+      data?.forEach(minister => {
+        if (minister.phone) phoneNumbers.push({ destination: minister.phone });
+        if (minister.whatsapp && minister.whatsapp !== minister.phone) {
+          phoneNumbers.push({ destination: minister.whatsapp });
+        }
+      });
+      
+      return phoneNumbers;
+    } catch (error: any) {
+      toast.error("Failed to fetch ministers: " + error.message);
+      return [];
+    }
+  };
+
+  const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = event.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet) as any[];
+        
+        const contacts: ExcelContact[] = json.map(row => ({
+          name: row.name || row.Name || row.NAME || '',
+          phone_number: String(row.phone_number || row.phone || row.Phone || row.PHONE || '')
+        })).filter(contact => contact.phone_number.trim());
+        
+        setExcelContacts(contacts);
+        toast.success(`Loaded ${contacts.length} contacts from Excel`);
+      } catch (error: any) {
+        toast.error("Failed to parse Excel file: " + error.message);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const replacePlaceholders = (message: string, contact: ExcelContact): string => {
+    return message
+      .replace(/\[\[name\]\]/gi, contact.name)
+      .replace(/\[\[phone_number\]\]/gi, contact.phone_number);
+  };
+
   const sendGeneralSMS = async () => {
     try {
       setLoading(true);
       
-      const validDestinations = generalDestinations.filter(d => d.destination.trim());
-      if (validDestinations.length === 0) {
-        toast.error("Please add at least one phone number");
+      let destinations: Destination[] = [];
+      
+      if (useAllMinisters) {
+        destinations = await fetchAllMinisters();
+      } else if (excelContacts.length > 0) {
+        // Use Excel contacts with placeholder replacement
+        destinations = excelContacts.map(contact => ({
+          destination: contact.phone_number,
+          message: replacePlaceholders(generalMessage, contact)
+        }));
+      } else {
+        destinations = generalDestinations.filter(d => d.destination.trim());
+      }
+      
+      if (destinations.length === 0) {
+        toast.error("Please add at least one phone number or select a source");
         return;
       }
       
@@ -74,18 +151,37 @@ const MessagingTab = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('frogapi-send-general', {
-        body: {
-          senderid: generalSenderId,
-          destinations: validDestinations,
-          message: generalMessage,
-          smstype: "text"
-        }
-      });
-      
-      if (error) throw error;
-      toast.success("SMS sent successfully");
-      console.log(data);
+      // If using Excel with placeholders, use personalized endpoint
+      if (excelContacts.length > 0 && (generalMessage.includes('[[name]]') || generalMessage.includes('[[phone_number]]'))) {
+        const { data, error } = await supabase.functions.invoke('frogapi-send-personalized', {
+          body: {
+            senderid: generalSenderId,
+            destinations: destinations.map(d => ({
+              destination: d.destination,
+              message: d.message || generalMessage,
+              smstype: "text"
+            }))
+          }
+        });
+        
+        if (error) throw error;
+        toast.success("Personalized SMS sent successfully");
+        console.log(data);
+      } else {
+        // Regular general SMS
+        const { data, error } = await supabase.functions.invoke('frogapi-send-general', {
+          body: {
+            senderid: generalSenderId,
+            destinations: destinations,
+            message: generalMessage,
+            smstype: "text"
+          }
+        });
+        
+        if (error) throw error;
+        toast.success("SMS sent successfully");
+        console.log(data);
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to send SMS");
     } finally {
@@ -204,37 +300,80 @@ const MessagingTab = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Phone Numbers</Label>
-                {generalDestinations.map((dest, idx) => (
-                  <div key={idx} className="flex gap-2">
-                    <Input
-                      placeholder="e.g., 0244123456"
-                      value={dest.destination}
-                      onChange={(e) => {
-                        const newDests = [...generalDestinations];
-                        newDests[idx].destination = e.target.value;
-                        setGeneralDestinations(newDests);
-                      }}
-                    />
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="use-all-ministers"
+                    checked={useAllMinisters}
+                    onChange={(e) => {
+                      setUseAllMinisters(e.target.checked);
+                      if (e.target.checked) setExcelContacts([]);
+                    }}
+                    className="h-4 w-4"
+                  />
+                  <Label htmlFor="use-all-ministers" className="cursor-pointer">
+                    <Users className="h-4 w-4 inline mr-1" />
+                    Send to all ministers in database
+                  </Label>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="excel-upload" className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Upload Excel with Names & Phone Numbers
+                  </Label>
+                  <Input
+                    id="excel-upload"
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={(e) => {
+                      handleExcelUpload(e);
+                      setUseAllMinisters(false);
+                    }}
+                    disabled={useAllMinisters}
+                  />
+                  {excelContacts.length > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      {excelContacts.length} contacts loaded. Use [[name]] and [[phone_number]] as placeholders in your message.
+                    </p>
+                  )}
+                </div>
+
+                {!useAllMinisters && excelContacts.length === 0 && (
+                  <div className="space-y-2">
+                    <Label>Phone Numbers (Manual Entry)</Label>
+                    {generalDestinations.map((dest, idx) => (
+                      <div key={idx} className="flex gap-2">
+                        <Input
+                          placeholder="e.g., 0244123456"
+                          value={dest.destination}
+                          onChange={(e) => {
+                            const newDests = [...generalDestinations];
+                            newDests[idx].destination = e.target.value;
+                            setGeneralDestinations(newDests);
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setGeneralDestinations(generalDestinations.filter((_, i) => i !== idx))}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setGeneralDestinations(generalDestinations.filter((_, i) => i !== idx))}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setGeneralDestinations([...generalDestinations, { destination: "" }])}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Plus className="h-4 w-4 mr-2" /> Add Number
                     </Button>
                   </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setGeneralDestinations([...generalDestinations, { destination: "" }])}
-                >
-                  <Plus className="h-4 w-4 mr-2" /> Add Number
-                </Button>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -243,7 +382,7 @@ const MessagingTab = () => {
                   id="general-message"
                   value={generalMessage}
                   onChange={(e) => setGeneralMessage(e.target.value)}
-                  placeholder="Enter your message here..."
+                  placeholder={excelContacts.length > 0 ? "Use [[name]] and [[phone_number]] for personalization..." : "Enter your message here..."}
                   rows={4}
                 />
               </div>

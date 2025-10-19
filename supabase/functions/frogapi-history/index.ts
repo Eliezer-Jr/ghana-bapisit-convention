@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,8 +21,8 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get('$2a$10$AesQdII2SKJRmzpwYymtHekB./uRwoTd1EzscUMMmwvpetUULnz76');
-    const username = Deno.env.get('eliezera');
+    const apiKey = Deno.env.get('FROGAPI_KEY');
+    const username = Deno.env.get('FROGAPI_USERNAME');
 
     if (!apiKey || !username) {
       throw new Error('FrogAPI credentials not configured');
