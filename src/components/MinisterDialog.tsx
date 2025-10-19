@@ -11,7 +11,6 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Plus, Trash2, Upload, User } from "lucide-react";
-import MessagingTab from "./MessagingTab";
 
 const ministerSchema = z.object({
   full_name: z.string().trim().min(1, "Name is required").max(100),
@@ -359,11 +358,10 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Tabs defaultValue="bio" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="bio">Bio Data</TabsTrigger>
               <TabsTrigger value="ministerial">Ministerial</TabsTrigger>
               <TabsTrigger value="history">History</TabsTrigger>
-              <TabsTrigger value="messages">Messages</TabsTrigger>
               <TabsTrigger value="other">Other</TabsTrigger>
             </TabsList>
 
@@ -869,10 +867,6 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   <Plus className="h-4 w-4 mr-2" /> Add History Entry
                 </Button>
               </div>
-            </TabsContent>
-
-            <TabsContent value="messages" className="space-y-4 mt-4">
-              <MessagingTab />
             </TabsContent>
 
             <TabsContent value="other" className="space-y-4 mt-4">

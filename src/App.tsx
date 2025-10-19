@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Dashboard from "./pages/Dashboard";
 import Ministers from "./pages/Ministers";
+import Messages from "./pages/Messages";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -51,6 +52,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Ministers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/messages"
+              element={
+                <ProtectedRoute>
+                  <Messages />
                 </ProtectedRoute>
               }
             />

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Users } from "lucide-react";
+import { LogOut, LayoutDashboard, Users, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
 interface LayoutProps {
@@ -28,6 +28,7 @@ const Layout = ({ children }: LayoutProps) => {
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
     { icon: Users, label: "Ministers", path: "/ministers" },
+    { icon: MessageSquare, label: "Messages", path: "/messages" },
   ];
 
   return (
