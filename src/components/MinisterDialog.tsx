@@ -6,10 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Upload, User } from "lucide-react";
+import MessagingTab from "./MessagingTab";
 
 const ministerSchema = z.object({
   full_name: z.string().trim().min(1, "Name is required").max(100),
@@ -48,6 +50,8 @@ interface MinisterDialogProps {
 
 const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDialogProps) => {
   const [loading, setLoading] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string>("");
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -89,6 +93,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
   useEffect(() => {
     const loadMinisterData = async () => {
       if (minister) {
+        setPhotoPreview(minister.photo_url || "");
         setFormData({
           full_name: minister.full_name || "",
           email: minister.email || "",
@@ -169,6 +174,8 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         setChildren([]);
         setAreasOfMinistry([]);
         setEmergencyContact({ contact_name: "", relationship: "", phone_number: "" });
+        setPhotoPreview("");
+        setPhotoFile(null);
       }
     };
 
@@ -176,6 +183,18 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
       loadMinisterData();
     }
   }, [minister, open]);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,23 +229,63 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
       };
 
       let ministerId = minister?.id;
+      let photoUrl = minister?.photo_url || null;
+
+      // Upload photo if a new one was selected
+      if (photoFile && ministerId) {
+        const fileExt = photoFile.name.split('.').pop();
+        const fileName = `${ministerId}-${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('minister-photos')
+          .upload(fileName, photoFile, { upsert: true });
+
+        if (uploadError) throw uploadError;
+        
+        const { data: publicUrlData } = supabase.storage
+          .from('minister-photos')
+          .getPublicUrl(fileName);
+        
+        photoUrl = publicUrlData.publicUrl;
+      }
+
+      const finalData = { ...dataToSubmit, photo_url: photoUrl };
 
       if (minister) {
         const { error } = await supabase
           .from("ministers")
-          .update(dataToSubmit as any)
+          .update(finalData as any)
           .eq("id", minister.id);
 
         if (error) throw error;
       } else {
         const { data, error } = await supabase
           .from("ministers")
-          .insert([dataToSubmit as any])
+          .insert([finalData as any])
           .select()
           .single();
 
         if (error) throw error;
         ministerId = data.id;
+        
+        // Upload photo for new minister
+        if (photoFile && ministerId) {
+          const fileExt = photoFile.name.split('.').pop();
+          const fileName = `${ministerId}-${Date.now()}.${fileExt}`;
+          const { error: uploadError } = await supabase.storage
+            .from('minister-photos')
+            .upload(fileName, photoFile);
+
+          if (!uploadError) {
+            const { data: publicUrlData } = supabase.storage
+              .from('minister-photos')
+              .getPublicUrl(fileName);
+            
+            await supabase
+              .from("ministers")
+              .update({ photo_url: publicUrlData.publicUrl })
+              .eq("id", ministerId);
+          }
+        }
       }
 
       // Save related data
@@ -300,14 +359,42 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Tabs defaultValue="bio" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="bio">Bio Data</TabsTrigger>
               <TabsTrigger value="ministerial">Ministerial</TabsTrigger>
               <TabsTrigger value="history">History</TabsTrigger>
+              <TabsTrigger value="messages">Messages</TabsTrigger>
               <TabsTrigger value="other">Other</TabsTrigger>
             </TabsList>
 
             <TabsContent value="bio" className="space-y-4 mt-4">
+              {/* Photo Upload Section */}
+              <div className="flex flex-col items-center gap-4 p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border-2 border-dashed border-primary/20">
+                <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
+                  <AvatarImage src={photoPreview} alt="Minister photo" />
+                  <AvatarFallback className="bg-primary/10">
+                    <User className="h-16 w-16 text-primary/40" />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col items-center gap-2">
+                  <Label htmlFor="photo" className="cursor-pointer">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                      <Upload className="h-4 w-4" />
+                      <span>{photoPreview ? "Change Photo" : "Upload Photo"}</span>
+                    </div>
+                  </Label>
+                  <Input
+                    id="photo"
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                    disabled={loading}
+                  />
+                  <p className="text-xs text-muted-foreground">Recommended: Square image, max 5MB</p>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="full_name">Full Name *</Label>
@@ -782,6 +869,10 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   <Plus className="h-4 w-4 mr-2" /> Add History Entry
                 </Button>
               </div>
+            </TabsContent>
+
+            <TabsContent value="messages" className="space-y-4 mt-4">
+              <MessagingTab />
             </TabsContent>
 
             <TabsContent value="other" className="space-y-4 mt-4">

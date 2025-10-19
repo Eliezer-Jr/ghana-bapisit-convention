@@ -1,3 +1,13 @@
 project_id = "vnmwvrjuowmdvjhyuebm"
 
-project_id = "zzlpfavopfmggsjqoplg"
+[functions.frogapi-balance]
+verify_jwt = true
+
+[functions.frogapi-send-general]
+verify_jwt = true
+
+[functions.frogapi-send-personalized]
+verify_jwt = true
+
+[functions.frogapi-history]
+verify_jwt = true
