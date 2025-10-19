@@ -11,8 +11,8 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get('FROGAPI_KEY');
-    const username = Deno.env.get('FROGAPI_USERNAME');
+    const apiKey = Deno.env.get('$2a$10$AesQdII2SKJRmzpwYymtHekB./uRwoTd1EzscUMMmwvpetUULnz76');
+    const username = Deno.env.get('eliezera');
 
     if (!apiKey || !username) {
       throw new Error('FrogAPI credentials not configured');
