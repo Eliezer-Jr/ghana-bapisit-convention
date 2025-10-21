@@ -16,6 +16,7 @@ interface ExcelContact {
 
 export const useSMSMessaging = () => {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchAllMinisters = async () => {
     try {
@@ -54,6 +55,7 @@ export const useSMSMessaging = () => {
   ) => {
     try {
       setLoading(true);
+      setError(null);
       
       let finalDestinations: Destination[] = [];
       
@@ -69,16 +71,17 @@ export const useSMSMessaging = () => {
       }
       
       if (finalDestinations.length === 0) {
+        setError("Please add at least one phone number");
         toast.error("Please add at least one phone number or select a source");
         return;
       }
       
       if (!message.trim()) {
+        setError("Please enter a message");
         toast.error("Please enter a message");
         return;
       }
 
-      // If using Excel with placeholders, use personalized endpoint
       if (excelContacts.length > 0 && (message.includes('[[name]]') || message.includes('[[phone_number]]'))) {
         const { data, error } = await supabase.functions.invoke('frogapi-send-personalized', {
           body: {
@@ -93,9 +96,7 @@ export const useSMSMessaging = () => {
         
         if (error) throw error;
         toast.success("Personalized SMS sent successfully");
-        console.log(data);
       } else {
-        // Regular general SMS
         const { data, error } = await supabase.functions.invoke('frogapi-send-general', {
           body: {
             senderid: MESSAGING_CONFIG.SENDER_ID,
@@ -107,9 +108,9 @@ export const useSMSMessaging = () => {
         
         if (error) throw error;
         toast.success("SMS sent successfully");
-        console.log(data);
       }
     } catch (error: any) {
+      setError(error.message || "Failed to send SMS");
       toast.error(error.message || "Failed to send SMS");
     } finally {
       setLoading(false);
@@ -119,12 +120,14 @@ export const useSMSMessaging = () => {
   const sendPersonalizedSMS = async (destinations: Array<{ destination: string; message?: string }>) => {
     try {
       setLoading(true);
+      setError(null);
       
       const validDestinations = destinations.filter(
         d => d.destination.trim() && d.message?.trim()
       );
       
       if (validDestinations.length === 0) {
+        setError("Please add at least one recipient with message");
         toast.error("Please add at least one recipient with message");
         return;
       }
@@ -141,13 +144,13 @@ export const useSMSMessaging = () => {
       
       if (error) throw error;
       toast.success("Personalized SMS sent successfully");
-      console.log(data);
     } catch (error: any) {
+      setError(error.message || "Failed to send personalized SMS");
       toast.error(error.message || "Failed to send personalized SMS");
     } finally {
       setLoading(false);
     }
   };
 
-  return { loading, sendGeneralSMS, sendPersonalizedSMS };
+  return { loading, error, setError, sendGeneralSMS, sendPersonalizedSMS };
 };

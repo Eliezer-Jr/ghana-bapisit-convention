@@ -12,6 +12,7 @@ interface HistoryFilters {
 export const useMessageHistory = () => {
   const [historyData, setHistoryData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<HistoryFilters>({
     datefrom: "",
     dateto: "",
@@ -22,8 +23,10 @@ export const useMessageHistory = () => {
   const fetchHistory = async () => {
     try {
       setLoading(true);
+      setError(null);
       
       if (!filters.datefrom || !filters.dateto) {
+        setError("Please select date range");
         toast.error("Please select date range");
         return;
       }
@@ -40,6 +43,7 @@ export const useMessageHistory = () => {
       setHistoryData(data);
       toast.success("History fetched successfully");
     } catch (error: any) {
+      setError(error.message || "Failed to fetch history");
       toast.error(error.message || "Failed to fetch history");
     } finally {
       setLoading(false);
@@ -51,6 +55,8 @@ export const useMessageHistory = () => {
     filters,
     setFilters,
     loading,
+    error,
+    setError,
     fetchHistory
   };
 };

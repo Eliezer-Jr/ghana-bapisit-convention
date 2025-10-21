@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Users, MessageSquare } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { LogOut, LayoutDashboard, Users, MessageSquare, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 interface LayoutProps {
@@ -13,7 +14,7 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -29,6 +30,9 @@ const Layout = ({ children }: LayoutProps) => {
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
     { icon: Users, label: "Ministers", path: "/ministers" },
     { icon: MessageSquare, label: "Messages", path: "/messages" },
+    ...(isSuperAdmin
+      ? [{ icon: Shield, label: "Super Admin", path: "/super-admin" }]
+      : []),
   ];
 
   return (
@@ -58,7 +62,14 @@ const Layout = ({ children }: LayoutProps) => {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">{user?.email}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{user?.email}</span>
+                {isSuperAdmin && (
+                  <Badge variant="default" className="text-xs">
+                    Super Admin
+                  </Badge>
+                )}
+              </div>
               <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
                 <LogOut className="h-4 w-4" />
                 Logout

@@ -2,9 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, Loader2 } from "lucide-react";
 import { useBalance } from "@/hooks/useBalance";
+import { ErrorDisplay } from "@/components/ErrorDisplay";
 
 export const BalanceCard = () => {
-  const { balance, loading, fetchBalance } = useBalance();
+  const { balance, loading, error, fetchBalance, setError } = useBalance();
 
   return (
     <Card>
@@ -15,13 +16,14 @@ export const BalanceCard = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
+        <ErrorDisplay error={error} onDismiss={() => setError(null)} />
         <Button onClick={fetchBalance} disabled={loading}>
           {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
           Check Balance
         </Button>
-        {balance && (
+        {balance && balance !== "0" && (
           <div className="mt-4 p-4 bg-secondary rounded-lg">
-            <pre className="text-sm">{JSON.stringify(balance, null, 2)}</pre>
+            <div className="text-2xl font-bold text-foreground">GHS {balance}</div>
           </div>
         )}
       </CardContent>
