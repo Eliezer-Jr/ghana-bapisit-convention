@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Plus, Search, Pencil, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -222,8 +223,16 @@ const Ministers = () => {
                     </TableRow>
                   ) : (
                     filteredMinisters.map((minister) => (
-                      <TableRow key={minister.id}>
-                        <TableCell className="font-medium">{minister.full_name}</TableCell>
+                  <TableRow key={minister.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={minister.photo_url || undefined} alt={minister.full_name} />
+                              <AvatarFallback>{minister.full_name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            {minister.full_name}
+                          </div>
+                        </TableCell>
                         <TableCell>{minister.role}</TableCell>
                         <TableCell>{minister.location || "-"}</TableCell>
                         <TableCell>{minister.email || "-"}</TableCell>
@@ -285,9 +294,10 @@ const Ministers = () => {
               {/* Sidebar with photo and basic info */}
               <div className="bg-gradient-to-br from-primary/10 to-accent/10 p-6 space-y-6">
                 <div className="flex flex-col items-center text-center space-y-4">
-                  <div className="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center text-4xl font-bold text-primary">
-                    {ministerToView.full_name.charAt(0)}
-                  </div>
+                  <Avatar className="w-32 h-32">
+                    <AvatarImage src={ministerToView.photo_url || undefined} alt={ministerToView.full_name} />
+                    <AvatarFallback className="text-4xl font-bold">{ministerToView.full_name.charAt(0)}</AvatarFallback>
+                  </Avatar>
                   <div>
                     <h2 className="text-2xl font-bold text-foreground">{ministerToView.full_name}</h2>
                     <p className="text-muted-foreground">{ministerToView.role}</p>
