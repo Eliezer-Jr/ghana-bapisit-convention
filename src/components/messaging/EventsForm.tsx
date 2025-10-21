@@ -1,17 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Send, Calendar, Cake } from "lucide-react";
+import { Loader2, Send, Calendar, Cake, Save } from "lucide-react";
 import { useEventMessages } from "@/hooks/useEventMessages";
 import { format, isSameDay } from "date-fns";
+import { toast } from "sonner";
+
+const DEFAULT_MESSAGES = {
+  birthday: "Happy Birthday [[name]]! May God bless you abundantly on your special day and grant you many more years of fruitful ministry. 🎂🎉",
+  anniversary: "Congratulations [[name]] on your ministry anniversary! We celebrate God's faithfulness in your life and service. 🎊"
+};
 
 export const EventsForm = () => {
   const { eventType, setEventType, upcomingEvents, loading, sendEventMessages } = useEventMessages();
   const [message, setMessage] = useState("");
   const [autoSend, setAutoSend] = useState(false);
+
+  useEffect(() => {
+    const savedMessage = localStorage.getItem(`default_${eventType}_message`);
+    setMessage(savedMessage || DEFAULT_MESSAGES[eventType]);
+  }, [eventType]);
+
+  const handleSaveDefault = () => {
+    localStorage.setItem(`default_${eventType}_message`, message);
+    toast.success("Default message saved");
+  };
 
   const handleSend = () => {
     sendEventMessages(message);
@@ -82,7 +98,19 @@ export const EventsForm = () => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="event-message">Message Template</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="event-message">Default Message Template</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSaveDefault}
+              className="gap-2"
+            >
+              <Save className="h-4 w-4" />
+              Save as Default
+            </Button>
+          </div>
           <Textarea
             id="event-message"
             value={message}
@@ -91,7 +119,7 @@ export const EventsForm = () => {
             rows={4}
           />
           <p className="text-sm text-muted-foreground">
-            Tip: Use [[name]] to personalize each message
+            Tip: Use [[name]] to personalize each message. Edit and save to customize your default template.
           </p>
         </div>
 

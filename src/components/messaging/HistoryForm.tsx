@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, History } from "lucide-react";
 import { useMessageHistory } from "@/hooks/useMessageHistory";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const HistoryForm = () => {
   const { historyData, filters, setFilters, loading, fetchHistory } = useMessageHistory();
@@ -62,8 +63,57 @@ export const HistoryForm = () => {
         </Button>
 
         {historyData && (
-          <div className="mt-4 p-4 bg-secondary rounded-lg max-h-96 overflow-auto">
-            <pre className="text-sm">{JSON.stringify(historyData, null, 2)}</pre>
+          <div className="mt-4 border rounded-lg overflow-hidden">
+            <div className="max-h-96 overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date/Time</TableHead>
+                    <TableHead>Recipient</TableHead>
+                    <TableHead>Message</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Sender ID</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array.isArray(historyData) && historyData.length > 0 ? (
+                    historyData.map((item: any, idx: number) => (
+                      <TableRow key={idx}>
+                        <TableCell className="text-sm">
+                          {item.timestamp || item.date || "-"}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {item.destination || item.recipient || item.phone || "-"}
+                        </TableCell>
+                        <TableCell className="text-sm max-w-xs truncate">
+                          {item.message || item.text || "-"}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            item.status === 'DELIVRD' || item.status === 'delivered' 
+                              ? 'bg-green-100 text-green-800' 
+                              : item.status === 'FAILED' || item.status === 'failed'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {item.status || "pending"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {item.senderid || item.sender || "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                        No history records found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         )}
       </CardContent>

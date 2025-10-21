@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -36,6 +36,8 @@ const Ministers = () => {
   const [selectedMinister, setSelectedMinister] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [ministerToDelete, setMinisterToDelete] = useState<any>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [ministerToView, setMinisterToView] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -95,6 +97,11 @@ const Ministers = () => {
   const handleAdd = () => {
     setSelectedMinister(null);
     setDialogOpen(true);
+  };
+
+  const handleViewClick = (minister: any) => {
+    setMinisterToView(minister);
+    setViewDialogOpen(true);
   };
 
   const handleDeleteClick = (minister: any) => {
@@ -229,7 +236,16 @@ const Ministers = () => {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => handleViewClick(minister)}
+                              title="View Details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleEdit(minister)}
+                              title="Edit"
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -238,6 +254,7 @@ const Ministers = () => {
                               size="sm"
                               onClick={() => handleDeleteClick(minister)}
                               className="text-destructive hover:text-destructive"
+                              title="Delete"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -259,6 +276,117 @@ const Ministers = () => {
         minister={selectedMinister}
         onSuccess={fetchMinisters}
       />
+
+      <AlertDialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <AlertDialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Minister Details</AlertDialogTitle>
+          </AlertDialogHeader>
+          {ministerToView && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Full Name</p>
+                  <p className="text-sm">{ministerToView.full_name || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Role</p>
+                  <p className="text-sm">{ministerToView.role || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Email</p>
+                  <p className="text-sm">{ministerToView.email || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Phone</p>
+                  <p className="text-sm">{ministerToView.phone || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">WhatsApp</p>
+                  <p className="text-sm">{ministerToView.whatsapp || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Date of Birth</p>
+                  <p className="text-sm">{ministerToView.date_of_birth ? new Date(ministerToView.date_of_birth).toLocaleDateString() : "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Location</p>
+                  <p className="text-sm">{ministerToView.location || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">GPS Address</p>
+                  <p className="text-sm">{ministerToView.gps_address || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Church Address</p>
+                  <p className="text-sm">{ministerToView.church_address || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Current Church</p>
+                  <p className="text-sm">{ministerToView.current_church_name || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Position at Church</p>
+                  <p className="text-sm">{ministerToView.position_at_church || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Marital Status</p>
+                  <p className="text-sm">{ministerToView.marital_status || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Spouse Name</p>
+                  <p className="text-sm">{ministerToView.spouse_name || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Number of Children</p>
+                  <p className="text-sm">{ministerToView.number_of_children || "0"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Date Joined</p>
+                  <p className="text-sm">{new Date(ministerToView.date_joined).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Status</p>
+                  <p className="text-sm">{getStatusBadge(ministerToView.status)}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Association</p>
+                  <p className="text-sm">{ministerToView.association || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Sector</p>
+                  <p className="text-sm">{ministerToView.sector || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Fellowship</p>
+                  <p className="text-sm">{ministerToView.fellowship || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Ordination Year</p>
+                  <p className="text-sm">{ministerToView.ordination_year || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Recognition Year</p>
+                  <p className="text-sm">{ministerToView.recognition_year || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Licensing Year</p>
+                  <p className="text-sm">{ministerToView.licensing_year || "-"}</p>
+                </div>
+              </div>
+              {ministerToView.notes && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Notes</p>
+                  <p className="text-sm whitespace-pre-wrap">{ministerToView.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

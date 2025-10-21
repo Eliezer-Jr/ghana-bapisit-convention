@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Send, Plus, Trash2, Upload, Users } from "lucide-react";
+import { Loader2, Send, Plus, Trash2, Upload, Users, Download } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { useSMSMessaging } from "@/hooks/useSMSMessaging";
@@ -54,6 +54,18 @@ export const GeneralSMSForm = () => {
     reader.readAsBinaryString(file);
   };
 
+  const downloadTemplate = () => {
+    const template = [
+      { name: "John Doe", phone_number: "0244123456" },
+      { name: "Jane Smith", phone_number: "0201234567" }
+    ];
+    const ws = XLSX.utils.json_to_sheet(template);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Contacts");
+    XLSX.writeFile(wb, "sms_template.xlsx");
+    toast.success("Template downloaded");
+  };
+
   const handleSend = () => {
     sendGeneralSMS(message, destinations, excelContacts, useAllMinisters);
   };
@@ -84,10 +96,22 @@ export const GeneralSMSForm = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="excel-upload" className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              Upload Excel with Names & Phone Numbers
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="excel-upload" className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Upload Excel with Names & Phone Numbers
+              </Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={downloadTemplate}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download Template
+              </Button>
+            </div>
             <Input
               id="excel-upload"
               type="file"
