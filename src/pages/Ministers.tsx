@@ -5,6 +5,7 @@ import MinisterDialog from "@/components/MinisterDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoField } from "@/components/InfoField";
 import {
   Table,
   TableBody,
@@ -278,113 +279,110 @@ const Ministers = () => {
       />
 
       <AlertDialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <AlertDialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Minister Details</AlertDialogTitle>
-          </AlertDialogHeader>
+        <AlertDialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-0">
           {ministerToView && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Full Name</p>
-                  <p className="text-sm">{ministerToView.full_name || "-"}</p>
+            <div className="grid md:grid-cols-3 h-full">
+              {/* Sidebar with photo and basic info */}
+              <div className="bg-gradient-to-br from-primary/10 to-accent/10 p-6 space-y-6">
+                <div className="flex flex-col items-center text-center space-y-4">
+                  <div className="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center text-4xl font-bold text-primary">
+                    {ministerToView.full_name.charAt(0)}
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-foreground">{ministerToView.full_name}</h2>
+                    <p className="text-muted-foreground">{ministerToView.role}</p>
+                  </div>
+                  {getStatusBadge(ministerToView.status)}
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Role</p>
-                  <p className="text-sm">{ministerToView.role || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Email</p>
-                  <p className="text-sm">{ministerToView.email || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Phone</p>
-                  <p className="text-sm">{ministerToView.phone || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">WhatsApp</p>
-                  <p className="text-sm">{ministerToView.whatsapp || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Date of Birth</p>
-                  <p className="text-sm">{ministerToView.date_of_birth ? new Date(ministerToView.date_of_birth).toLocaleDateString() : "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Location</p>
-                  <p className="text-sm">{ministerToView.location || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">GPS Address</p>
-                  <p className="text-sm">{ministerToView.gps_address || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Church Address</p>
-                  <p className="text-sm">{ministerToView.church_address || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Current Church</p>
-                  <p className="text-sm">{ministerToView.current_church_name || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Position at Church</p>
-                  <p className="text-sm">{ministerToView.position_at_church || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Marital Status</p>
-                  <p className="text-sm">{ministerToView.marital_status || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Spouse Name</p>
-                  <p className="text-sm">{ministerToView.spouse_name || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Number of Children</p>
-                  <p className="text-sm">{ministerToView.number_of_children || "0"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Date Joined</p>
-                  <p className="text-sm">{new Date(ministerToView.date_joined).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Status</p>
-                  <p className="text-sm">{getStatusBadge(ministerToView.status)}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Association</p>
-                  <p className="text-sm">{ministerToView.association || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Sector</p>
-                  <p className="text-sm">{ministerToView.sector || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Fellowship</p>
-                  <p className="text-sm">{ministerToView.fellowship || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Ordination Year</p>
-                  <p className="text-sm">{ministerToView.ordination_year || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Recognition Year</p>
-                  <p className="text-sm">{ministerToView.recognition_year || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Licensing Year</p>
-                  <p className="text-sm">{ministerToView.licensing_year || "-"}</p>
+
+                <div className="space-y-3 pt-4 border-t border-border/50">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Badge variant="outline" className="w-full justify-start">
+                      📧 {ministerToView.email || "No email"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Badge variant="outline" className="w-full justify-start">
+                      📱 {ministerToView.phone || "No phone"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Badge variant="outline" className="w-full justify-start">
+                      💬 {ministerToView.whatsapp || "No WhatsApp"}
+                    </Badge>
+                  </div>
                 </div>
               </div>
-              {ministerToView.notes && (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Notes</p>
-                  <p className="text-sm whitespace-pre-wrap">{ministerToView.notes}</p>
+
+              {/* Main content area */}
+              <div className="md:col-span-2 p-6 overflow-y-auto max-h-[90vh]">
+                <AlertDialogHeader className="mb-6">
+                  <AlertDialogTitle className="text-2xl">Detailed Information</AlertDialogTitle>
+                </AlertDialogHeader>
+
+                <div className="space-y-6">
+                  {/* Personal Information */}
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-primary border-b pb-2">Personal Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <InfoField label="Date of Birth" value={ministerToView.date_of_birth ? new Date(ministerToView.date_of_birth).toLocaleDateString() : "-"} />
+                      <InfoField label="Marital Status" value={ministerToView.marital_status || "-"} />
+                      <InfoField label="Spouse Name" value={ministerToView.spouse_name || "-"} />
+                      <InfoField label="Marriage Type" value={ministerToView.marriage_type || "-"} />
+                      <InfoField label="Number of Children" value={ministerToView.number_of_children || "0"} />
+                    </div>
+                  </div>
+
+                  {/* Location Information */}
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-primary border-b pb-2">Location Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <InfoField label="Location" value={ministerToView.location || "-"} />
+                      <InfoField label="GPS Address" value={ministerToView.gps_address || "-"} />
+                      <InfoField label="Church Address" value={ministerToView.church_address || "-"} className="col-span-2" />
+                    </div>
+                  </div>
+
+                  {/* Ministry Information */}
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-primary border-b pb-2">Ministry Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <InfoField label="Current Church" value={ministerToView.current_church_name || "-"} />
+                      <InfoField label="Position at Church" value={ministerToView.position_at_church || "-"} />
+                      <InfoField label="Association" value={ministerToView.association || "-"} />
+                      <InfoField label="Sector" value={ministerToView.sector || "-"} />
+                      <InfoField label="Fellowship" value={ministerToView.fellowship || "-"} />
+                      <InfoField label="Date Joined" value={new Date(ministerToView.date_joined).toLocaleDateString()} />
+                    </div>
+                  </div>
+
+                  {/* Ordination Information */}
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-primary border-b pb-2">Ordination & Credentials</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <InfoField label="Ordination Year" value={ministerToView.ordination_year || "-"} />
+                      <InfoField label="Recognition Year" value={ministerToView.recognition_year || "-"} />
+                      <InfoField label="Licensing Year" value={ministerToView.licensing_year || "-"} />
+                    </div>
+                  </div>
+
+                  {/* Notes */}
+                  {ministerToView.notes && (
+                    <div className="space-y-3">
+                      <h3 className="text-lg font-semibold text-primary border-b pb-2">Notes</h3>
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <p className="text-sm whitespace-pre-wrap">{ministerToView.notes}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+
+                <AlertDialogFooter className="mt-6">
+                  <AlertDialogCancel>Close</AlertDialogCancel>
+                </AlertDialogFooter>
+              </div>
             </div>
           )}
-          <AlertDialogFooter>
-            <AlertDialogCancel>Close</AlertDialogCancel>
-          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 

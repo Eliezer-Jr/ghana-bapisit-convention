@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Send, Plus, Trash2, Upload, Users, Download } from "lucide-react";
+import { Loader2, Send, Plus, Trash2, Upload, Users, Download, X } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { useSMSMessaging } from "@/hooks/useSMSMessaging";
+import { supabase } from "@/lib/supabase";
+import { Badge } from "@/components/ui/badge";
 
 interface Destination {
   destination: string;
@@ -20,12 +22,21 @@ interface ExcelContact {
   phone_number: string;
 }
 
+interface Minister {
+  id: string;
+  full_name: string;
+  phone: string;
+  whatsapp: string;
+}
+
 export const GeneralSMSForm = () => {
   const { loading, sendGeneralSMS } = useSMSMessaging();
   const [message, setMessage] = useState("");
   const [destinations, setDestinations] = useState<Destination[]>([{ destination: "" }]);
   const [useAllMinisters, setUseAllMinisters] = useState(false);
   const [excelContacts, setExcelContacts] = useState<ExcelContact[]>([]);
+  const [ministers, setMinisters] = useState<Minister[]>([]);
+  const [selectedMinisters, setSelectedMinisters] = useState<Minister[]>([]);
 
   const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -52,6 +63,37 @@ export const GeneralSMSForm = () => {
       }
     };
     reader.readAsBinaryString(file);
+  };
+
+  useEffect(() => {
+    if (useAllMinisters) {
+      fetchMinisters();
+    }
+  }, [useAllMinisters]);
+
+  const fetchMinisters = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("ministers")
+        .select("id, full_name, phone, whatsapp")
+        .eq("status", "active");
+
+      if (error) throw error;
+      
+      const ministersWithContacts = (data || []).filter(
+        (m) => m.phone || m.whatsapp
+      );
+      
+      setMinisters(ministersWithContacts);
+      setSelectedMinisters(ministersWithContacts);
+      toast.success(`Loaded ${ministersWithContacts.length} ministers`);
+    } catch (error: any) {
+      toast.error("Failed to load ministers: " + error.message);
+    }
+  };
+
+  const removeMinister = (ministerId: string) => {
+    setSelectedMinisters((prev) => prev.filter((m) => m.id !== ministerId));
   };
 
   const downloadTemplate = () => {
@@ -85,7 +127,12 @@ export const GeneralSMSForm = () => {
               checked={useAllMinisters}
               onChange={(e) => {
                 setUseAllMinisters(e.target.checked);
-                if (e.target.checked) setExcelContacts([]);
+                if (e.target.checked) {
+                  setExcelContacts([]);
+                  setDestinations([{ destination: "" }]);
+                } else {
+                  setSelectedMinisters([]);
+                }
               }}
               className="h-4 w-4"
             />
@@ -94,6 +141,37 @@ export const GeneralSMSForm = () => {
               Send to all ministers in database
             </Label>
           </div>
+
+          {useAllMinisters && selectedMinisters.length > 0 && (
+            <div className="space-y-2">
+              <Label>Selected Ministers ({selectedMinisters.length})</Label>
+              <div className="border rounded-lg p-4 max-h-64 overflow-y-auto space-y-2">
+                {selectedMinisters.map((minister) => (
+                  <div
+                    key={minister.id}
+                    className="flex items-center justify-between p-2 bg-muted/50 rounded hover:bg-muted transition-colors"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{minister.full_name}</p>
+                      <div className="flex gap-2 text-xs text-muted-foreground">
+                        {minister.phone && <Badge variant="secondary">Phone: {minister.phone}</Badge>}
+                        {minister.whatsapp && <Badge variant="secondary">WhatsApp: {minister.whatsapp}</Badge>}
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeMinister(minister.id)}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">

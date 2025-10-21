@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LogOut, LayoutDashboard, Users, MessageSquare, Shield } from "lucide-react";
 import { toast } from "sonner";
+import logoWatermark from "@/assets/logo-watermark.png";
 
 interface LayoutProps {
   children: ReactNode;
@@ -36,12 +37,12 @@ const Layout = ({ children }: LayoutProps) => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
       <nav className="border-b border-border bg-card">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-8">
-              <h1 className="text-xl font-semibold text-primary">Ghana Bapisit Convention</h1>
+              <h1 className="text-xl font-semibold text-primary">Ghana Baptist Convention</h1>
               <div className="flex gap-1">
                 {navItems.map((item) => {
                   const Icon = item.icon;
@@ -79,6 +80,15 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       </nav>
       <main className="container mx-auto px-4 py-8">{children}</main>
+      
+      {/* Watermark Logo */}
+      <div className="fixed bottom-4 right-4 opacity-20 hover:opacity-40 transition-opacity pointer-events-none z-50">
+        <img 
+          src={logoWatermark} 
+          alt="Ghana Baptist Convention" 
+          className="w-20 h-20 object-contain"
+        />
+      </div>
     </div>
   );
 };
