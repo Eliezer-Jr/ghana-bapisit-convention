@@ -43,6 +43,8 @@ const Ministers = () => {
   const [ministerToView, setMinisterToView] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [importPreview, setImportPreview] = useState<any[]>([]);
+  const [showImportPreview, setShowImportPreview] = useState(false);
 
   useEffect(() => {
     fetchMinisters();
@@ -234,51 +236,75 @@ const Ministers = () => {
           return;
         }
 
-        // Validate and insert ministers
-        const ministersToInsert = jsonData.map((row: any) => ({
-          full_name: row.full_name,
-          email: row.email || null,
-          phone: row.phone || null,
-          role: row.role,
-          location: row.location || null,
+        // Show preview instead of importing directly
+        const ministersPreview = jsonData.map((row: any, index: number) => ({
+          _rowId: index,
+          full_name: row.full_name || "",
+          email: row.email || "",
+          phone: row.phone || "",
+          role: row.role || "",
+          location: row.location || "",
           status: row.status || "active",
           date_joined: row.date_joined || new Date().toISOString().split('T')[0],
-          date_of_birth: row.date_of_birth || null,
-          marital_status: row.marital_status || null,
-          spouse_name: row.spouse_name || null,
-          marriage_type: row.marriage_type || null,
+          date_of_birth: row.date_of_birth || "",
+          marital_status: row.marital_status || "",
+          spouse_name: row.spouse_name || "",
+          marriage_type: row.marriage_type || "",
           number_of_children: row.number_of_children || 0,
-          titles: row.titles || null,
-          gps_address: row.gps_address || null,
-          whatsapp: row.whatsapp || null,
-          current_church_name: row.current_church_name || null,
-          position_at_church: row.position_at_church || null,
-          church_address: row.church_address || null,
-          association: row.association || null,
-          sector: row.sector || null,
-          fellowship: row.fellowship || null,
-          ordination_year: row.ordination_year || null,
-          recognition_year: row.recognition_year || null,
-          licensing_year: row.licensing_year || null,
-          notes: row.notes || null
+          titles: row.titles || "",
+          gps_address: row.gps_address || "",
+          whatsapp: row.whatsapp || "",
+          current_church_name: row.current_church_name || "",
+          position_at_church: row.position_at_church || "",
+          church_address: row.church_address || "",
+          association: row.association || "",
+          sector: row.sector || "",
+          fellowship: row.fellowship || "",
+          ordination_year: row.ordination_year || "",
+          recognition_year: row.recognition_year || "",
+          licensing_year: row.licensing_year || "",
+          notes: row.notes || ""
         }));
 
-        const { error } = await supabase
-          .from("ministers")
-          .insert(ministersToInsert);
-
-        if (error) throw error;
-
-        toast.success(`Successfully imported ${ministersToInsert.length} ministers`);
-        fetchMinisters();
+        setImportPreview(ministersPreview);
+        setShowImportPreview(true);
+        toast.success(`Preview ready: ${ministersPreview.length} ministers`);
       } catch (error: any) {
-        toast.error("Error importing ministers: " + error.message);
+        toast.error("Error reading file: " + error.message);
         console.error(error);
       }
     };
 
     reader.readAsArrayBuffer(file);
     event.target.value = ""; // Reset input
+  };
+
+  const confirmImport = async () => {
+    try {
+      const ministersToInsert = importPreview.map(({ _rowId, ...minister }) => minister);
+
+      const { error } = await supabase
+        .from("ministers")
+        .insert(ministersToInsert);
+
+      if (error) throw error;
+
+      toast.success(`Successfully imported ${ministersToInsert.length} ministers`);
+      setShowImportPreview(false);
+      setImportPreview([]);
+      fetchMinisters();
+    } catch (error: any) {
+      toast.error("Error importing ministers: " + error.message);
+      console.error(error);
+    }
+  };
+
+  const updatePreviewCell = (rowId: number, field: string, value: any) => {
+    setImportPreview(prev => 
+      prev.map(row => 
+        row._rowId === rowId ? { ...row, [field]: value } : row
+      )
+    );
   };
 
   const getStatusBadge = (status: string) => {
@@ -577,6 +603,93 @@ const Ministers = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showImportPreview} onOpenChange={setShowImportPreview}>
+        <AlertDialogContent className="max-w-[95vw] max-h-[90vh] overflow-hidden p-0">
+          <AlertDialogHeader className="p-6 pb-4">
+            <AlertDialogTitle>Import Preview - {importPreview.length} Ministers</AlertDialogTitle>
+            <AlertDialogDescription>
+              Review and edit the data before importing. Click on any cell to edit.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="overflow-auto max-h-[60vh] px-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[150px]">Full Name</TableHead>
+                  <TableHead className="min-w-[150px]">Email</TableHead>
+                  <TableHead className="min-w-[120px]">Phone</TableHead>
+                  <TableHead className="min-w-[120px]">Role</TableHead>
+                  <TableHead className="min-w-[120px]">Location</TableHead>
+                  <TableHead className="min-w-[100px]">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {importPreview.map((row) => (
+                  <TableRow key={row._rowId}>
+                    <TableCell>
+                      <Input
+                        value={row.full_name}
+                        onChange={(e) => updatePreviewCell(row._rowId, 'full_name', e.target.value)}
+                        className="min-w-[140px]"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={row.email}
+                        onChange={(e) => updatePreviewCell(row._rowId, 'email', e.target.value)}
+                        className="min-w-[140px]"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={row.phone}
+                        onChange={(e) => updatePreviewCell(row._rowId, 'phone', e.target.value)}
+                        className="min-w-[110px]"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={row.role}
+                        onChange={(e) => updatePreviewCell(row._rowId, 'role', e.target.value)}
+                        className="min-w-[110px]"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={row.location}
+                        onChange={(e) => updatePreviewCell(row._rowId, 'location', e.target.value)}
+                        className="min-w-[110px]"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Select value={row.status} onValueChange={(value) => updatePreviewCell(row._rowId, 'status', value)}>
+                        <SelectTrigger className="min-w-[90px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                          <SelectItem value="retired">Retired</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <AlertDialogFooter className="p-6 pt-4">
+            <AlertDialogCancel onClick={() => {
+              setShowImportPreview(false);
+              setImportPreview([]);
+            }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmImport}>
+              Confirm Import
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

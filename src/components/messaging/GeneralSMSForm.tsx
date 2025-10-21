@@ -10,6 +10,24 @@ import * as XLSX from "xlsx";
 import { useSMSMessaging } from "@/hooks/useSMSMessaging";
 import { supabase } from "@/lib/supabase";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Destination {
   destination: string;
@@ -18,6 +36,7 @@ interface Destination {
 }
 
 interface ExcelContact {
+  _rowId?: number;
   name: string;
   phone_number: string;
 }
@@ -37,6 +56,8 @@ export const GeneralSMSForm = () => {
   const [excelContacts, setExcelContacts] = useState<ExcelContact[]>([]);
   const [ministers, setMinisters] = useState<Minister[]>([]);
   const [selectedMinisters, setSelectedMinisters] = useState<Minister[]>([]);
+  const [contactsPreview, setContactsPreview] = useState<ExcelContact[]>([]);
+  const [showContactsPreview, setShowContactsPreview] = useState(false);
 
   const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -59,18 +80,36 @@ export const GeneralSMSForm = () => {
           return;
         }
         
-        const contacts: ExcelContact[] = json.map(row => ({
+        const contacts: ExcelContact[] = json.map((row, index) => ({
+          _rowId: index,
           name: row.name || row.Name || row.NAME || '',
           phone_number: String(row.phone_number || row.phone || row.Phone || row.PHONE || '')
         })).filter(contact => contact.phone_number.trim());
         
-        setExcelContacts(contacts);
-        toast.success(`Loaded ${contacts.length} contacts from Excel (header row skipped)`);
+        setContactsPreview(contacts);
+        setShowContactsPreview(true);
+        toast.success(`Preview ready: ${contacts.length} contacts`);
       } catch (error: any) {
         toast.error("Failed to parse Excel file: " + error.message);
       }
     };
     reader.readAsBinaryString(file);
+    e.target.value = ""; // Reset input
+  };
+
+  const confirmContactsImport = () => {
+    const finalContacts = contactsPreview.map(({ _rowId, ...contact }) => contact);
+    setExcelContacts(finalContacts);
+    setShowContactsPreview(false);
+    toast.success(`Loaded ${finalContacts.length} contacts`);
+  };
+
+  const updateContactCell = (rowId: number, field: string, value: string) => {
+    setContactsPreview(prev =>
+      prev.map(contact =>
+        contact._rowId === rowId ? { ...contact, [field]: value } : contact
+      )
+    );
   };
 
   useEffect(() => {
@@ -267,6 +306,54 @@ export const GeneralSMSForm = () => {
           Send Message
         </Button>
       </CardContent>
+
+      <AlertDialog open={showContactsPreview} onOpenChange={setShowContactsPreview}>
+        <AlertDialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
+          <AlertDialogHeader className="p-6 pb-4">
+            <AlertDialogTitle>Import Preview - {contactsPreview.length} Contacts</AlertDialogTitle>
+            <AlertDialogDescription>
+              Review and edit the contacts before importing. Click on any cell to edit.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="overflow-auto max-h-[60vh] px-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Phone Number</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {contactsPreview.map((contact) => (
+                  <TableRow key={contact._rowId}>
+                    <TableCell>
+                      <Input
+                        value={contact.name}
+                        onChange={(e) => updateContactCell(contact._rowId!, 'name', e.target.value)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={contact.phone_number}
+                        onChange={(e) => updateContactCell(contact._rowId!, 'phone_number', e.target.value)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <AlertDialogFooter className="p-6 pt-4">
+            <AlertDialogCancel onClick={() => {
+              setShowContactsPreview(false);
+              setContactsPreview([]);
+            }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmContactsImport}>
+              Confirm Import
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
