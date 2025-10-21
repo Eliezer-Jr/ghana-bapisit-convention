@@ -224,10 +224,13 @@ const Ministers = () => {
         const workbook = XLSX.read(data, { type: "array" });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
+        
+        // sheet_to_json automatically uses first row as headers and skips it
+        // Only data rows (row 2 onwards) are converted to JSON objects
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
         if (jsonData.length === 0) {
-          toast.error("No data found in the file");
+          toast.error("No data found in the file (header row was skipped)");
           return;
         }
 

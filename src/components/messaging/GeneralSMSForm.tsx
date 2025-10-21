@@ -49,7 +49,15 @@ export const GeneralSMSForm = () => {
         const workbook = XLSX.read(data, { type: 'binary' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
+        
+        // sheet_to_json automatically uses first row as headers and skips it
+        // Only data rows (row 2 onwards) are converted to JSON objects
         const json = XLSX.utils.sheet_to_json(worksheet) as any[];
+        
+        if (json.length === 0) {
+          toast.error("No data found in the file (header row was skipped)");
+          return;
+        }
         
         const contacts: ExcelContact[] = json.map(row => ({
           name: row.name || row.Name || row.NAME || '',
@@ -57,7 +65,7 @@ export const GeneralSMSForm = () => {
         })).filter(contact => contact.phone_number.trim());
         
         setExcelContacts(contacts);
-        toast.success(`Loaded ${contacts.length} contacts from Excel`);
+        toast.success(`Loaded ${contacts.length} contacts from Excel (header row skipped)`);
       } catch (error: any) {
         toast.error("Failed to parse Excel file: " + error.message);
       }
