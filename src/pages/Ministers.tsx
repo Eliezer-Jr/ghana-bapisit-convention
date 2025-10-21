@@ -26,9 +26,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Plus, Search, Pencil, Trash2, Eye } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Eye, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import * as XLSX from "xlsx";
 
 const Ministers = () => {
   const [ministers, setMinisters] = useState<any[]>([]);
@@ -133,6 +134,150 @@ const Ministers = () => {
     }
   };
 
+  const downloadTemplate = () => {
+    const template = [
+      {
+        full_name: "John Doe",
+        email: "john@example.com",
+        phone: "+233123456789",
+        role: "Pastor",
+        location: "Accra",
+        status: "active",
+        date_joined: "2024-01-01",
+        date_of_birth: "1980-01-01",
+        marital_status: "Married",
+        spouse_name: "Jane Doe",
+        marriage_type: "Traditional",
+        number_of_children: "2",
+        titles: "Rev.",
+        gps_address: "GA-123-4567",
+        whatsapp: "+233123456789",
+        current_church_name: "Grace Church",
+        position_at_church: "Senior Pastor",
+        church_address: "123 Main St, Accra",
+        association: "Greater Accra",
+        sector: "Central",
+        fellowship: "Morning Fellowship",
+        ordination_year: "2010",
+        recognition_year: "2008",
+        licensing_year: "2006",
+        notes: "Additional notes here"
+      }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(template);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Ministers Template");
+    XLSX.writeFile(wb, "ministers_import_template.xlsx");
+    toast.success("Template downloaded successfully");
+  };
+
+  const handleExport = () => {
+    if (filteredMinisters.length === 0) {
+      toast.error("No ministers to export");
+      return;
+    }
+
+    const exportData = filteredMinisters.map((minister) => ({
+      full_name: minister.full_name,
+      email: minister.email || "",
+      phone: minister.phone || "",
+      role: minister.role,
+      location: minister.location || "",
+      status: minister.status,
+      date_joined: minister.date_joined,
+      date_of_birth: minister.date_of_birth || "",
+      marital_status: minister.marital_status || "",
+      spouse_name: minister.spouse_name || "",
+      marriage_type: minister.marriage_type || "",
+      number_of_children: minister.number_of_children || 0,
+      titles: minister.titles || "",
+      gps_address: minister.gps_address || "",
+      whatsapp: minister.whatsapp || "",
+      current_church_name: minister.current_church_name || "",
+      position_at_church: minister.position_at_church || "",
+      church_address: minister.church_address || "",
+      association: minister.association || "",
+      sector: minister.sector || "",
+      fellowship: minister.fellowship || "",
+      ordination_year: minister.ordination_year || "",
+      recognition_year: minister.recognition_year || "",
+      licensing_year: minister.licensing_year || "",
+      notes: minister.notes || ""
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Ministers");
+    XLSX.writeFile(wb, `ministers_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast.success("Ministers exported successfully");
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        if (jsonData.length === 0) {
+          toast.error("No data found in the file");
+          return;
+        }
+
+        // Validate and insert ministers
+        const ministersToInsert = jsonData.map((row: any) => ({
+          full_name: row.full_name,
+          email: row.email || null,
+          phone: row.phone || null,
+          role: row.role,
+          location: row.location || null,
+          status: row.status || "active",
+          date_joined: row.date_joined || new Date().toISOString().split('T')[0],
+          date_of_birth: row.date_of_birth || null,
+          marital_status: row.marital_status || null,
+          spouse_name: row.spouse_name || null,
+          marriage_type: row.marriage_type || null,
+          number_of_children: row.number_of_children || 0,
+          titles: row.titles || null,
+          gps_address: row.gps_address || null,
+          whatsapp: row.whatsapp || null,
+          current_church_name: row.current_church_name || null,
+          position_at_church: row.position_at_church || null,
+          church_address: row.church_address || null,
+          association: row.association || null,
+          sector: row.sector || null,
+          fellowship: row.fellowship || null,
+          ordination_year: row.ordination_year || null,
+          recognition_year: row.recognition_year || null,
+          licensing_year: row.licensing_year || null,
+          notes: row.notes || null
+        }));
+
+        const { error } = await supabase
+          .from("ministers")
+          .insert(ministersToInsert);
+
+        if (error) throw error;
+
+        toast.success(`Successfully imported ${ministersToInsert.length} ministers`);
+        fetchMinisters();
+      } catch (error: any) {
+        toast.error("Error importing ministers: " + error.message);
+        console.error(error);
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
+    event.target.value = ""; // Reset input
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive"> = {
       active: "default",
@@ -156,10 +301,30 @@ const Ministers = () => {
               Manage minister records and information
             </p>
           </div>
-          <Button onClick={handleAdd} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Minister
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={downloadTemplate} variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              Download Template
+            </Button>
+            <Button onClick={handleExport} variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+            <Button variant="outline" className="gap-2 relative">
+              <Upload className="h-4 w-4" />
+              Import
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleImport}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+            </Button>
+            <Button onClick={handleAdd} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Minister
+            </Button>
+          </div>
         </div>
 
         <Card className="shadow-sm">
