@@ -85,7 +85,7 @@ const Layout = ({ children }: LayoutProps) => {
       <div className="fixed bottom-4 right-4 opacity-20 hover:opacity-40 transition-opacity pointer-events-none z-50">
         <img 
           src={logoWatermark} 
-          alt="Ghana Baptist Convention" 
+          alt="LEC" 
           className="w-20 h-20 object-contain"
         />
       </div>
