@@ -20,9 +20,14 @@ serve(async (req) => {
 
     const apiKey = Deno.env.get('FROGAPI_KEY');
     const username = Deno.env.get('FROGAPI_USERNAME');
+    const senderId = Deno.env.get('FROGAPI_OTP_SENDER_ID');
 
     if (!apiKey || !username) {
       throw new Error("FrogAPI credentials not configured");
+    }
+
+    if (!senderId) {
+      throw new Error("FrogAPI OTP Sender ID not configured");
     }
 
     const postData = {
@@ -31,7 +36,7 @@ serve(async (req) => {
       length: 6,
       messagetemplate: "Your Ghana Baptist Convention verification code is: %OTPCODE%. It will expire after %EXPIRY% mins",
       type: "NUMERIC",
-      senderid: "GBC"
+      senderid: senderId
     };
 
     console.log("Generating OTP for:", phoneNumber);
