@@ -7,21 +7,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 import { Church } from "lucide-react";
 import { z } from "zod";
 
-const authSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+const phoneSchema = z.object({
+  phoneNumber: z.string().regex(/^0\d{9}$/, "Phone number must be 10 digits starting with 0"),
+  fullName: z.string().min(2, "Full name is required").optional(),
 });
 
 const Auth = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [isSignup, setIsSignup] = useState(false);
 
   // Redirect if already authenticated
   if (user) {
@@ -29,44 +33,78 @@ const Auth = () => {
     return null;
   }
 
-  const handleAuth = async (type: "login" | "signup") => {
+  const handleSendOTP = async (type: "login" | "signup") => {
     try {
       setLoading(true);
+      setIsSignup(type === "signup");
 
       // Validate inputs
-      const validated = authSchema.parse({ email, password });
+      const validated = phoneSchema.parse({ 
+        phoneNumber, 
+        fullName: type === "signup" ? fullName : undefined 
+      });
 
-      if (type === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email: validated.email,
-          password: validated.password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-          },
-        });
-
-        if (error) throw error;
-        toast.success("Account created successfully!");
-        navigate("/");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: validated.email,
-          password: validated.password,
-        });
-
-        if (error) throw error;
-        toast.success("Signed in successfully!");
-        navigate("/");
+      if (type === "signup" && !fullName.trim()) {
+        throw new Error("Full name is required for signup");
       }
+
+      // Send OTP
+      const { data, error } = await supabase.functions.invoke('frogapi-otp-generate', {
+        body: { phoneNumber: validated.phoneNumber }
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || "Failed to send OTP");
+
+      setOtpSent(true);
+      toast.success("OTP sent to your phone number!");
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else {
-        toast.error(error.message || "An error occurred");
+        toast.error(error.message || "Failed to send OTP");
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVerifyOTP = async () => {
+    try {
+      setLoading(true);
+
+      if (otp.length !== 6) {
+        throw new Error("Please enter the complete 6-digit OTP");
+      }
+
+      // Verify OTP
+      const { data, error } = await supabase.functions.invoke('frogapi-otp-verify', {
+        body: { 
+          phoneNumber, 
+          otp,
+          fullName: isSignup ? fullName : undefined,
+          isSignup 
+        }
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || "Invalid OTP");
+
+      toast.success(data.message || "Verification successful!");
+      
+      // Refresh the session
+      await supabase.auth.refreshSession();
+      navigate("/");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to verify OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBack = () => {
+    setOtpSent(false);
+    setOtp("");
   };
 
   return (
@@ -82,72 +120,108 @@ const Auth = () => {
           <CardDescription>Minister Data Management System</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login" className="space-y-4">
+          {!otpSent ? (
+            <Tabs defaultValue="login" className="w-full" onValueChange={(v) => setIsSignup(v === "signup")}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              </TabsList>
+              <TabsContent value="login" className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-phone">Phone Number</Label>
+                  <Input
+                    id="login-phone"
+                    type="tel"
+                    placeholder="0241234567"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    disabled={loading}
+                    maxLength={10}
+                  />
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={() => handleSendOTP("login")}
+                  disabled={loading || !phoneNumber}
+                >
+                  {loading ? "Sending OTP..." : "Send OTP"}
+                </Button>
+              </TabsContent>
+              <TabsContent value="signup" className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-name">Full Name</Label>
+                  <Input
+                    id="signup-name"
+                    type="text"
+                    placeholder="John Doe"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-phone">Phone Number</Label>
+                  <Input
+                    id="signup-phone"
+                    type="tel"
+                    placeholder="0241234567"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    disabled={loading}
+                    maxLength={10}
+                  />
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={() => handleSendOTP("signup")}
+                  disabled={loading || !phoneNumber || !fullName}
+                >
+                  {loading ? "Sending OTP..." : "Send OTP"}
+                </Button>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="login-email">Email</Label>
-                <Input
-                  id="login-email"
-                  type="email"
-                  placeholder="admin@church.org"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={loading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="login-password">Password</Label>
-                <Input
-                  id="login-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                />
+                <Label>Enter Verification Code</Label>
+                <p className="text-sm text-muted-foreground">
+                  We sent a 6-digit code to {phoneNumber}
+                </p>
+                <div className="flex justify-center">
+                  <InputOTP
+                    maxLength={6}
+                    value={otp}
+                    onChange={setOtp}
+                    disabled={loading}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
               </div>
               <Button
                 className="w-full"
-                onClick={() => handleAuth("login")}
-                disabled={loading}
+                onClick={handleVerifyOTP}
+                disabled={loading || otp.length !== 6}
               >
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? "Verifying..." : "Verify OTP"}
               </Button>
-            </TabsContent>
-            <TabsContent value="signup" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
-                <Input
-                  id="signup-email"
-                  type="email"
-                  placeholder="admin@church.org"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={loading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
-                <Input
-                  id="signup-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                />
-              </div>
               <Button
+                variant="outline"
                 className="w-full"
-                onClick={() => handleAuth("signup")}
+                onClick={handleBack}
                 disabled={loading}
               >
-                {loading ? "Creating account..." : "Create Account"}
+                Back
               </Button>
-            </TabsContent>
-          </Tabs>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
