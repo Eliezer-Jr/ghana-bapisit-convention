@@ -132,9 +132,15 @@ const Auth = () => {
 
       toast.success(data.message || "Verification successful!");
       
-      // Refresh the session
-      await supabase.auth.refreshSession();
-      navigate("/");
+      // Set the session if returned (for login)
+      if (data.session) {
+        await supabase.auth.setSession(data.session);
+      }
+      
+      // Small delay to ensure auth state updates
+      setTimeout(() => {
+        navigate("/");
+      }, 100);
     } catch (error: any) {
       toast.error(error.message || "Failed to verify OTP");
     } finally {
