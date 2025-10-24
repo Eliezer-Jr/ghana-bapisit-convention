@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       educational_qualifications: {
         Row: {
           created_at: string
@@ -259,6 +286,7 @@ export type Database = {
       profiles: {
         Row: {
           approved: boolean | null
+          avatar_url: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
@@ -268,6 +296,7 @@ export type Database = {
         }
         Insert: {
           approved?: boolean | null
+          avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
@@ -277,6 +306,7 @@ export type Database = {
         }
         Update: {
           approved?: boolean | null
+          avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
