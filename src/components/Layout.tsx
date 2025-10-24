@@ -4,9 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, LayoutDashboard, Users, MessageSquare, Shield } from "lucide-react";
+import { LogOut, LayoutDashboard, Users, MessageSquare, Shield, UserCircle, Activity } from "lucide-react";
 import { toast } from "sonner";
 import logoWatermark from "@/assets/logo-watermark.png";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 interface LayoutProps {
   children: ReactNode;
@@ -16,8 +17,14 @@ const Layout = ({ children }: LayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isSuperAdmin } = useAuth();
+  const { logActivity } = useActivityLog();
 
   const handleLogout = async () => {
+    await logActivity({
+      action: 'user_logout',
+      details: { timestamp: new Date().toISOString() }
+    });
+    
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast.error("Error signing out");
@@ -31,8 +38,12 @@ const Layout = ({ children }: LayoutProps) => {
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
     { icon: Users, label: "Ministers", path: "/ministers" },
     { icon: MessageSquare, label: "Messages", path: "/messages" },
+    { icon: UserCircle, label: "Profile", path: "/profile" },
     ...(isSuperAdmin
-      ? [{ icon: Shield, label: "Super Admin", path: "/super-admin" }]
+      ? [
+          { icon: Shield, label: "Super Admin", path: "/super-admin" },
+          { icon: Activity, label: "Activity Logs", path: "/activity-logs" }
+        ]
       : []),
   ];
 

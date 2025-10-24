@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { Layout } from "@/components/Layout";
+import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -44,20 +44,33 @@ export default function ActivityLogs() {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch activity logs
+      const { data: logsData, error: logsError } = await supabase
         .from('activity_logs')
-        .select(`
-          *,
-          profiles (
-            full_name,
-            email
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (error) throw error;
-      setLogs(data || []);
+      if (logsError) throw logsError;
+
+      // Fetch user profiles for the logs
+      const userIds = [...new Set(logsData?.map(log => log.user_id) || [])];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Map profiles to logs
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]));
+      const enrichedLogs = logsData?.map(log => ({
+        ...log,
+        profiles: profilesMap.get(log.user_id)
+      })) || [];
+
+      setLogs(enrichedLogs);
     } catch (error: any) {
       console.error('Error fetching logs:', error);
       toast.error("Failed to load activity logs");

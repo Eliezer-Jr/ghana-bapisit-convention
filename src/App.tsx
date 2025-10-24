@@ -11,6 +11,8 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import PendingApproval from "./pages/PendingApproval";
 import SuperAdmin from "./pages/SuperAdmin";
+import Profile from "./pages/Profile";
+import ActivityLogs from "./pages/ActivityLogs";
 
 const queryClient = new QueryClient();
 
@@ -98,6 +100,22 @@ const App = () => (
                 <ProtectedRoute>
                   <Messages />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/activity-logs"
+              element={
+                <SuperAdminRoute>
+                  <ActivityLogs />
+                </SuperAdminRoute>
               }
             />
             <Route path="*" element={<NotFound />} />

@@ -11,6 +11,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { toast } from "sonner";
 import { Church } from "lucide-react";
 import { z } from "zod";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 const phoneSchema = z.object({
   phoneNumber: z.string().regex(/^0\d{9}$/, "Phone number must be 10 digits starting with 0"),
@@ -20,6 +21,7 @@ const phoneSchema = z.object({
 const Auth = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { logActivity } = useActivityLog();
   const [loading, setLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [fullName, setFullName] = useState("");
@@ -135,6 +137,12 @@ const Auth = () => {
       // Set the session if returned (for login)
       if (data.session) {
         await supabase.auth.setSession(data.session);
+        
+        // Log the activity
+        await logActivity({
+          action: isSignup ? 'user_signup' : 'user_login',
+          details: { phone_number: phoneNumber, method: 'otp' }
+        });
       }
       
       // Small delay to ensure auth state updates
