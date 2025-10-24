@@ -75,21 +75,21 @@ const PendingApproval = () => {
                     <Mail className="h-5 w-5 text-primary mt-0.5" />
                     <div>
                       <p className="font-medium text-foreground">Email Support</p>
-                      <p className="text-sm text-muted-foreground">support@ghanabaptist.org</p>
+                      <p className="text-sm text-muted-foreground">info@lordeconsult.com</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Phone className="h-5 w-5 text-primary mt-0.5" />
                     <div>
                       <p className="font-medium text-foreground">Phone Support</p>
-                      <p className="text-sm text-muted-foreground">+233 XX XXX XXXX</p>
+                      <p className="text-sm text-muted-foreground">+233 55 708 3554</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Globe className="h-5 w-5 text-primary mt-0.5" />
                     <div>
                       <p className="font-medium text-foreground">Website</p>
-                      <p className="text-sm text-muted-foreground">www.ghanabaptist.org</p>
+                      <p className="text-sm text-muted-foreground">info@lordeconsult.com</p>
                     </div>
                   </div>
                 </div>
