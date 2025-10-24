@@ -26,7 +26,20 @@ serve(async (req) => {
       throw new Error("FrogAPI credentials not configured");
     }
 
-    console.log("Verifying OTP for:", phoneNumber, "OTP:", otp);
+    console.log("Verifying OTP for:", phoneNumber, "OTP length:", otp?.length, "OTP value:", otp);
+
+    // Validate OTP format
+    if (!otp || String(otp).trim().length === 0) {
+      throw new Error("OTP code is required");
+    }
+
+    const otpCode = String(otp).trim();
+    const verifyPayload = {
+      number: phoneNumber,
+      code: otpCode
+    };
+
+    console.log("FrogAPI verify request payload:", JSON.stringify(verifyPayload));
 
     // Verify OTP with FrogAPI
     const verifyResponse = await fetch('https://frogapi.wigal.com.gh/api/v3/sms/otp/verify', {
@@ -36,23 +49,30 @@ serve(async (req) => {
         'API-KEY': apiKey,
         'USERNAME': username
       },
-      body: JSON.stringify({
-        number: phoneNumber,
-        code: String(otp).trim()
-      })
+      body: JSON.stringify(verifyPayload)
     });
 
     const verifyData = await verifyResponse.json();
-    console.log("FrogAPI verify response:", verifyData);
+    console.log("FrogAPI verify response:", JSON.stringify(verifyData));
+    console.log("Response status:", verifyData.status);
 
     // Check if verification was successful
-    if (verifyData.status === 'SYSTEM_ERROR' || verifyData.status === 'FAILED') {
+    if (verifyData.status === 'SYSTEM_ERROR') {
+      console.error("System error from FrogAPI:", verifyData.message);
+      throw new Error(`Verification system error: ${verifyData.message || "Unknown error"}`);
+    }
+
+    if (verifyData.status === 'FAILED') {
+      console.error("Verification failed:", verifyData.message);
       throw new Error(verifyData.message || "OTP verification failed");
     }
 
     if (verifyData.status !== 'VERIFIED') {
-      throw new Error("Invalid or expired OTP");
+      console.error("Unexpected status:", verifyData.status);
+      throw new Error(`Invalid or expired OTP. Status: ${verifyData.status}`);
     }
+
+    console.log("OTP verified successfully");
 
     // Initialize Supabase client with service role
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
