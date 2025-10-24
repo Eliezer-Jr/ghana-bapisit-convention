@@ -11,3 +11,12 @@ verify_jwt = true
 
 [functions.frogapi-history]
 verify_jwt = true
+
+[functions.frogapi-otp-generate]
+verify_jwt = false
+
+[functions.frogapi-otp-verify]
+verify_jwt = false
+
+[functions.frogapi-test-otp]
+verify_jwt = false

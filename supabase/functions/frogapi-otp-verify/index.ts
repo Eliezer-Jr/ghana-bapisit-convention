@@ -1,0 +1,196 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { phoneNumber, otp, fullName, isSignup } = await req.json();
+    
+    if (!phoneNumber || !otp) {
+      throw new Error("Phone number and OTP are required");
+    }
+
+    const apiKey = Deno.env.get('FROGAPI_KEY');
+    const username = Deno.env.get('FROGAPI_USERNAME');
+
+    if (!apiKey || !username) {
+      throw new Error("FrogAPI credentials not configured");
+    }
+
+    console.log("Verifying OTP for:", phoneNumber, "OTP length:", otp?.length, "OTP value:", otp);
+
+    // Validate OTP format
+    if (!otp || String(otp).trim().length === 0) {
+      throw new Error("OTP code is required");
+    }
+
+    const otpCode = String(otp).trim();
+    
+    // Ensure phone number is in correct format (remove leading zero for Ghana numbers)
+    let formattedNumber = phoneNumber;
+    if (phoneNumber.startsWith('0')) {
+      formattedNumber = '233' + phoneNumber.substring(1);
+    }
+    
+    const verifyPayload = {
+      otpcode: otpCode,  // FrogAPI expects 'otpcode' not 'code'
+      number: formattedNumber
+    };
+
+    console.log("FrogAPI verify request payload:", JSON.stringify(verifyPayload));
+
+    // Verify OTP with FrogAPI
+    const verifyResponse = await fetch('https://frogapi.wigal.com.gh/api/v3/sms/otp/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'API-KEY': apiKey,
+        'USERNAME': username
+      },
+      body: JSON.stringify(verifyPayload)
+    });
+
+    const verifyData = await verifyResponse.json();
+    console.log("FrogAPI verify response:", JSON.stringify(verifyData));
+    console.log("Response status:", verifyData.status);
+
+    // Check if verification was successful
+    const status = String(verifyData.status ?? '').toUpperCase();
+    if (status === 'SYSTEM_ERROR') {
+      console.error("System error from FrogAPI:", verifyData.message);
+      
+      // Provide helpful message for common issue
+      if (verifyData.message && verifyData.message.includes("null")) {
+        throw new Error("OTP verification is not available yet. Please wait a moment after receiving the SMS and try again. If the issue persists, request a new OTP.");
+      }
+      
+      throw new Error(`Verification system error: ${verifyData.message || "Unknown error"}`);
+    }
+
+    if (status === 'FAILED') {
+      console.error("Verification failed:", verifyData.message);
+      throw new Error(verifyData.message || "Invalid or expired OTP. Please check and try again.");
+    }
+
+    // Accept SUCCESS/VERIFIED/OK as success statuses from FrogAPI
+    const successStatuses = new Set(['VERIFIED', 'SUCCESS', 'OK']);
+    if (!successStatuses.has(status)) {
+      console.error("Unexpected status from FrogAPI:", status, "full response:", verifyData);
+      throw new Error(verifyData.message || `OTP verification failed. Please request a new OTP and try again.`);
+    }
+
+    console.log("OTP verified successfully");
+
+    // Initialize Supabase client with service role
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Create or authenticate user
+    const email = `${phoneNumber}@otp.gbc.local`;
+    const password = `otp_${phoneNumber}_${Date.now()}`;
+
+    if (isSignup) {
+      // Create new user
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          phone_number: phoneNumber,
+          full_name: fullName
+        }
+      });
+
+      if (authError) throw authError;
+
+      // Update profile with phone number
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ 
+          phone_number: phoneNumber,
+          full_name: fullName 
+        })
+        .eq('id', authData.user.id);
+
+      if (profileError) console.error('Profile update error:', profileError);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          user: authData.user,
+          message: "Account created successfully"
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } else {
+      // Login existing user by phone: set a fresh password and sign in with the user's actual email
+      // Find profile linked to this phone number
+      const { data: profile, error: profileErr } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('phone_number', phoneNumber)
+        .single();
+
+      if (profileErr || !profile) {
+        console.error('Profile not found for phone:', phoneNumber, 'error:', profileErr);
+        throw new Error("User not found. Please sign up first.");
+      }
+
+      // Fetch the auth user to get the real email
+      const { data: userData, error: getUserErr } = await supabase.auth.admin.getUserById(profile.id);
+      if (getUserErr || !userData?.user) {
+        console.error('Unable to fetch auth user by id:', profile.id, getUserErr);
+        throw new Error("Account lookup failed. Please try signing up again.");
+      }
+
+      // Update password to a new one-time value
+      const newPassword = `otp_${phoneNumber}_${Date.now()}`;
+      const { error: updateError } = await supabase.auth.admin.updateUserById(
+        profile.id,
+        { password: newPassword }
+      );
+
+      if (updateError) {
+        console.error('Password update error:', updateError);
+        throw new Error("Could not refresh login credentials. Please request a new OTP and try again.");
+      }
+
+      // Sign in using the user's actual email
+      const userEmail = userData.user.email!;
+      const { data: retryAuth, error: retryError } = await supabase.auth.signInWithPassword({
+        email: userEmail,
+        password: newPassword
+      });
+
+      if (retryError) {
+        console.error('Sign-in retry failed:', retryError);
+        throw new Error("Login failed after verification. Please request a new OTP and try again.");
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          session: retryAuth.session,
+          message: "Login successful"
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+  } catch (error: any) {
+    console.error('Error verifying OTP:', error);
+    return new Response(
+      JSON.stringify({ success: false, error: error.message }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
