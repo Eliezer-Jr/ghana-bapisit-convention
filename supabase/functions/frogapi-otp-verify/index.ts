@@ -42,8 +42,8 @@ serve(async (req) => {
     }
     
     const verifyPayload = {
-      number: formattedNumber,
-      code: otpCode
+      otpcode: otpCode,  // FrogAPI expects 'otpcode' not 'code'
+      number: formattedNumber
     };
 
     console.log("FrogAPI verify request payload:", JSON.stringify(verifyPayload));
