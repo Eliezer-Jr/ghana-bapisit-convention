@@ -26,7 +26,7 @@ serve(async (req) => {
       throw new Error("FrogAPI credentials not configured");
     }
 
-    console.log("Verifying OTP for:", phoneNumber);
+    console.log("Verifying OTP for:", phoneNumber, "OTP:", otp);
 
     // Verify OTP with FrogAPI
     const verifyResponse = await fetch('https://frogapi.wigal.com.gh/api/v3/sms/otp/verify', {
@@ -38,14 +38,19 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         number: phoneNumber,
-        code: otp
+        code: String(otp).trim()
       })
     });
 
     const verifyData = await verifyResponse.json();
     console.log("FrogAPI verify response:", verifyData);
 
-    if (!verifyData.success || verifyData.status !== 'VERIFIED') {
+    // Check if verification was successful
+    if (verifyData.status === 'SYSTEM_ERROR' || verifyData.status === 'FAILED') {
+      throw new Error(verifyData.message || "OTP verification failed");
+    }
+
+    if (verifyData.status !== 'VERIFIED') {
       throw new Error("Invalid or expired OTP");
     }
 

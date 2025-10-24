@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -26,6 +26,18 @@ const Auth = () => {
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
+  const [canResend, setCanResend] = useState(false);
+  const [resendTimer, setResendTimer] = useState(60);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
 
   // Redirect if already authenticated
   if (user) {
@@ -57,6 +69,29 @@ const Auth = () => {
       if (!data.success) throw new Error(data.error || "Failed to send OTP");
 
       setOtpSent(true);
+      setCanResend(false);
+      setResendTimer(60);
+      
+      // Clear any existing timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      
+      // Start countdown timer
+      timerRef.current = setInterval(() => {
+        setResendTimer((prev) => {
+          if (prev <= 1) {
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+              timerRef.current = null;
+            }
+            setCanResend(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
       toast.success("OTP sent to your phone number!");
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -67,6 +102,11 @@ const Auth = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResendOTP = async () => {
+    if (!canResend) return;
+    await handleSendOTP(isSignup ? "signup" : "login");
   };
 
   const handleVerifyOTP = async () => {
@@ -103,8 +143,14 @@ const Auth = () => {
   };
 
   const handleBack = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
     setOtpSent(false);
     setOtp("");
+    setCanResend(false);
+    setResendTimer(60);
   };
 
   return (
@@ -212,14 +258,24 @@ const Auth = () => {
               >
                 {loading ? "Verifying..." : "Verify OTP"}
               </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleBack}
-                disabled={loading}
-              >
-                Back
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={handleBack}
+                  disabled={loading}
+                >
+                  Back
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={handleResendOTP}
+                  disabled={loading || !canResend}
+                >
+                  {canResend ? "Resend OTP" : `Resend in ${resendTimer}s`}
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
