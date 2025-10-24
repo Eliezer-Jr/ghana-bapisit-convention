@@ -133,53 +133,54 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
-      // Login existing user
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password
+      // Login existing user by phone: set a fresh password and sign in with the user's actual email
+      // Find profile linked to this phone number
+      const { data: profile, error: profileErr } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('phone_number', phoneNumber)
+        .single();
+
+      if (profileErr || !profile) {
+        console.error('Profile not found for phone:', phoneNumber, 'error:', profileErr);
+        throw new Error("User not found. Please sign up first.");
+      }
+
+      // Fetch the auth user to get the real email
+      const { data: userData, error: getUserErr } = await supabase.auth.admin.getUserById(profile.id);
+      if (getUserErr || !userData?.user) {
+        console.error('Unable to fetch auth user by id:', profile.id, getUserErr);
+        throw new Error("Account lookup failed. Please try signing up again.");
+      }
+
+      // Update password to a new one-time value
+      const newPassword = `otp_${phoneNumber}_${Date.now()}`;
+      const { error: updateError } = await supabase.auth.admin.updateUserById(
+        profile.id,
+        { password: newPassword }
+      );
+
+      if (updateError) {
+        console.error('Password update error:', updateError);
+        throw new Error("Could not refresh login credentials. Please request a new OTP and try again.");
+      }
+
+      // Sign in using the user's actual email
+      const userEmail = userData.user.email!;
+      const { data: retryAuth, error: retryError } = await supabase.auth.signInWithPassword({
+        email: userEmail,
+        password: newPassword
       });
 
-      if (authError) {
-        // Try to get user by phone number and create new password
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('phone_number', phoneNumber)
-          .single();
-
-        if (profile) {
-          // Update password and sign in
-          const { error: updateError } = await supabase.auth.admin.updateUserById(
-            profile.id,
-            { password }
-          );
-
-          if (updateError) throw updateError;
-
-          const { data: retryAuth, error: retryError } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
-
-          if (retryError) throw retryError;
-
-          return new Response(
-            JSON.stringify({ 
-              success: true, 
-              session: retryAuth.session,
-              message: "Login successful"
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
-        throw new Error("User not found. Please sign up first.");
+      if (retryError) {
+        console.error('Sign-in retry failed:', retryError);
+        throw new Error("Login failed after verification. Please request a new OTP and try again.");
       }
 
       return new Response(
         JSON.stringify({ 
           success: true, 
-          session: authData.session,
+          session: retryAuth.session,
           message: "Login successful"
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
