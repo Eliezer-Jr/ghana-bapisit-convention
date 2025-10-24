@@ -64,7 +64,8 @@ serve(async (req) => {
     console.log("Response status:", verifyData.status);
 
     // Check if verification was successful
-    if (verifyData.status === 'SYSTEM_ERROR') {
+    const status = String(verifyData.status ?? '').toUpperCase();
+    if (status === 'SYSTEM_ERROR') {
       console.error("System error from FrogAPI:", verifyData.message);
       
       // Provide helpful message for common issue
@@ -75,14 +76,16 @@ serve(async (req) => {
       throw new Error(`Verification system error: ${verifyData.message || "Unknown error"}`);
     }
 
-    if (verifyData.status === 'FAILED') {
+    if (status === 'FAILED') {
       console.error("Verification failed:", verifyData.message);
-      throw new Error(verifyData.message || "Invalid OTP code. Please check and try again.");
+      throw new Error(verifyData.message || "Invalid or expired OTP. Please check and try again.");
     }
 
-    if (verifyData.status !== 'VERIFIED') {
-      console.error("Unexpected status:", verifyData.status);
-      throw new Error(`OTP verification failed. Please request a new OTP and try again.`);
+    // Accept SUCCESS/VERIFIED/OK as success statuses from FrogAPI
+    const successStatuses = new Set(['VERIFIED', 'SUCCESS', 'OK']);
+    if (!successStatuses.has(status)) {
+      console.error("Unexpected status from FrogAPI:", status, "full response:", verifyData);
+      throw new Error(verifyData.message || `OTP verification failed. Please request a new OTP and try again.`);
     }
 
     console.log("OTP verified successfully");
