@@ -34,8 +34,15 @@ serve(async (req) => {
     }
 
     const otpCode = String(otp).trim();
+    
+    // Ensure phone number is in correct format (remove leading zero for Ghana numbers)
+    let formattedNumber = phoneNumber;
+    if (phoneNumber.startsWith('0')) {
+      formattedNumber = '233' + phoneNumber.substring(1);
+    }
+    
     const verifyPayload = {
-      number: phoneNumber,
+      number: formattedNumber,
       code: otpCode
     };
 
@@ -59,17 +66,23 @@ serve(async (req) => {
     // Check if verification was successful
     if (verifyData.status === 'SYSTEM_ERROR') {
       console.error("System error from FrogAPI:", verifyData.message);
+      
+      // Provide helpful message for common issue
+      if (verifyData.message && verifyData.message.includes("null")) {
+        throw new Error("OTP verification is not available yet. Please wait a moment after receiving the SMS and try again. If the issue persists, request a new OTP.");
+      }
+      
       throw new Error(`Verification system error: ${verifyData.message || "Unknown error"}`);
     }
 
     if (verifyData.status === 'FAILED') {
       console.error("Verification failed:", verifyData.message);
-      throw new Error(verifyData.message || "OTP verification failed");
+      throw new Error(verifyData.message || "Invalid OTP code. Please check and try again.");
     }
 
     if (verifyData.status !== 'VERIFIED') {
       console.error("Unexpected status:", verifyData.status);
-      throw new Error(`Invalid or expired OTP. Status: ${verifyData.status}`);
+      throw new Error(`OTP verification failed. Please request a new OTP and try again.`);
     }
 
     console.log("OTP verified successfully");

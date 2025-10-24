@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.frogapi-otp-verify]
 verify_jwt = false
+
+[functions.frogapi-test-otp]
+verify_jwt = false

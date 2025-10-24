@@ -30,8 +30,14 @@ serve(async (req) => {
       throw new Error("FrogAPI OTP Sender ID not configured");
     }
 
+    // Format phone number for FrogAPI (use international format)
+    let formattedNumber = phoneNumber;
+    if (phoneNumber.startsWith('0')) {
+      formattedNumber = '233' + phoneNumber.substring(1);
+    }
+
     const postData = {
-      number: phoneNumber,
+      number: formattedNumber,
       expiry: 5,
       length: 6,
       messagetemplate: "Your Ghana Baptist Convention verification code is: %OTPCODE%. It will expire after %EXPIRY% mins",
@@ -52,7 +58,7 @@ serve(async (req) => {
     });
 
     const data = await response.json();
-    console.log("FrogAPI response:", data);
+    console.log("FrogAPI OTP generation response:", JSON.stringify(data, null, 2));
 
     return new Response(
       JSON.stringify({ success: true, data }),
