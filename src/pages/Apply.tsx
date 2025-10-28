@@ -8,10 +8,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Upload } from "lucide-react";
+import { Upload, ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+
+const STEPS = [
+  { id: 1, title: "Personal Information", description: "Basic personal details" },
+  { id: 2, title: "Church Information", description: "Church and ministry details" },
+  { id: 3, title: "Admission & Training", description: "Admission level and qualifications" },
+  { id: 4, title: "Documents", description: "Required supporting documents" },
+];
 
 const Apply = () => {
   const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
@@ -73,8 +82,55 @@ const Apply = () => {
     });
   };
 
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        if (!formData.full_name || !formData.email || !formData.phone || !formData.date_of_birth) {
+          toast.error("Please fill in all required personal information fields");
+          return false;
+        }
+        break;
+      case 2:
+        if (!formData.church_name || !formData.fellowship || !formData.association || !formData.sector) {
+          toast.error("Please fill in all required church information fields");
+          return false;
+        }
+        break;
+      case 3:
+        if (!formData.admission_level) {
+          toast.error("Please select an admission level");
+          return false;
+        }
+        break;
+      case 4:
+        const requiredDocs = ['passport_photo', 'birth_certificate', 'baptism_certificate', 'recommendation_letter'];
+        const missingDocs = requiredDocs.filter(doc => !documents[doc as keyof typeof documents]);
+        if (missingDocs.length > 0) {
+          toast.error("Please upload all required documents");
+          return false;
+        }
+        break;
+    }
+    return true;
+  };
+
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
+    }
+  };
+
+  const handlePrevious = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateStep(currentStep)) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -120,6 +176,241 @@ const Apply = () => {
     }
   };
 
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Personal Information</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="full_name">Full Name *</Label>
+                <Input
+                  id="full_name"
+                  required
+                  value={formData.full_name}
+                  onChange={(e) => handleInputChange('full_name', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Phone *</Label>
+                <Input
+                  id="phone"
+                  required
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="date_of_birth">Date of Birth *</Label>
+                <Input
+                  id="date_of_birth"
+                  type="date"
+                  required
+                  value={formData.date_of_birth}
+                  onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="marital_status">Marital Status</Label>
+                <Select
+                  value={formData.marital_status}
+                  onValueChange={(value) => handleInputChange('marital_status', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="single">Single</SelectItem>
+                    <SelectItem value="married">Married</SelectItem>
+                    <SelectItem value="widowed">Widowed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {formData.marital_status === 'married' && (
+                <div>
+                  <Label htmlFor="spouse_name">Spouse Name</Label>
+                  <Input
+                    id="spouse_name"
+                    value={formData.spouse_name}
+                    onChange={(e) => handleInputChange('spouse_name', e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      
+      case 2:
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Church Information</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="church_name">Church Name *</Label>
+                <Input
+                  id="church_name"
+                  required
+                  value={formData.church_name}
+                  onChange={(e) => handleInputChange('church_name', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="fellowship">Fellowship *</Label>
+                <Input
+                  id="fellowship"
+                  required
+                  value={formData.fellowship}
+                  onChange={(e) => handleInputChange('fellowship', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="association">Association *</Label>
+                <Input
+                  id="association"
+                  required
+                  value={formData.association}
+                  onChange={(e) => handleInputChange('association', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="sector">Sector *</Label>
+                <Input
+                  id="sector"
+                  required
+                  value={formData.sector}
+                  onChange={(e) => handleInputChange('sector', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 3:
+        return (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold">Admission Level *</h3>
+              <Select
+                required
+                value={formData.admission_level}
+                onValueChange={(value) => handleInputChange('admission_level', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select admission level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="licensing">Licensing</SelectItem>
+                  <SelectItem value="recognition">Recognition</SelectItem>
+                  <SelectItem value="ordination">Ordination</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold">Theological Training</h3>
+              <div className="grid md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <Label htmlFor="theological_institution">Institution</Label>
+                  <Input
+                    id="theological_institution"
+                    value={formData.theological_institution}
+                    onChange={(e) => handleInputChange('theological_institution', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="theological_qualification">Qualification</Label>
+                  <Input
+                    id="theological_qualification"
+                    value={formData.theological_qualification}
+                    onChange={(e) => handleInputChange('theological_qualification', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold">Mentor Information</h3>
+              <div className="grid md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <Label htmlFor="mentor_name">Mentor Name</Label>
+                  <Input
+                    id="mentor_name"
+                    value={formData.mentor_name}
+                    onChange={(e) => handleInputChange('mentor_name', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="mentor_contact">Mentor Contact</Label>
+                  <Input
+                    id="mentor_contact"
+                    value={formData.mentor_contact}
+                    onChange={(e) => handleInputChange('mentor_contact', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="vision_statement">Vision Statement</Label>
+              <Textarea
+                id="vision_statement"
+                rows={4}
+                placeholder="Describe your vision for ministry..."
+                value={formData.vision_statement}
+                onChange={(e) => handleInputChange('vision_statement', e.target.value)}
+              />
+            </div>
+          </div>
+        );
+      
+      case 4:
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Required Documents</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              {[
+                { key: 'passport_photo', label: 'Passport Photo *' },
+                { key: 'birth_certificate', label: 'Birth Certificate *' },
+                { key: 'baptism_certificate', label: 'Baptism Certificate *' },
+                { key: 'recommendation_letter', label: 'Recommendation Letter *' },
+                { key: 'theological_certificate', label: 'Theological Certificate' },
+                { key: 'marriage_certificate', label: 'Marriage Certificate' },
+              ].map(({ key, label }) => (
+                <div key={key}>
+                  <Label htmlFor={key}>{label}</Label>
+                  <div className="mt-1">
+                    <Input
+                      id={key}
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      required={label.includes('*')}
+                      onChange={(e) => handleFileChange(key, e.target.files?.[0] || null)}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  const progress = (currentStep / STEPS.length) * 100;
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 py-12 px-4">
       <div className="max-w-4xl mx-auto">
@@ -127,242 +418,59 @@ const Apply = () => {
           <CardHeader>
             <CardTitle className="text-3xl">Ministerial Admission Application</CardTitle>
             <CardDescription>
-              Complete this form to apply for ministerial admission. All fields marked with * are required.
+              Step {currentStep} of {STEPS.length}: {STEPS[currentStep - 1].title}
             </CardDescription>
+            <div className="mt-4">
+              <Progress value={progress} className="h-2" />
+            </div>
+            <div className="flex justify-between mt-4 text-sm">
+              {STEPS.map((step) => (
+                <div
+                  key={step.id}
+                  className={`flex items-center gap-2 ${
+                    step.id === currentStep
+                      ? 'text-primary font-semibold'
+                      : step.id < currentStep
+                      ? 'text-muted-foreground'
+                      : 'text-muted-foreground/50'
+                  }`}
+                >
+                  {step.id < currentStep ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 text-xs">
+                      {step.id}
+                    </span>
+                  )}
+                  <span className="hidden md:inline">{step.title}</span>
+                </div>
+              ))}
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Personal Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Personal Information</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="full_name">Full Name *</Label>
-                    <Input
-                      id="full_name"
-                      required
-                      value={formData.full_name}
-                      onChange={(e) => handleInputChange('full_name', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Phone *</Label>
-                    <Input
-                      id="phone"
-                      required
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="date_of_birth">Date of Birth *</Label>
-                    <Input
-                      id="date_of_birth"
-                      type="date"
-                      required
-                      value={formData.date_of_birth}
-                      onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="marital_status">Marital Status</Label>
-                    <Select
-                      value={formData.marital_status}
-                      onValueChange={(value) => handleInputChange('marital_status', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="single">Single</SelectItem>
-                        <SelectItem value="married">Married</SelectItem>
-                        <SelectItem value="widowed">Widowed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {formData.marital_status === 'married' && (
-                    <div>
-                      <Label htmlFor="spouse_name">Spouse Name</Label>
-                      <Input
-                        id="spouse_name"
-                        value={formData.spouse_name}
-                        onChange={(e) => handleInputChange('spouse_name', e.target.value)}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Church Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Church Information</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="church_name">Church Name *</Label>
-                    <Input
-                      id="church_name"
-                      required
-                      value={formData.church_name}
-                      onChange={(e) => handleInputChange('church_name', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="fellowship">Fellowship *</Label>
-                    <Input
-                      id="fellowship"
-                      required
-                      value={formData.fellowship}
-                      onChange={(e) => handleInputChange('fellowship', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="association">Association *</Label>
-                    <Input
-                      id="association"
-                      required
-                      value={formData.association}
-                      onChange={(e) => handleInputChange('association', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="sector">Sector *</Label>
-                    <Input
-                      id="sector"
-                      required
-                      value={formData.sector}
-                      onChange={(e) => handleInputChange('sector', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Admission Details */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Admission Level *</h3>
-                <Select
-                  required
-                  value={formData.admission_level}
-                  onValueChange={(value) => handleInputChange('admission_level', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select admission level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="licensing">Licensing</SelectItem>
-                    <SelectItem value="recognition">Recognition</SelectItem>
-                    <SelectItem value="ordination">Ordination</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Theological Training */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Theological Training</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="theological_institution">Institution</Label>
-                    <Input
-                      id="theological_institution"
-                      value={formData.theological_institution}
-                      onChange={(e) => handleInputChange('theological_institution', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="theological_qualification">Qualification</Label>
-                    <Input
-                      id="theological_qualification"
-                      value={formData.theological_qualification}
-                      onChange={(e) => handleInputChange('theological_qualification', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Mentor Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Mentor Information</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="mentor_name">Mentor Name</Label>
-                    <Input
-                      id="mentor_name"
-                      value={formData.mentor_name}
-                      onChange={(e) => handleInputChange('mentor_name', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="mentor_contact">Mentor Contact</Label>
-                    <Input
-                      id="mentor_contact"
-                      value={formData.mentor_contact}
-                      onChange={(e) => handleInputChange('mentor_contact', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Vision Statement */}
-              <div>
-                <Label htmlFor="vision_statement">Vision Statement</Label>
-                <Textarea
-                  id="vision_statement"
-                  rows={4}
-                  placeholder="Describe your vision for ministry..."
-                  value={formData.vision_statement}
-                  onChange={(e) => handleInputChange('vision_statement', e.target.value)}
-                />
-              </div>
-
-              {/* Document Uploads */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Required Documents</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  {[
-                    { key: 'passport_photo', label: 'Passport Photo *' },
-                    { key: 'birth_certificate', label: 'Birth Certificate *' },
-                    { key: 'baptism_certificate', label: 'Baptism Certificate *' },
-                    { key: 'recommendation_letter', label: 'Recommendation Letter *' },
-                    { key: 'theological_certificate', label: 'Theological Certificate' },
-                    { key: 'marriage_certificate', label: 'Marriage Certificate' },
-                  ].map(({ key, label }) => (
-                    <div key={key}>
-                      <Label htmlFor={key}>{label}</Label>
-                      <div className="mt-1">
-                        <Input
-                          id={key}
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          required={label.includes('*')}
-                          onChange={(e) => handleFileChange(key, e.target.files?.[0] || null)}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-4">
+              {renderStepContent()}
+              <div className="flex justify-between gap-4 mt-8">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => navigate('/auth')}
+                  onClick={currentStep === 1 ? () => navigate('/auth') : handlePrevious}
                 >
-                  Cancel
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  {currentStep === 1 ? 'Cancel' : 'Previous'}
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Submitting...' : 'Submit Application'}
-                  <Upload className="ml-2 h-4 w-4" />
-                </Button>
+                
+                {currentStep < STEPS.length ? (
+                  <Button type="button" onClick={handleNext}>
+                    Next
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Submitting...' : 'Submit Application'}
+                    <Upload className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </form>
           </CardContent>
