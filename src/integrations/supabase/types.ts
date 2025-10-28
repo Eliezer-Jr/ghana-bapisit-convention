@@ -120,7 +120,7 @@ export type Database = {
           theological_institution: string | null
           theological_qualification: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
           vision_statement: string | null
         }
         Insert: {
@@ -158,7 +158,7 @@ export type Database = {
           theological_institution?: string | null
           theological_qualification?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           vision_statement?: string | null
         }
         Update: {
@@ -196,7 +196,7 @@ export type Database = {
           theological_institution?: string | null
           theological_qualification?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           vision_statement?: string | null
         }
         Relationships: []

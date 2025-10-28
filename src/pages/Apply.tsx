@@ -81,11 +81,24 @@ const Apply = () => {
       // Create application
       const { data: application, error: appError } = await supabase
         .from('applications')
-        .insert({
-          ...formData,
-          status: 'submitted' as const,
-          submitted_at: new Date().toISOString(),
-        })
+        .insert([{
+          full_name: formData.full_name,
+          email: formData.email,
+          phone: formData.phone,
+          date_of_birth: formData.date_of_birth,
+          marital_status: formData.marital_status || null,
+          spouse_name: formData.spouse_name || null,
+          church_name: formData.church_name,
+          fellowship: formData.fellowship,
+          association: formData.association,
+          sector: formData.sector,
+          admission_level: formData.admission_level as "licensing" | "recognition" | "ordination",
+          theological_institution: formData.theological_institution || null,
+          theological_qualification: formData.theological_qualification || null,
+          mentor_name: formData.mentor_name || null,
+          mentor_contact: formData.mentor_contact || null,
+          vision_statement: formData.vision_statement || null,
+        }])
         .select()
         .single();
 
