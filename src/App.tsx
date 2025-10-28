@@ -13,6 +13,9 @@ import PendingApproval from "./pages/PendingApproval";
 import SuperAdmin from "./pages/SuperAdmin";
 import Profile from "./pages/Profile";
 import ActivityLogs from "./pages/ActivityLogs";
+import Admissions from "./pages/Admissions";
+import AdmissionForm from "./pages/AdmissionForm";
+import AdminAdmissions from "./pages/AdminAdmissions";
 
 const queryClient = new QueryClient();
 
@@ -115,6 +118,38 @@ const App = () => (
               element={
                 <SuperAdminRoute>
                   <ActivityLogs />
+                </SuperAdminRoute>
+              }
+            />
+            <Route
+              path="/admissions"
+              element={
+                <ProtectedRoute>
+                  <Admissions />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admissions/:id"
+              element={
+                <ProtectedRoute>
+                  <AdmissionForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admissions/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <AdmissionForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/admissions"
+              element={
+                <SuperAdminRoute>
+                  <AdminAdmissions />
                 </SuperAdminRoute>
               }
             />

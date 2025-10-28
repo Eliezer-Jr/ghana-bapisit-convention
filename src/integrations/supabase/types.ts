@@ -49,6 +49,158 @@ export type Database = {
           },
         ]
       }
+      application_documents: {
+        Row: {
+          application_id: string
+          document_name: string
+          document_type: string
+          document_url: string
+          id: string
+          uploaded_at: string
+        }
+        Insert: {
+          application_id: string
+          document_name: string
+          document_type: string
+          document_url: string
+          id?: string
+          uploaded_at?: string
+        }
+        Update: {
+          application_id?: string
+          document_name?: string
+          document_type?: string
+          document_url?: string
+          id?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_documents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      applications: {
+        Row: {
+          admin_notes: string | null
+          admission_level: Database["public"]["Enums"]["admission_level"]
+          association: string
+          church_name: string
+          created_at: string
+          date_of_birth: string
+          email: string
+          fellowship: string
+          full_name: string
+          gazette_paid: boolean | null
+          gazette_receipt_number: string | null
+          id: string
+          interview_date: string | null
+          interview_location: string | null
+          interview_result: string | null
+          marital_status: string | null
+          mentor_contact: string | null
+          mentor_name: string | null
+          ministry_evaluation_paper: string | null
+          payment_amount: number | null
+          payment_date: string | null
+          payment_receipt_number: string | null
+          phone: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          screening_date: string | null
+          screening_result: string | null
+          sector: string
+          spouse_name: string | null
+          status: Database["public"]["Enums"]["application_status"]
+          submitted_at: string | null
+          theological_institution: string | null
+          theological_qualification: string | null
+          updated_at: string
+          user_id: string
+          vision_statement: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          admission_level: Database["public"]["Enums"]["admission_level"]
+          association: string
+          church_name: string
+          created_at?: string
+          date_of_birth: string
+          email: string
+          fellowship: string
+          full_name: string
+          gazette_paid?: boolean | null
+          gazette_receipt_number?: string | null
+          id?: string
+          interview_date?: string | null
+          interview_location?: string | null
+          interview_result?: string | null
+          marital_status?: string | null
+          mentor_contact?: string | null
+          mentor_name?: string | null
+          ministry_evaluation_paper?: string | null
+          payment_amount?: number | null
+          payment_date?: string | null
+          payment_receipt_number?: string | null
+          phone: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screening_date?: string | null
+          screening_result?: string | null
+          sector: string
+          spouse_name?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          submitted_at?: string | null
+          theological_institution?: string | null
+          theological_qualification?: string | null
+          updated_at?: string
+          user_id: string
+          vision_statement?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          admission_level?: Database["public"]["Enums"]["admission_level"]
+          association?: string
+          church_name?: string
+          created_at?: string
+          date_of_birth?: string
+          email?: string
+          fellowship?: string
+          full_name?: string
+          gazette_paid?: boolean | null
+          gazette_receipt_number?: string | null
+          id?: string
+          interview_date?: string | null
+          interview_location?: string | null
+          interview_result?: string | null
+          marital_status?: string | null
+          mentor_contact?: string | null
+          mentor_name?: string | null
+          ministry_evaluation_paper?: string | null
+          payment_amount?: number | null
+          payment_date?: string | null
+          payment_receipt_number?: string | null
+          phone?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screening_date?: string | null
+          screening_result?: string | null
+          sector?: string
+          spouse_name?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          submitted_at?: string | null
+          theological_institution?: string | null
+          theological_qualification?: string | null
+          updated_at?: string
+          user_id?: string
+          vision_statement?: string | null
+        }
+        Relationships: []
+      }
       convention_positions: {
         Row: {
           created_at: string
@@ -441,7 +593,17 @@ export type Database = {
       }
     }
     Enums: {
+      admission_level: "licensing" | "recognition" | "ordination"
       app_role: "super_admin" | "admin" | "user"
+      application_status:
+        | "draft"
+        | "submitted"
+        | "under_review"
+        | "screening_scheduled"
+        | "screening_passed"
+        | "interview_scheduled"
+        | "approved"
+        | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -569,7 +731,18 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      admission_level: ["licensing", "recognition", "ordination"],
       app_role: ["super_admin", "admin", "user"],
+      application_status: [
+        "draft",
+        "submitted",
+        "under_review",
+        "screening_scheduled",
+        "screening_passed",
+        "interview_scheduled",
+        "approved",
+        "rejected",
+      ],
     },
   },
 } as const

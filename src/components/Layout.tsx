@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, LayoutDashboard, Users, MessageSquare, Shield, UserCircle, Activity } from "lucide-react";
+import { LogOut, LayoutDashboard, Users, MessageSquare, Shield, UserCircle, Activity, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import logoWatermark from "@/assets/logo-watermark.png";
 import { useActivityLog } from "@/hooks/useActivityLog";
@@ -38,11 +38,13 @@ const Layout = ({ children }: LayoutProps) => {
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
     { icon: Users, label: "Ministers", path: "/ministers" },
     { icon: MessageSquare, label: "Messages", path: "/messages" },
+    { icon: GraduationCap, label: "Admissions", path: "/admissions" },
     { icon: UserCircle, label: "Profile", path: "/profile" },
     ...(isSuperAdmin
       ? [
           { icon: Shield, label: "Super Admin", path: "/super-admin" },
-          { icon: Activity, label: "Activity Logs", path: "/activity-logs" }
+          { icon: Activity, label: "Activity Logs", path: "/activity-logs" },
+          { icon: GraduationCap, label: "Admission Admin", path: "/admin/admissions" }
         ]
       : []),
   ];
