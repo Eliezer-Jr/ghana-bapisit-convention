@@ -27,6 +27,8 @@ const ministerSchema = z.object({
   gps_address: z.string().trim().max(200).optional(),
   marital_status: z.string().max(20).optional(),
   spouse_name: z.string().trim().max(100).optional(),
+  spouse_phone_number: z.string().trim().max(20).optional(),
+  spouse_occupation: z.string().trim().max(100).optional(),
   marriage_type: z.string().max(20).optional(),
   number_of_children: z.number().min(0).default(0),
   current_church_name: z.string().trim().max(200).optional(),
@@ -66,6 +68,8 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
     gps_address: "",
     marital_status: "",
     spouse_name: "",
+    spouse_phone_number: "",
+    spouse_occupation: "",
     marriage_type: "",
     number_of_children: 0,
     current_church_name: "",
@@ -81,6 +85,8 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
 
   const [qualifications, setQualifications] = useState<Array<{ qualification: string; institution: string; year_obtained: number | null }>>([]);
   const [history, setHistory] = useState<Array<{ church_name: string; association: string; sector: string; position: string; period_start: number | null; period_end: number | null }>>([]);
+  const [nonChurchWork, setNonChurchWork] = useState<Array<{ organization: string; job_title: string; period_start: number | null; period_end: number | null }>>([]);
+  const [conventionPositions, setConventionPositions] = useState<Array<{ position: string; period_start: number | null; period_end: number | null }>>([]);
   const [children, setChildren] = useState<Array<{ child_name: string }>>([]);
   const [areasOfMinistry, setAreasOfMinistry] = useState<string[]>([]);
   const [emergencyContact, setEmergencyContact] = useState({
@@ -108,6 +114,8 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           gps_address: minister.gps_address || "",
           marital_status: minister.marital_status || "",
           spouse_name: minister.spouse_name || "",
+          spouse_phone_number: minister.spouse_phone_number || "",
+          spouse_occupation: minister.spouse_occupation || "",
           marriage_type: minister.marriage_type || "",
           number_of_children: minister.number_of_children || 0,
           current_church_name: minister.current_church_name || "",
@@ -123,15 +131,19 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         setAreasOfMinistry(minister.areas_of_ministry || []);
 
         // Load related data
-        const [qualData, histData, childData, emergData] = await Promise.all([
+        const [qualData, histData, nonChurchData, conventionData, childData, emergData] = await Promise.all([
           supabase.from("educational_qualifications").select("*").eq("minister_id", minister.id),
           supabase.from("ministerial_history").select("*").eq("minister_id", minister.id),
+          supabase.from("non_church_work").select("*").eq("minister_id", minister.id),
+          supabase.from("convention_positions").select("*").eq("minister_id", minister.id),
           supabase.from("minister_children").select("*").eq("minister_id", minister.id),
           supabase.from("emergency_contacts").select("*").eq("minister_id", minister.id).maybeSingle(),
         ]);
 
         if (qualData.data) setQualifications(qualData.data);
         if (histData.data) setHistory(histData.data);
+        if (nonChurchData.data) setNonChurchWork(nonChurchData.data);
+        if (conventionData.data) setConventionPositions(conventionData.data);
         if (childData.data) setChildren(childData.data);
         if (emergData.data) {
           setEmergencyContact({
@@ -156,6 +168,8 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           gps_address: "",
           marital_status: "",
           spouse_name: "",
+          spouse_phone_number: "",
+          spouse_occupation: "",
           marriage_type: "",
           number_of_children: 0,
           current_church_name: "",
@@ -170,6 +184,8 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         });
         setQualifications([]);
         setHistory([]);
+        setNonChurchWork([]);
+        setConventionPositions([]);
         setChildren([]);
         setAreasOfMinistry([]);
         setEmergencyContact({ contact_name: "", relationship: "", phone_number: "" });
@@ -217,6 +233,8 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         gps_address: validated.gps_address?.trim() || null,
         marital_status: validated.marital_status?.trim() || null,
         spouse_name: validated.spouse_name?.trim() || null,
+        spouse_phone_number: validated.spouse_phone_number?.trim() || null,
+        spouse_occupation: validated.spouse_occupation?.trim() || null,
         marriage_type: validated.marriage_type?.trim() || null,
         current_church_name: validated.current_church_name?.trim() || null,
         position_at_church: validated.position_at_church?.trim() || null,
@@ -293,6 +311,8 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         await Promise.all([
           supabase.from("educational_qualifications").delete().eq("minister_id", ministerId),
           supabase.from("ministerial_history").delete().eq("minister_id", ministerId),
+          supabase.from("non_church_work").delete().eq("minister_id", ministerId),
+          supabase.from("convention_positions").delete().eq("minister_id", ministerId),
           supabase.from("minister_children").delete().eq("minister_id", ministerId),
           supabase.from("emergency_contacts").delete().eq("minister_id", ministerId),
         ]);
@@ -312,6 +332,22 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           insertPromises.push(
             supabase.from("ministerial_history").insert(
               history.filter(h => h.church_name && h.position).map(h => ({ ...h, minister_id: ministerId }))
+            )
+          );
+        }
+
+        if (nonChurchWork.length > 0) {
+          insertPromises.push(
+            supabase.from("non_church_work").insert(
+              nonChurchWork.filter(w => w.organization && w.job_title).map(w => ({ ...w, minister_id: ministerId }))
+            )
+          );
+        }
+
+        if (conventionPositions.length > 0) {
+          insertPromises.push(
+            supabase.from("convention_positions").insert(
+              conventionPositions.filter(p => p.position).map(p => ({ ...p, minister_id: ministerId }))
             )
           );
         }
@@ -494,6 +530,24 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                     id="spouse_name"
                     value={formData.spouse_name}
                     onChange={(e) => setFormData({ ...formData, spouse_name: e.target.value })}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="spouse_phone_number">Spouse's Phone Number</Label>
+                  <Input
+                    id="spouse_phone_number"
+                    value={formData.spouse_phone_number}
+                    onChange={(e) => setFormData({ ...formData, spouse_phone_number: e.target.value })}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="spouse_occupation">Occupation of Spouse</Label>
+                  <Input
+                    id="spouse_occupation"
+                    value={formData.spouse_occupation}
+                    onChange={(e) => setFormData({ ...formData, spouse_occupation: e.target.value })}
                     disabled={loading}
                   />
                 </div>
@@ -741,7 +795,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="licensing_year">Licensing Year</Label>
+                  <Label htmlFor="licensing_year">Licensing / Commissioning Year</Label>
                   <Input
                     id="licensing_year"
                     type="number"
@@ -781,7 +835,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
 
             <TabsContent value="history" className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label>Ministerial History</Label>
+                <Label>History of Churches You Have Pastored</Label>
                 {history.map((hist, idx) => (
                   <div key={idx} className="grid grid-cols-[2fr_1fr_1fr_2fr_1fr_1fr_auto] gap-2 items-end border p-2 rounded">
                     <Input
@@ -864,7 +918,133 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   onClick={() => setHistory([...history, { church_name: "", association: "", sector: "", position: "", period_start: null, period_end: null }])}
                   disabled={loading}
                 >
-                  <Plus className="h-4 w-4 mr-2" /> Add History Entry
+                  <Plus className="h-4 w-4 mr-2" /> Add Church History
+                </Button>
+              </div>
+
+              <div className="space-y-2 mt-6">
+                <Label>Non-Church Work</Label>
+                {nonChurchWork.map((work, idx) => (
+                  <div key={idx} className="grid grid-cols-[2fr_2fr_1fr_1fr_auto] gap-2 items-end border p-2 rounded">
+                    <Input
+                      placeholder="Organization"
+                      value={work.organization}
+                      onChange={(e) => {
+                        const newWork = [...nonChurchWork];
+                        newWork[idx].organization = e.target.value;
+                        setNonChurchWork(newWork);
+                      }}
+                      disabled={loading}
+                    />
+                    <Input
+                      placeholder="Job Title"
+                      value={work.job_title}
+                      onChange={(e) => {
+                        const newWork = [...nonChurchWork];
+                        newWork[idx].job_title = e.target.value;
+                        setNonChurchWork(newWork);
+                      }}
+                      disabled={loading}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Start Year"
+                      value={work.period_start || ""}
+                      onChange={(e) => {
+                        const newWork = [...nonChurchWork];
+                        newWork[idx].period_start = parseInt(e.target.value) || null;
+                        setNonChurchWork(newWork);
+                      }}
+                      disabled={loading}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="End Year"
+                      value={work.period_end || ""}
+                      onChange={(e) => {
+                        const newWork = [...nonChurchWork];
+                        newWork[idx].period_end = parseInt(e.target.value) || null;
+                        setNonChurchWork(newWork);
+                      }}
+                      disabled={loading}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setNonChurchWork(nonChurchWork.filter((_, i) => i !== idx))}
+                      disabled={loading}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setNonChurchWork([...nonChurchWork, { organization: "", job_title: "", period_start: null, period_end: null }])}
+                  disabled={loading}
+                >
+                  <Plus className="h-4 w-4 mr-2" /> Add Non-Church Work
+                </Button>
+              </div>
+
+              <div className="space-y-2 mt-6">
+                <Label>KEY Positions Held Within the Convention</Label>
+                {conventionPositions.map((pos, idx) => (
+                  <div key={idx} className="grid grid-cols-[3fr_1fr_1fr_auto] gap-2 items-end border p-2 rounded">
+                    <Input
+                      placeholder="Position"
+                      value={pos.position}
+                      onChange={(e) => {
+                        const newPos = [...conventionPositions];
+                        newPos[idx].position = e.target.value;
+                        setConventionPositions(newPos);
+                      }}
+                      disabled={loading}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Start Year"
+                      value={pos.period_start || ""}
+                      onChange={(e) => {
+                        const newPos = [...conventionPositions];
+                        newPos[idx].period_start = parseInt(e.target.value) || null;
+                        setConventionPositions(newPos);
+                      }}
+                      disabled={loading}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="End Year"
+                      value={pos.period_end || ""}
+                      onChange={(e) => {
+                        const newPos = [...conventionPositions];
+                        newPos[idx].period_end = parseInt(e.target.value) || null;
+                        setConventionPositions(newPos);
+                      }}
+                      disabled={loading}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setConventionPositions(conventionPositions.filter((_, i) => i !== idx))}
+                      disabled={loading}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConventionPositions([...conventionPositions, { position: "", period_start: null, period_end: null }])}
+                  disabled={loading}
+                >
+                  <Plus className="h-4 w-4 mr-2" /> Add Convention Position
                 </Button>
               </div>
             </TabsContent>

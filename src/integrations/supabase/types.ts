@@ -49,6 +49,41 @@ export type Database = {
           },
         ]
       }
+      convention_positions: {
+        Row: {
+          created_at: string
+          id: string
+          minister_id: string
+          period_end: number | null
+          period_start: number | null
+          position: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          minister_id: string
+          period_end?: number | null
+          period_start?: number | null
+          position: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          minister_id?: string
+          period_end?: number | null
+          period_start?: number | null
+          position?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "convention_positions_minister_id_fkey"
+            columns: ["minister_id"]
+            isOneToOne: false
+            referencedRelation: "ministers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       educational_qualifications: {
         Row: {
           created_at: string
@@ -220,6 +255,8 @@ export type Database = {
           role: string
           sector: string | null
           spouse_name: string | null
+          spouse_occupation: string | null
+          spouse_phone_number: string | null
           status: string
           titles: string | null
           updated_at: string
@@ -252,6 +289,8 @@ export type Database = {
           role: string
           sector?: string | null
           spouse_name?: string | null
+          spouse_occupation?: string | null
+          spouse_phone_number?: string | null
           status?: string
           titles?: string | null
           updated_at?: string
@@ -284,12 +323,52 @@ export type Database = {
           role?: string
           sector?: string | null
           spouse_name?: string | null
+          spouse_occupation?: string | null
+          spouse_phone_number?: string | null
           status?: string
           titles?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
         Relationships: []
+      }
+      non_church_work: {
+        Row: {
+          created_at: string
+          id: string
+          job_title: string
+          minister_id: string
+          organization: string
+          period_end: number | null
+          period_start: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_title: string
+          minister_id: string
+          organization: string
+          period_end?: number | null
+          period_start?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_title?: string
+          minister_id?: string
+          organization?: string
+          period_end?: number | null
+          period_start?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "non_church_work_minister_id_fkey"
+            columns: ["minister_id"]
+            isOneToOne: false
+            referencedRelation: "ministers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
