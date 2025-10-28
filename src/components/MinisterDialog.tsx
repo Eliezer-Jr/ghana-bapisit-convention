@@ -87,7 +87,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
   const [history, setHistory] = useState<Array<{ church_name: string; association: string; sector: string; position: string; period_start: number | null; period_end: number | null }>>([]);
   const [nonChurchWork, setNonChurchWork] = useState<Array<{ organization: string; job_title: string; period_start: number | null; period_end: number | null }>>([]);
   const [conventionPositions, setConventionPositions] = useState<Array<{ position: string; period_start: number | null; period_end: number | null }>>([]);
-  const [children, setChildren] = useState<Array<{ child_name: string }>>([]);
+  const [children, setChildren] = useState<Array<{ child_name: string; date_of_birth: string }>>([]);
   const [areasOfMinistry, setAreasOfMinistry] = useState<string[]>([]);
   const [emergencyContact, setEmergencyContact] = useState({
     contact_name: "",
@@ -394,8 +394,9 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Tabs defaultValue="bio" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="bio">Bio Data</TabsTrigger>
+              <TabsTrigger value="education">Education</TabsTrigger>
               <TabsTrigger value="ministerial">Ministerial</TabsTrigger>
               <TabsTrigger value="history">History</TabsTrigger>
               <TabsTrigger value="other">Other</TabsTrigger>
@@ -581,6 +582,55 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
               </div>
 
               <div className="space-y-2">
+                <Label>Names of Biological Children</Label>
+                {children.map((child, idx) => (
+                  <div key={idx} className="grid grid-cols-[2fr_1fr_auto] gap-2 items-end">
+                    <Input
+                      placeholder="Child name"
+                      value={child.child_name}
+                      onChange={(e) => {
+                        const newChildren = [...children];
+                        newChildren[idx].child_name = e.target.value;
+                        setChildren(newChildren);
+                      }}
+                      disabled={loading}
+                    />
+                    <Input
+                      type="date"
+                      placeholder="Date of Birth"
+                      value={child.date_of_birth}
+                      onChange={(e) => {
+                        const newChildren = [...children];
+                        newChildren[idx].date_of_birth = e.target.value;
+                        setChildren(newChildren);
+                      }}
+                      disabled={loading}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setChildren(children.filter((_, i) => i !== idx))}
+                      disabled={loading}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setChildren([...children, { child_name: "", date_of_birth: "" }])}
+                  disabled={loading}
+                >
+                  <Plus className="h-4 w-4 mr-2" /> Add Child
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="education" className="space-y-4 mt-4">
+              <div className="space-y-2">
                 <Label>Educational Qualifications (Starting with highest)</Label>
                 {qualifications.map((qual, idx) => (
                   <div key={idx} className="grid grid-cols-[2fr_2fr_1fr_auto] gap-2 items-end">
@@ -634,42 +684,6 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   disabled={loading}
                 >
                   <Plus className="h-4 w-4 mr-2" /> Add Qualification
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Names of Biological Children</Label>
-                {children.map((child, idx) => (
-                  <div key={idx} className="flex gap-2">
-                    <Input
-                      placeholder="Child name"
-                      value={child.child_name}
-                      onChange={(e) => {
-                        const newChildren = [...children];
-                        newChildren[idx].child_name = e.target.value;
-                        setChildren(newChildren);
-                      }}
-                      disabled={loading}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setChildren(children.filter((_, i) => i !== idx))}
-                      disabled={loading}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setChildren([...children, { child_name: "" }])}
-                  disabled={loading}
-                >
-                  <Plus className="h-4 w-4 mr-2" /> Add Child
                 </Button>
               </div>
             </TabsContent>

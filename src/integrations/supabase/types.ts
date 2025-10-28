@@ -158,18 +158,21 @@ export type Database = {
         Row: {
           child_name: string
           created_at: string
+          date_of_birth: string | null
           id: string
           minister_id: string
         }
         Insert: {
           child_name: string
           created_at?: string
+          date_of_birth?: string | null
           id?: string
           minister_id: string
         }
         Update: {
           child_name?: string
           created_at?: string
+          date_of_birth?: string | null
           id?: string
           minister_id?: string
         }
