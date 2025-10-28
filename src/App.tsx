@@ -16,6 +16,7 @@ import ActivityLogs from "./pages/ActivityLogs";
 import Admissions from "./pages/Admissions";
 import AdmissionForm from "./pages/AdmissionForm";
 import AdminAdmissions from "./pages/AdminAdmissions";
+import Apply from "./pages/Apply";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/apply" element={<Apply />} />
             <Route path="/pending" element={<PendingApproval />} />
             <Route
               path="/super-admin"
