@@ -707,9 +707,9 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                     id="date_joined"
                     type="date"
                     value={formData.date_joined}
-                    onChange={(e) => setFormData({ ...formData, date_joined: e.target.value })}
                     required
-                    disabled={loading}
+                    disabled
+                    className="bg-muted"
                   />
                 </div>
                 <div className="space-y-2">
