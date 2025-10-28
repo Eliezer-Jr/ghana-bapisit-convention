@@ -17,6 +17,7 @@ import Admissions from "./pages/Admissions";
 import AdmissionForm from "./pages/AdmissionForm";
 import AdminAdmissions from "./pages/AdminAdmissions";
 import Apply from "./pages/Apply";
+import FinancePortal from "./pages/FinancePortal";
 
 const queryClient = new QueryClient();
 
@@ -153,6 +154,14 @@ const App = () => (
                 <SuperAdminRoute>
                   <AdminAdmissions />
                 </SuperAdminRoute>
+              }
+            />
+            <Route
+              path="/finance"
+              element={
+                <ProtectedRoute>
+                  <FinancePortal />
+                </ProtectedRoute>
               }
             />
             <Route path="*" element={<NotFound />} />

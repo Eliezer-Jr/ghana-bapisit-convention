@@ -1,114 +1,152 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Upload, ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { OTPService } from "@/services/otp";
 
-const STEPS = [
-  { id: 1, title: "Personal Information", description: "Basic personal details" },
-  { id: 2, title: "Church Information", description: "Church and ministry details" },
-  { id: 3, title: "Admission & Training", description: "Admission level and qualifications" },
-  { id: 4, title: "Documents", description: "Required supporting documents" },
-];
-
-const Apply = () => {
+export default function Apply() {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0); // 0 = OTP verification
+  const [loading, setLoading] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [resendAvailable, setResendAvailable] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+
   const [formData, setFormData] = useState({
-    full_name: "",
+    fullName: "",
     email: "",
     phone: "",
-    date_of_birth: "",
-    marital_status: "",
-    spouse_name: "",
-    church_name: "",
+    dateOfBirth: "",
+    maritalStatus: "",
+    spouseName: "",
+    churchName: "",
     fellowship: "",
     association: "",
     sector: "",
-    admission_level: "" as "licensing" | "recognition" | "ordination" | "",
-    theological_institution: "",
-    theological_qualification: "",
-    mentor_name: "",
-    mentor_contact: "",
-    vision_statement: "",
+    admissionLevel: "",
+    theologicalInstitution: "",
+    theologicalQualification: "",
+    visionStatement: "",
+    mentorName: "",
+    mentorContact: "",
+    ministryEvaluationPaper: "",
+    gazetteReceiptNumber: "",
+    paymentReceiptNumber: "",
   });
 
-  const [documents, setDocuments] = useState<{
-    passport_photo?: File;
-    birth_certificate?: File;
-    baptism_certificate?: File;
-    recommendation_letter?: File;
-    theological_certificate?: File;
-    marriage_certificate?: File;
-  }>({});
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    } else {
+      setResendAvailable(true);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  const totalSteps = 5; // Including OTP verification step
 
-  const handleFileChange = (field: string, file: File | null) => {
-    if (file) {
-      setDocuments(prev => ({ ...prev, [field]: file }));
+  const handleSendOTP = async () => {
+    if (!phoneNumber.trim()) {
+      toast.error("Please enter your phone number");
+      return;
+    }
+
+    setLoading(true);
+    const result = await OTPService.generateOTP(phoneNumber);
+    setLoading(false);
+
+    if (result.success) {
+      setOtpSent(true);
+      setResendTimer(60);
+      setResendAvailable(false);
+      toast.success("OTP sent to your phone!");
+    } else {
+      toast.error(result.error || "Failed to send OTP");
     }
   };
 
-  const uploadDocument = async (file: File, applicationId: string, docType: string) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${applicationId}/${docType}_${Date.now()}.${fileExt}`;
-    
-    const { error: uploadError, data } = await supabase.storage
-      .from('application-documents')
-      .upload(fileName, file);
+  const handleVerifyOTP = async () => {
+    if (otp.length !== 6) {
+      toast.error("Please enter the complete 6-digit OTP");
+      return;
+    }
 
-    if (uploadError) throw uploadError;
+    setLoading(true);
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('application-documents')
-      .getPublicUrl(fileName);
+    // Check if phone number is approved
+    const formattedPhone = phoneNumber.startsWith("+") ? phoneNumber : `+233${phoneNumber.replace(/^0/, "")}`;
+    const { data: approvedData, error: approvedError } = await supabase
+      .from("approved_applicants")
+      .select("*")
+      .eq("phone_number", formattedPhone)
+      .eq("used", false)
+      .maybeSingle();
 
-    await supabase.from('application_documents').insert({
-      application_id: applicationId,
-      document_type: docType,
-      document_name: file.name,
-      document_url: publicUrl,
-    });
+    if (approvedError) {
+      setLoading(false);
+      toast.error("Error checking approval status");
+      return;
+    }
+
+    if (!approvedData) {
+      setLoading(false);
+      toast.error("Your phone number is not approved for application. Please contact finance to make payment first.");
+      return;
+    }
+
+    // Verify OTP
+    const result = await OTPService.verifyOTP(phoneNumber, otp);
+    setLoading(false);
+
+    if (result.success) {
+      setOtpVerified(true);
+      setCurrentStep(1);
+      setFormData(prev => ({ ...prev, phone: formattedPhone }));
+      toast.success("Phone verified! You can now proceed with your application.");
+    } else {
+      toast.error(result.error || "Invalid OTP");
+    }
   };
 
   const validateStep = (step: number): boolean => {
     switch (step) {
+      case 0:
+        return otpVerified;
       case 1:
-        if (!formData.full_name || !formData.email || !formData.phone || !formData.date_of_birth) {
+        if (!formData.fullName || !formData.email || !formData.phone || !formData.dateOfBirth) {
           toast.error("Please fill in all required personal information fields");
           return false;
         }
         break;
       case 2:
-        if (!formData.church_name || !formData.fellowship || !formData.association || !formData.sector) {
+        if (!formData.churchName || !formData.fellowship || !formData.association || !formData.sector) {
           toast.error("Please fill in all required church information fields");
           return false;
         }
         break;
       case 3:
-        if (!formData.admission_level) {
+        if (!formData.admissionLevel) {
           toast.error("Please select an admission level");
           return false;
         }
         break;
       case 4:
-        const requiredDocs = ['passport_photo', 'birth_certificate', 'baptism_certificate', 'recommendation_letter'];
-        const missingDocs = requiredDocs.filter(doc => !documents[doc as keyof typeof documents]);
-        if (missingDocs.length > 0) {
-          toast.error("Please upload all required documents");
-          return false;
-        }
+        // Documents step - optional validation
         break;
     }
     return true;
@@ -116,368 +154,456 @@ const Apply = () => {
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
+      setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
     }
   };
 
   const handlePrevious = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
+    setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateStep(currentStep)) {
+    if (!otpVerified) {
+      toast.error("Please verify your phone number first");
       return;
     }
 
-    setIsSubmitting(true);
+    setLoading(true);
 
     try {
-      // Create application
-      const { data: application, error: appError } = await supabase
-        .from('applications')
-        .insert([{
-          full_name: formData.full_name,
-          email: formData.email,
-          phone: formData.phone,
-          date_of_birth: formData.date_of_birth,
-          marital_status: formData.marital_status || null,
-          spouse_name: formData.spouse_name || null,
-          church_name: formData.church_name,
-          fellowship: formData.fellowship,
-          association: formData.association,
-          sector: formData.sector,
-          admission_level: formData.admission_level as "licensing" | "recognition" | "ordination",
-          theological_institution: formData.theological_institution || null,
-          theological_qualification: formData.theological_qualification || null,
-          mentor_name: formData.mentor_name || null,
-          mentor_contact: formData.mentor_contact || null,
-          vision_statement: formData.vision_statement || null,
-        }])
-        .select()
-        .single();
+      // Mark the approved applicant as used
+      const formattedPhone = phoneNumber.startsWith("+") ? phoneNumber : `+233${phoneNumber.replace(/^0/, "")}`;
+      
+      const { error } = await supabase.from("applications").insert({
+        full_name: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        date_of_birth: formData.dateOfBirth,
+        marital_status: formData.maritalStatus || null,
+        spouse_name: formData.spouseName || null,
+        church_name: formData.churchName,
+        fellowship: formData.fellowship,
+        association: formData.association,
+        sector: formData.sector,
+        admission_level: formData.admissionLevel as "licensing" | "recognition" | "ordination",
+        theological_institution: formData.theologicalInstitution || null,
+        theological_qualification: formData.theologicalQualification || null,
+        vision_statement: formData.visionStatement || null,
+        mentor_name: formData.mentorName || null,
+        mentor_contact: formData.mentorContact || null,
+        ministry_evaluation_paper: formData.ministryEvaluationPaper || null,
+        gazette_receipt_number: formData.gazetteReceiptNumber || null,
+        payment_receipt_number: formData.paymentReceiptNumber || null,
+        submitted_at: new Date().toISOString(),
+      });
 
-      if (appError) throw appError;
+      if (error) throw error;
 
-      // Upload documents
-      const uploadPromises = Object.entries(documents).map(([key, file]) =>
-        uploadDocument(file, application.id, key)
-      );
-      await Promise.all(uploadPromises);
+      // Update approved_applicants to mark as used
+      await supabase
+        .from("approved_applicants")
+        .update({ used: true })
+        .eq("phone_number", formattedPhone);
 
       toast.success("Application submitted successfully!");
-      navigate('/auth', { state: { message: 'Application submitted! Please create an account to track your application status.' } });
+      navigate("/auth", { state: { message: "Application submitted! Please log in to track your status." } });
     } catch (error: any) {
-      console.error('Error submitting application:', error);
+      console.error("Error submitting application:", error);
       toast.error(error.message || "Failed to submit application");
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Personal Information</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="full_name">Full Name *</Label>
-                <Input
-                  id="full_name"
-                  required
-                  value={formData.full_name}
-                  onChange={(e) => handleInputChange('full_name', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone *</Label>
-                <Input
-                  id="phone"
-                  required
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="date_of_birth">Date of Birth *</Label>
-                <Input
-                  id="date_of_birth"
-                  type="date"
-                  required
-                  value={formData.date_of_birth}
-                  onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="marital_status">Marital Status</Label>
-                <Select
-                  value={formData.marital_status}
-                  onValueChange={(value) => handleInputChange('marital_status', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="single">Single</SelectItem>
-                    <SelectItem value="married">Married</SelectItem>
-                    <SelectItem value="widowed">Widowed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {formData.marital_status === 'married' && (
-                <div>
-                  <Label htmlFor="spouse_name">Spouse Name</Label>
-                  <Input
-                    id="spouse_name"
-                    value={formData.spouse_name}
-                    onChange={(e) => handleInputChange('spouse_name', e.target.value)}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      
-      case 2:
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Church Information</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="church_name">Church Name *</Label>
-                <Input
-                  id="church_name"
-                  required
-                  value={formData.church_name}
-                  onChange={(e) => handleInputChange('church_name', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="fellowship">Fellowship *</Label>
-                <Input
-                  id="fellowship"
-                  required
-                  value={formData.fellowship}
-                  onChange={(e) => handleInputChange('fellowship', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="association">Association *</Label>
-                <Input
-                  id="association"
-                  required
-                  value={formData.association}
-                  onChange={(e) => handleInputChange('association', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="sector">Sector *</Label>
-                <Input
-                  id="sector"
-                  required
-                  value={formData.sector}
-                  onChange={(e) => handleInputChange('sector', e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-        );
-      
-      case 3:
-        return (
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold">Admission Level *</h3>
-              <Select
-                required
-                value={formData.admission_level}
-                onValueChange={(value) => handleInputChange('admission_level', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select admission level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="licensing">Licensing</SelectItem>
-                  <SelectItem value="recognition">Recognition</SelectItem>
-                  <SelectItem value="ordination">Ordination</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold">Theological Training</h3>
-              <div className="grid md:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <Label htmlFor="theological_institution">Institution</Label>
-                  <Input
-                    id="theological_institution"
-                    value={formData.theological_institution}
-                    onChange={(e) => handleInputChange('theological_institution', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="theological_qualification">Qualification</Label>
-                  <Input
-                    id="theological_qualification"
-                    value={formData.theological_qualification}
-                    onChange={(e) => handleInputChange('theological_qualification', e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold">Mentor Information</h3>
-              <div className="grid md:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <Label htmlFor="mentor_name">Mentor Name</Label>
-                  <Input
-                    id="mentor_name"
-                    value={formData.mentor_name}
-                    onChange={(e) => handleInputChange('mentor_name', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="mentor_contact">Mentor Contact</Label>
-                  <Input
-                    id="mentor_contact"
-                    value={formData.mentor_contact}
-                    onChange={(e) => handleInputChange('mentor_contact', e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="vision_statement">Vision Statement</Label>
-              <Textarea
-                id="vision_statement"
-                rows={4}
-                placeholder="Describe your vision for ministry..."
-                value={formData.vision_statement}
-                onChange={(e) => handleInputChange('vision_statement', e.target.value)}
-              />
-            </div>
-          </div>
-        );
-      
-      case 4:
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Required Documents</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              {[
-                { key: 'passport_photo', label: 'Passport Photo *' },
-                { key: 'birth_certificate', label: 'Birth Certificate *' },
-                { key: 'baptism_certificate', label: 'Baptism Certificate *' },
-                { key: 'recommendation_letter', label: 'Recommendation Letter *' },
-                { key: 'theological_certificate', label: 'Theological Certificate' },
-                { key: 'marriage_certificate', label: 'Marriage Certificate' },
-              ].map(({ key, label }) => (
-                <div key={key}>
-                  <Label htmlFor={key}>{label}</Label>
-                  <div className="mt-1">
-                    <Input
-                      id={key}
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      required={label.includes('*')}
-                      onChange={(e) => handleFileChange(key, e.target.files?.[0] || null)}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      
-      default:
-        return null;
-    }
-  };
-
-  const progress = (currentStep / STEPS.length) * 100;
+  const steps = [
+    { number: 0, title: "Phone Verification" },
+    { number: 1, title: "Personal Information" },
+    { number: 2, title: "Church Information" },
+    { number: 3, title: "Admission & Training" },
+    { number: 4, title: "Documents" },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <Card>
           <CardHeader>
-            <CardTitle className="text-3xl">Ministerial Admission Application</CardTitle>
+            <CardTitle>Ministerial Admission Application</CardTitle>
             <CardDescription>
-              Step {currentStep} of {STEPS.length}: {STEPS[currentStep - 1].title}
+              {!otpVerified ? "Verify your phone number to begin" : "Complete all steps to submit your application"}
             </CardDescription>
-            <div className="mt-4">
-              <Progress value={progress} className="h-2" />
-            </div>
-            <div className="flex justify-between mt-4 text-sm">
-              {STEPS.map((step) => (
-                <div
-                  key={step.id}
-                  className={`flex items-center gap-2 ${
-                    step.id === currentStep
-                      ? 'text-primary font-semibold'
-                      : step.id < currentStep
-                      ? 'text-muted-foreground'
-                      : 'text-muted-foreground/50'
-                  }`}
-                >
-                  {step.id < currentStep ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 text-xs">
-                      {step.id}
-                    </span>
-                  )}
-                  <span className="hidden md:inline">{step.title}</span>
-                </div>
-              ))}
-            </div>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {renderStepContent()}
-              <div className="flex justify-between gap-4 mt-8">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={currentStep === 1 ? () => navigate('/auth') : handlePrevious}
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  {currentStep === 1 ? 'Cancel' : 'Previous'}
-                </Button>
-                
-                {currentStep < STEPS.length ? (
-                  <Button type="button" onClick={handleNext}>
-                    Next
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? 'Submitting...' : 'Submit Application'}
-                    <Upload className="ml-2 h-4 w-4" />
-                  </Button>
-                )}
+            {/* Progress Bar */}
+            <div className="mb-8">
+              <Progress value={(currentStep / totalSteps) * 100} className="h-2" />
+              <div className="flex justify-between mt-4">
+                {steps.map((step) => (
+                  <div
+                    key={step.number}
+                    className={`flex flex-col items-center ${
+                      currentStep >= step.number ? "text-primary" : "text-muted-foreground"
+                    }`}
+                  >
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
+                        currentStep > step.number
+                          ? "bg-primary border-primary text-primary-foreground"
+                          : currentStep === step.number
+                          ? "border-primary"
+                          : "border-muted"
+                      }`}
+                    >
+                      {currentStep > step.number ? <Check className="h-5 w-5" /> : step.number + 1}
+                    </div>
+                    <span className="text-xs mt-2 text-center max-w-[80px]">{step.title}</span>
+                  </div>
+                ))}
               </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Step 0: OTP Verification */}
+              {currentStep === 0 && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Verify Your Phone Number</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Enter your phone number to receive a verification code. Your number must be approved by finance before you can apply.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone-verify">Phone Number *</Label>
+                    <Input
+                      id="phone-verify"
+                      type="tel"
+                      placeholder="0XXXXXXXXX"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      disabled={otpSent}
+                      required
+                    />
+                  </div>
+
+                  {!otpSent ? (
+                    <Button
+                      type="button"
+                      onClick={handleSendOTP}
+                      disabled={loading}
+                      className="w-full"
+                    >
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Send Verification Code
+                    </Button>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="otp">Enter 6-Digit Code</Label>
+                        <div className="flex justify-center">
+                          <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+                            <InputOTPGroup>
+                              <InputOTPSlot index={0} />
+                              <InputOTPSlot index={1} />
+                              <InputOTPSlot index={2} />
+                              <InputOTPSlot index={3} />
+                              <InputOTPSlot index={4} />
+                              <InputOTPSlot index={5} />
+                            </InputOTPGroup>
+                          </InputOTP>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          onClick={handleVerifyOTP}
+                          disabled={loading || otp.length !== 6}
+                          className="flex-1"
+                        >
+                          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Verify Code
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleSendOTP}
+                          disabled={!resendAvailable || loading}
+                        >
+                          {resendTimer > 0 ? `Resend (${resendTimer}s)` : "Resend Code"}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Step 1: Personal Information */}
+              {currentStep === 1 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Personal Information</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="fullName">Full Name *</Label>
+                      <Input
+                        id="fullName"
+                        required
+                        value={formData.fullName}
+                        onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        required
+                        value={formData.email}
+                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Phone *</Label>
+                      <Input
+                        id="phone"
+                        required
+                        value={formData.phone}
+                        disabled
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                      <Input
+                        id="dateOfBirth"
+                        type="date"
+                        required
+                        value={formData.dateOfBirth}
+                        onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="maritalStatus">Marital Status</Label>
+                      <Select
+                        value={formData.maritalStatus}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, maritalStatus: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="single">Single</SelectItem>
+                          <SelectItem value="married">Married</SelectItem>
+                          <SelectItem value="widowed">Widowed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {formData.maritalStatus === "married" && (
+                      <div>
+                        <Label htmlFor="spouseName">Spouse Name</Label>
+                        <Input
+                          id="spouseName"
+                          value={formData.spouseName}
+                          onChange={(e) => setFormData(prev => ({ ...prev, spouseName: e.target.value }))}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Church Information */}
+              {currentStep === 2 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Church Information</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="churchName">Church Name *</Label>
+                      <Input
+                        id="churchName"
+                        required
+                        value={formData.churchName}
+                        onChange={(e) => setFormData(prev => ({ ...prev, churchName: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="fellowship">Fellowship *</Label>
+                      <Input
+                        id="fellowship"
+                        required
+                        value={formData.fellowship}
+                        onChange={(e) => setFormData(prev => ({ ...prev, fellowship: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="association">Association *</Label>
+                      <Input
+                        id="association"
+                        required
+                        value={formData.association}
+                        onChange={(e) => setFormData(prev => ({ ...prev, association: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="sector">Sector *</Label>
+                      <Input
+                        id="sector"
+                        required
+                        value={formData.sector}
+                        onChange={(e) => setFormData(prev => ({ ...prev, sector: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Admission & Training */}
+              {currentStep === 3 && (
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="admissionLevel">Admission Level *</Label>
+                    <Select
+                      required
+                      value={formData.admissionLevel}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, admissionLevel: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select admission level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="licensing">Licensing</SelectItem>
+                        <SelectItem value="recognition">Recognition</SelectItem>
+                        <SelectItem value="ordination">Ordination</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold">Theological Training</h3>
+                    <div className="grid md:grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <Label htmlFor="theologicalInstitution">Institution</Label>
+                        <Input
+                          id="theologicalInstitution"
+                          value={formData.theologicalInstitution}
+                          onChange={(e) => setFormData(prev => ({ ...prev, theologicalInstitution: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="theologicalQualification">Qualification</Label>
+                        <Input
+                          id="theologicalQualification"
+                          value={formData.theologicalQualification}
+                          onChange={(e) => setFormData(prev => ({ ...prev, theologicalQualification: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold">Mentor Information</h3>
+                    <div className="grid md:grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <Label htmlFor="mentorName">Mentor Name</Label>
+                        <Input
+                          id="mentorName"
+                          value={formData.mentorName}
+                          onChange={(e) => setFormData(prev => ({ ...prev, mentorName: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="mentorContact">Mentor Contact</Label>
+                        <Input
+                          id="mentorContact"
+                          value={formData.mentorContact}
+                          onChange={(e) => setFormData(prev => ({ ...prev, mentorContact: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="visionStatement">Vision Statement</Label>
+                    <Textarea
+                      id="visionStatement"
+                      rows={4}
+                      placeholder="Describe your vision for ministry..."
+                      value={formData.visionStatement}
+                      onChange={(e) => setFormData(prev => ({ ...prev, visionStatement: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Documents */}
+              {currentStep === 4 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Payment Information</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="gazetteReceiptNumber">Gazette Receipt Number</Label>
+                      <Input
+                        id="gazetteReceiptNumber"
+                        value={formData.gazetteReceiptNumber}
+                        onChange={(e) => setFormData(prev => ({ ...prev, gazetteReceiptNumber: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="paymentReceiptNumber">Payment Receipt Number</Label>
+                      <Input
+                        id="paymentReceiptNumber"
+                        value={formData.paymentReceiptNumber}
+                        onChange={(e) => setFormData(prev => ({ ...prev, paymentReceiptNumber: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="ministryEvaluationPaper">Ministry Evaluation Paper</Label>
+                    <Textarea
+                      id="ministryEvaluationPaper"
+                      rows={4}
+                      placeholder="Describe your ministry experience and evaluation..."
+                      value={formData.ministryEvaluationPaper}
+                      onChange={(e) => setFormData(prev => ({ ...prev, ministryEvaluationPaper: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation Buttons */}
+              {currentStep > 0 && (
+                <div className="flex justify-between pt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handlePrevious}
+                    disabled={currentStep === 0}
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Previous
+                  </Button>
+
+                  {currentStep < totalSteps ? (
+                    <Button
+                      type="button"
+                      onClick={handleNext}
+                      disabled={!otpVerified}
+                    >
+                      Next
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button type="submit" disabled={loading}>
+                      {loading ? "Submitting..." : "Submit Application"}
+                    </Button>
+                  )}
+                </div>
+              )}
             </form>
           </CardContent>
         </Card>
       </div>
     </div>
   );
-};
-
-export default Apply;
+}

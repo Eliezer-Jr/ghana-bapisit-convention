@@ -201,6 +201,47 @@ export type Database = {
         }
         Relationships: []
       }
+      approved_applicants: {
+        Row: {
+          application_id: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          phone_number: string
+          used: boolean | null
+        }
+        Insert: {
+          application_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          phone_number: string
+          used?: boolean | null
+        }
+        Update: {
+          application_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          phone_number?: string
+          used?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approved_applicants_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       convention_positions: {
         Row: {
           created_at: string
