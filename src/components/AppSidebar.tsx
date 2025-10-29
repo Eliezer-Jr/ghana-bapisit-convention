@@ -82,29 +82,29 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className={collapsed ? "w-16" : "w-64"}>
-      <SidebarContent className="gap-0">
+    <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon">
+      <SidebarContent className="py-4">
         {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : "px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"}>
+          <SidebarGroupLabel className={collapsed ? "sr-only" : "px-6 text-xs font-semibold uppercase tracking-wider"}>
             Navigation
           </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-1 px-2">
+          <SidebarGroupContent className="mt-2">
+            <SidebarMenu className="gap-1 px-3">
               {navItems
                 .filter((item) => item.show)
                 .map((item) => (
                   <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton asChild className="h-11">
+                    <SidebarMenuButton asChild className="h-10" tooltip={collapsed ? item.label : undefined}>
                       <NavLink 
                         to={item.path} 
                         end={item.path === "/"} 
                         className={({ isActive: navActive }) => 
-                          `flex items-center gap-3 rounded-md px-3 py-2 transition-all ${getNavCls(isActive(item.path))}`
+                          `flex items-center gap-3 rounded-lg px-3 transition-colors ${getNavCls(isActive(item.path))}`
                         }
                       >
                         <item.icon className="h-5 w-5 shrink-0" />
-                        {!collapsed && <span className="text-sm">{item.label}</span>}
+                        {!collapsed && <span>{item.label}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -115,25 +115,25 @@ export function AppSidebar() {
 
         {/* Admin Section */}
         {adminItems.some((item) => item.show) && (
-          <SidebarGroup className="mt-auto">
-            <SidebarGroupLabel className={collapsed ? "sr-only" : "px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"}>
+          <SidebarGroup className="mt-8">
+            <SidebarGroupLabel className={collapsed ? "sr-only" : "px-6 text-xs font-semibold uppercase tracking-wider"}>
               Administration
             </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-1 px-2">
+            <SidebarGroupContent className="mt-2">
+              <SidebarMenu className="gap-1 px-3">
                 {adminItems
                   .filter((item) => item.show)
                   .map((item) => (
                     <SidebarMenuItem key={item.path}>
-                      <SidebarMenuButton asChild className="h-11">
+                      <SidebarMenuButton asChild className="h-10" tooltip={collapsed ? item.label : undefined}>
                         <NavLink 
                           to={item.path} 
                           className={({ isActive: navActive }) => 
-                            `flex items-center gap-3 rounded-md px-3 py-2 transition-all ${getNavCls(isActive(item.path))}`
+                            `flex items-center gap-3 rounded-lg px-3 transition-colors ${getNavCls(isActive(item.path))}`
                           }
                         >
                           <item.icon className="h-5 w-5 shrink-0" />
-                          {!collapsed && <span className="text-sm">{item.label}</span>}
+                          {!collapsed && <span>{item.label}</span>}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -147,24 +147,24 @@ export function AppSidebar() {
       {/* Footer */}
       {!collapsed && (
         <SidebarFooter className="p-4 border-t">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-              <UserCircle className="h-6 w-6 text-primary" />
+          <div className="flex items-center gap-3 px-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+              <UserCircle className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{user?.email?.split("@")[0]}</p>
               {isSuperAdmin && (
-                <Badge variant="default" className="text-xs mt-1">
-                  Super Admin
+                <Badge variant="secondary" className="text-xs mt-1 px-2 py-0">
+                  Admin
                 </Badge>
               )}
               {isFinanceManager && !isSuperAdmin && (
-                <Badge variant="default" className="text-xs mt-1">
-                  Finance Manager
+                <Badge variant="secondary" className="text-xs mt-1 px-2 py-0">
+                  Finance
                 </Badge>
               )}
               {isAdmissionReviewer && !isSuperAdmin && (
-                <Badge variant="default" className="text-xs mt-1">
+                <Badge variant="secondary" className="text-xs mt-1 px-2 py-0">
                   Reviewer
                 </Badge>
               )}
