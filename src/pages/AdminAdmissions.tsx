@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import ResponsiveLayout from "@/components/ResponsiveLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -131,12 +130,11 @@ export default function AdminAdmissions() {
   };
 
   return (
-    <ResponsiveLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Admission Applications Management</h1>
-          <p className="text-muted-foreground mt-1">Review and manage ministerial admission applications</p>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Admission Applications Management</h1>
+        <p className="text-muted-foreground mt-1">Review and manage ministerial admission applications</p>
+      </div>
 
         {/* Statistics */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -384,7 +382,6 @@ export default function AdminAdmissions() {
             )}
           </CardContent>
         </Card>
-      </div>
-    </ResponsiveLayout>
+    </div>
   );
 }
