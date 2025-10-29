@@ -635,7 +635,12 @@ export type Database = {
     }
     Enums: {
       admission_level: "licensing" | "recognition" | "ordination"
-      app_role: "super_admin" | "admin" | "user" | "finance_manager"
+      app_role:
+        | "super_admin"
+        | "admin"
+        | "user"
+        | "finance_manager"
+        | "admission_reviewer"
       application_status:
         | "draft"
         | "submitted"
@@ -773,7 +778,13 @@ export const Constants = {
   public: {
     Enums: {
       admission_level: ["licensing", "recognition", "ordination"],
-      app_role: ["super_admin", "admin", "user", "finance_manager"],
+      app_role: [
+        "super_admin",
+        "admin",
+        "user",
+        "finance_manager",
+        "admission_reviewer",
+      ],
       application_status: [
         "draft",
         "submitted",

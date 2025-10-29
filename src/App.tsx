@@ -18,6 +18,7 @@ import AdmissionForm from "./pages/AdmissionForm";
 import AdminAdmissions from "./pages/AdminAdmissions";
 import Apply from "./pages/Apply";
 import FinancePortal from "./pages/FinancePortal";
+import ResponsiveLayout from "./components/ResponsiveLayout";
 
 const queryClient = new QueryClient();
 
@@ -88,7 +89,9 @@ const App = () => (
               path="/"
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <ResponsiveLayout>
+                    <Dashboard />
+                  </ResponsiveLayout>
                 </ProtectedRoute>
               }
             />
@@ -96,7 +99,9 @@ const App = () => (
               path="/ministers"
               element={
                 <ProtectedRoute>
-                  <Ministers />
+                  <ResponsiveLayout>
+                    <Ministers />
+                  </ResponsiveLayout>
                 </ProtectedRoute>
               }
             />
@@ -104,7 +109,9 @@ const App = () => (
               path="/messages"
               element={
                 <ProtectedRoute>
-                  <Messages />
+                  <ResponsiveLayout>
+                    <Messages />
+                  </ResponsiveLayout>
                 </ProtectedRoute>
               }
             />
@@ -112,7 +119,9 @@ const App = () => (
               path="/profile"
               element={
                 <ProtectedRoute>
-                  <Profile />
+                  <ResponsiveLayout>
+                    <Profile />
+                  </ResponsiveLayout>
                 </ProtectedRoute>
               }
             />
@@ -120,7 +129,9 @@ const App = () => (
               path="/activity-logs"
               element={
                 <SuperAdminRoute>
-                  <ActivityLogs />
+                  <ResponsiveLayout>
+                    <ActivityLogs />
+                  </ResponsiveLayout>
                 </SuperAdminRoute>
               }
             />
@@ -128,7 +139,9 @@ const App = () => (
               path="/admissions"
               element={
                 <ProtectedRoute>
-                  <Admissions />
+                  <ResponsiveLayout>
+                    <Admissions />
+                  </ResponsiveLayout>
                 </ProtectedRoute>
               }
             />
@@ -136,7 +149,9 @@ const App = () => (
               path="/admissions/:id"
               element={
                 <ProtectedRoute>
-                  <AdmissionForm />
+                  <ResponsiveLayout>
+                    <AdmissionForm />
+                  </ResponsiveLayout>
                 </ProtectedRoute>
               }
             />
@@ -144,7 +159,9 @@ const App = () => (
               path="/admissions/:id/edit"
               element={
                 <ProtectedRoute>
-                  <AdmissionForm />
+                  <ResponsiveLayout>
+                    <AdmissionForm />
+                  </ResponsiveLayout>
                 </ProtectedRoute>
               }
             />
@@ -152,7 +169,9 @@ const App = () => (
               path="/admin/admissions"
               element={
                 <SuperAdminRoute>
-                  <AdminAdmissions />
+                  <ResponsiveLayout>
+                    <AdminAdmissions />
+                  </ResponsiveLayout>
                 </SuperAdminRoute>
               }
             />
@@ -160,7 +179,9 @@ const App = () => (
               path="/finance"
               element={
                 <ProtectedRoute>
-                  <FinancePortal />
+                  <ResponsiveLayout>
+                    <FinancePortal />
+                  </ResponsiveLayout>
                 </ProtectedRoute>
               }
             />

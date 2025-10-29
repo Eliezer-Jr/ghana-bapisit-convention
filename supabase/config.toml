@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.frogapi-test-otp]
 verify_jwt = false
+
+[functions.approve-applicant]
+verify_jwt = true
