@@ -64,45 +64,53 @@ export default function Admissions() {
 
   return (
     <Layout>
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Ministerial Admissions</h1>
-            <p className="text-muted-foreground mt-1">Apply for Licensing, Recognition, or Ordination</p>
-          </div>
-          <Button onClick={() => navigate("/admissions/new")}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Application
-          </Button>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">My Applications</h1>
+          <p className="text-muted-foreground mt-1">Track your ministerial admission applications</p>
         </div>
 
         {/* Important Information */}
-        <Card className="border-blue-200 bg-blue-50/50">
+        <Card className="border-primary/20 bg-primary/5">
           <CardHeader>
-            <CardTitle>2025 Admission Guidelines</CardTitle>
+            <CardTitle className="text-lg">Important Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <p><strong>Application Deadline:</strong> January 24, 2025</p>
-            <p><strong>Age Limit:</strong> Maximum entry age for Licensing is 45 years</p>
-            <p><strong>Processing Fees:</strong> GH₵ 850.00 (Non-Refundable) + GH₵ 750.00 Gazette (Refundable)</p>
-            <p><strong>Screening Period:</strong> January 20-23, 2025</p>
-            <p><strong>Interviews:</strong> February 24 to April 7, 2025</p>
+            <p className="text-muted-foreground">Applications are submitted outside this portal. Use this page to track the status of your submitted applications.</p>
+            <div className="grid md:grid-cols-2 gap-2 mt-4 pt-4 border-t">
+              <div>
+                <p className="font-medium text-foreground">Application Deadline</p>
+                <p className="text-muted-foreground">January 24, 2025</p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Age Limit</p>
+                <p className="text-muted-foreground">Maximum 45 years for Licensing</p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Processing Fee</p>
+                <p className="text-muted-foreground">GH₵ 850.00 (Non-Refundable)</p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Gazette Fee</p>
+                <p className="text-muted-foreground">GH₵ 750.00 (Refundable)</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         {/* Applications List */}
         {loading ? (
-          <div className="text-center py-12">Loading applications...</div>
+          <Card>
+            <CardContent className="py-12 text-center">
+              <div className="text-muted-foreground">Loading applications...</div>
+            </CardContent>
+          </Card>
         ) : applications.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Applications Yet</h3>
-              <p className="text-muted-foreground mb-4">Start your ministerial admission journey today</p>
-              <Button onClick={() => navigate("/admissions/new")}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Your First Application
-              </Button>
+              <h3 className="text-lg font-semibold mb-2">No Applications Found</h3>
+              <p className="text-muted-foreground">You don't have any applications yet. Applications are submitted through the official admission process.</p>
             </CardContent>
           </Card>
         ) : (

@@ -35,10 +35,8 @@ interface UserWithRoles {
 }
 
 export function UserManagement() {
-  const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("user");
   const queryClient = useQueryClient();
 
@@ -69,17 +67,20 @@ export function UserManagement() {
 
   const createUserMutation = useMutation({
     mutationFn: async (userData: {
-      email: string;
       fullName: string;
       phoneNumber: string;
-      password: string;
       role: UserRole;
     }) => {
+      // Generate a random email from phone number
+      const email = `${userData.phoneNumber}@gbc.temp`;
+      const tempPassword = Math.random().toString(36).slice(-12) + "GBC123!";
+
       // Create user via Supabase Auth Admin API
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        password: userData.password,
+        email,
+        password: tempPassword,
         email_confirm: true,
+        phone: userData.phoneNumber,
         user_metadata: {
           full_name: userData.fullName,
         },
@@ -110,11 +111,9 @@ export function UserManagement() {
       return authData;
     },
     onSuccess: () => {
-      toast.success("User created successfully!");
-      setEmail("");
+      toast.success("User created successfully! They can now login with OTP.");
       setFullName("");
       setPhoneNumber("");
-      setPassword("");
       setRole("user");
       queryClient.invalidateQueries({ queryKey: ["all-users"] });
     },
@@ -157,11 +156,11 @@ export function UserManagement() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !fullName || !password) {
+    if (!fullName || !phoneNumber) {
       toast.error("Please fill in all required fields");
       return;
     }
-    createUserMutation.mutate({ email, fullName, phoneNumber, password, role });
+    createUserMutation.mutate({ fullName, phoneNumber, role });
   };
 
   const getRoleBadgeVariant = (role: string) => {
@@ -201,24 +200,12 @@ export function UserManagement() {
             Create New User
           </CardTitle>
           <CardDescription>
-            Create accounts for finance managers, admission reviewers, and other users
+            Users will receive OTP for login. No password required.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="user@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="fullName">Full Name *</Label>
                 <Input
@@ -231,30 +218,19 @@ export function UserManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <Label htmlFor="phoneNumber">Phone Number *</Label>
                 <Input
                   id="phoneNumber"
                   type="tel"
-                  placeholder="+233XXXXXXXXX"
+                  placeholder="0241234567"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Minimum 8 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  maxLength={10}
                   required
-                  minLength={8}
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="role">Role *</Label>
                 <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
                   <SelectTrigger>
@@ -273,7 +249,7 @@ export function UserManagement() {
 
             <Button type="submit" disabled={createUserMutation.isPending} className="w-full">
               {createUserMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create User
+              Create User (OTP Login)
             </Button>
           </form>
         </CardContent>

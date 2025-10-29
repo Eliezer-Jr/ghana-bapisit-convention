@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 import { Church } from "lucide-react";
@@ -169,113 +169,126 @@ const Auth = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-1 text-center">
+      <Card className="w-full max-w-md shadow-xl border-2">
+        <CardHeader className="space-y-1 text-center pb-4">
           <div className="flex justify-center mb-4">
-            <div className="rounded-full bg-primary p-3">
-              <Church className="h-8 w-8 text-primary-foreground" />
+            <div className="rounded-full bg-primary/10 p-4">
+              <Church className="h-10 w-10 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Ghana Bapisit Convention</CardTitle>
-          <CardDescription>Minister Data Management System</CardDescription>
+          <CardTitle className="text-2xl font-bold">Ghana Baptist Convention</CardTitle>
+          <CardDescription className="text-base">Minister Data Management System</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           {!otpSent ? (
-            <Tabs defaultValue="login" className="w-full" onValueChange={(v) => setIsSignup(v === "signup")}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
-              </TabsList>
-              <TabsContent value="login" className="space-y-4">
+            <div className="space-y-4">
+              <div className="text-center pb-2">
+                <h3 className="text-lg font-semibold text-foreground">
+                  {isSignup ? "Create Account" : "Sign In"}
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {isSignup ? "Register with your phone number" : "Login with OTP verification"}
+                </p>
+              </div>
+
+              {isSignup && (
                 <div className="space-y-2">
-                  <Label htmlFor="login-phone">Phone Number</Label>
+                  <Label htmlFor="fullName" className="text-sm font-medium">Full Name</Label>
                   <Input
-                    id="login-phone"
-                    type="tel"
-                    placeholder="0241234567"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    disabled={loading}
-                    maxLength={10}
-                  />
-                </div>
-                <Button
-                  className="w-full"
-                  onClick={() => handleSendOTP("login")}
-                  disabled={loading || !phoneNumber}
-                >
-                  {loading ? "Sending OTP..." : "Send OTP"}
-                </Button>
-              </TabsContent>
-              <TabsContent value="signup" className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
-                  <Input
-                    id="signup-name"
+                    id="fullName"
                     type="text"
                     placeholder="John Doe"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     disabled={loading}
+                    className="h-11"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-phone">Phone Number</Label>
-                  <Input
-                    id="signup-phone"
-                    type="tel"
-                    placeholder="0241234567"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    disabled={loading}
-                    maxLength={10}
-                  />
-                </div>
-                <Button
-                  className="w-full"
-                  onClick={() => handleSendOTP("signup")}
-                  disabled={loading || !phoneNumber || !fullName}
-                >
-                  {loading ? "Sending OTP..." : "Send OTP"}
-                </Button>
-              </TabsContent>
-            </Tabs>
-          ) : (
-            <div className="space-y-4">
+              )}
+
               <div className="space-y-2">
-                <Label>Enter Verification Code</Label>
-                <p className="text-sm text-muted-foreground">
-                  We sent a 6-digit code to {phoneNumber}
-                </p>
-                <div className="flex justify-center">
-                  <InputOTP
-                    maxLength={6}
-                    value={otp}
-                    onChange={setOtp}
-                    disabled={loading}
-                  >
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
+                <Label htmlFor="phoneNumber" className="text-sm font-medium">Phone Number</Label>
+                <Input
+                  id="phoneNumber"
+                  type="tel"
+                  placeholder="0241234567"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  disabled={loading}
+                  maxLength={10}
+                  className="h-11"
+                />
+              </div>
+
+              <Button
+                className="w-full h-11"
+                onClick={() => handleSendOTP(isSignup ? "signup" : "login")}
+                disabled={loading || !phoneNumber || (isSignup && !fullName)}
+              >
+                {loading ? "Sending OTP..." : "Send OTP"}
+              </Button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">Or</span>
                 </div>
               </div>
+
               <Button
-                className="w-full"
+                variant="outline"
+                className="w-full h-11"
+                onClick={() => {
+                  setIsSignup(!isSignup);
+                  setFullName("");
+                  setPhoneNumber("");
+                }}
+                disabled={loading}
+              >
+                {isSignup ? "Already have an account? Login" : "Don't have an account? Sign Up"}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="text-center space-y-2">
+                <h3 className="text-lg font-semibold">Enter Verification Code</h3>
+                <p className="text-sm text-muted-foreground">
+                  We sent a 6-digit code to <span className="font-medium text-foreground">{phoneNumber}</span>
+                </p>
+              </div>
+
+              <div className="flex justify-center py-4">
+                <InputOTP
+                  maxLength={6}
+                  value={otp}
+                  onChange={setOtp}
+                  disabled={loading}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
+              <Button
+                className="w-full h-11"
                 onClick={handleVerifyOTP}
                 disabled={loading || otp.length !== 6}
               >
                 {loading ? "Verifying..." : "Verify OTP"}
               </Button>
+
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 h-11"
                   onClick={handleBack}
                   disabled={loading}
                 >
@@ -283,7 +296,7 @@ const Auth = () => {
                 </Button>
                 <Button
                   variant="secondary"
-                  className="flex-1"
+                  className="flex-1 h-11"
                   onClick={handleResendOTP}
                   disabled={loading || !canResend}
                 >
