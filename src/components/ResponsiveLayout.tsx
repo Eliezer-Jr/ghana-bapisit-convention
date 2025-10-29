@@ -48,8 +48,8 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Header */}
-          <header className="h-16 border-b bg-card sticky top-0 z-40 flex items-center justify-between px-6">
+          {/* Header - Modern Design */}
+          <header className="h-16 border-b bg-card/80 backdrop-blur-lg sticky top-0 z-40 flex items-center justify-between px-6 shadow-sm">
             {/* Left side - Menu and Logo */}
             <div className="flex items-center gap-4">
               {/* Mobile Menu Button */}
@@ -70,15 +70,18 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                  <Church className="h-5 w-5 text-primary" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary shadow-md">
+                  <Church className="h-5 w-5 text-white" />
                 </div>
-                <h1 className="text-lg font-semibold hidden sm:block">Ghana Baptist Convention</h1>
+                <div className="hidden sm:block">
+                  <h1 className="text-lg font-bold text-gradient leading-none">Ghana Baptist Convention</h1>
+                  <p className="text-xs text-muted-foreground">Ministry Portal</p>
+                </div>
               </div>
             </div>
 
             {/* Right side - Logout only */}
-            <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
+            <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 font-medium">
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Logout</span>
             </Button>
@@ -90,7 +93,7 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
           </main>
 
           {/* Watermark Logo */}
-          <div className="fixed bottom-4 right-4 opacity-20 hover:opacity-40 transition-opacity pointer-events-none">
+          <div className="fixed bottom-4 right-4 opacity-10 hover:opacity-20 transition-opacity pointer-events-none">
             <img src={logoWatermark} alt="LEC" className="w-16 h-16 object-contain" />
           </div>
         </div>

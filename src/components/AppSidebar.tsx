@@ -71,8 +71,8 @@ export function AppSidebar() {
 
   const getNavCls = (isActive: boolean) =>
     isActive 
-      ? "bg-primary/10 text-primary font-medium border-l-4 border-primary" 
-      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground";
+      ? "bg-gradient-to-r from-primary/10 to-transparent text-primary font-semibold border-l-4 border-primary shadow-sm" 
+      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground";
 
   const isActive = (path: string) => {
     if (path === "/") {
@@ -83,28 +83,28 @@ export function AppSidebar() {
 
   return (
     <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon">
-      <SidebarContent className="py-4">
+      <SidebarContent className="py-6">
         {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : "px-6 text-xs font-semibold uppercase tracking-wider"}>
-            Navigation
+          <SidebarGroupLabel className={collapsed ? "sr-only" : "px-6 mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground"}>
+            Menu
           </SidebarGroupLabel>
-          <SidebarGroupContent className="mt-2">
-            <SidebarMenu className="gap-1 px-3">
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-2 px-3">
               {navItems
                 .filter((item) => item.show)
                 .map((item) => (
                   <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton asChild className="h-10" tooltip={collapsed ? item.label : undefined}>
+                    <SidebarMenuButton asChild className="h-11" tooltip={collapsed ? item.label : undefined}>
                       <NavLink 
                         to={item.path} 
                         end={item.path === "/"} 
                         className={({ isActive: navActive }) => 
-                          `flex items-center gap-3 rounded-lg px-3 transition-colors ${getNavCls(isActive(item.path))}`
+                          `flex items-center gap-3 rounded-xl px-4 smooth-transition ${getNavCls(isActive(item.path))}`
                         }
                       >
                         <item.icon className="h-5 w-5 shrink-0" />
-                        {!collapsed && <span>{item.label}</span>}
+                        {!collapsed && <span className="font-medium">{item.label}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -116,24 +116,24 @@ export function AppSidebar() {
         {/* Admin Section */}
         {adminItems.some((item) => item.show) && (
           <SidebarGroup className="mt-8">
-            <SidebarGroupLabel className={collapsed ? "sr-only" : "px-6 text-xs font-semibold uppercase tracking-wider"}>
-              Administration
+            <SidebarGroupLabel className={collapsed ? "sr-only" : "px-6 mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground"}>
+              Admin
             </SidebarGroupLabel>
-            <SidebarGroupContent className="mt-2">
-              <SidebarMenu className="gap-1 px-3">
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-2 px-3">
                 {adminItems
                   .filter((item) => item.show)
                   .map((item) => (
                     <SidebarMenuItem key={item.path}>
-                      <SidebarMenuButton asChild className="h-10" tooltip={collapsed ? item.label : undefined}>
+                      <SidebarMenuButton asChild className="h-11" tooltip={collapsed ? item.label : undefined}>
                         <NavLink 
                           to={item.path} 
                           className={({ isActive: navActive }) => 
-                            `flex items-center gap-3 rounded-lg px-3 transition-colors ${getNavCls(isActive(item.path))}`
+                            `flex items-center gap-3 rounded-xl px-4 smooth-transition ${getNavCls(isActive(item.path))}`
                           }
                         >
                           <item.icon className="h-5 w-5 shrink-0" />
-                          {!collapsed && <span>{item.label}</span>}
+                          {!collapsed && <span className="font-medium">{item.label}</span>}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -144,27 +144,27 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      {/* Footer */}
+      {/* Footer - Modern User Card */}
       {!collapsed && (
-        <SidebarFooter className="p-4 border-t">
-          <div className="flex items-center gap-3 px-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-              <UserCircle className="h-5 w-5 text-primary" />
+        <SidebarFooter className="p-4 border-t bg-muted/30">
+          <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-card shadow-sm">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary">
+              <UserCircle className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user?.email?.split("@")[0]}</p>
+              <p className="text-sm font-semibold truncate">{user?.email?.split("@")[0]}</p>
               {isSuperAdmin && (
-                <Badge variant="secondary" className="text-xs mt-1 px-2 py-0">
+                <Badge variant="default" className="text-xs mt-1 px-2 py-0.5 bg-primary">
                   Admin
                 </Badge>
               )}
               {isFinanceManager && !isSuperAdmin && (
-                <Badge variant="secondary" className="text-xs mt-1 px-2 py-0">
+                <Badge variant="default" className="text-xs mt-1 px-2 py-0.5 bg-secondary">
                   Finance
                 </Badge>
               )}
               {isAdmissionReviewer && !isSuperAdmin && (
-                <Badge variant="secondary" className="text-xs mt-1 px-2 py-0">
+                <Badge variant="default" className="text-xs mt-1 px-2 py-0.5 bg-secondary">
                   Reviewer
                 </Badge>
               )}
