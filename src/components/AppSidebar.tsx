@@ -12,6 +12,7 @@ import {
   Activity,
   DollarSign,
   ClipboardCheck,
+  UserCog,
 } from "lucide-react";
 import {
   Sidebar,
@@ -23,7 +24,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -59,14 +62,17 @@ export function AppSidebar() {
   ];
 
   const adminItems = [
-    { icon: Shield, label: "Super Admin", path: "/super-admin", show: isSuperAdmin },
+    { icon: Shield, label: "User Approvals", path: "/super-admin", show: isSuperAdmin },
+    { icon: UserCog, label: "User Management", path: "/user-management", show: isSuperAdmin },
     { icon: Activity, label: "Activity Logs", path: "/activity-logs", show: isSuperAdmin },
     { icon: ClipboardCheck, label: "Review Admissions", path: "/admin/admissions", show: isSuperAdmin || isAdmissionReviewer },
     { icon: DollarSign, label: "Finance Portal", path: "/finance", show: isSuperAdmin || isFinanceManager },
   ];
 
   const getNavCls = (isActive: boolean) =>
-    isActive ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" : "hover:bg-accent";
+    isActive 
+      ? "bg-primary/10 text-primary font-medium border-l-4 border-primary" 
+      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground";
 
   const isActive = (path: string) => {
     if (path === "/") {
@@ -76,20 +82,29 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-64"}>
-      <SidebarContent>
+    <Sidebar className={collapsed ? "w-16" : "w-64"}>
+      <SidebarContent className="gap-0">
+        {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>Main Menu</SidebarGroupLabel>
+          <SidebarGroupLabel className={collapsed ? "sr-only" : "px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"}>
+            Navigation
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1 px-2">
               {navItems
                 .filter((item) => item.show)
                 .map((item) => (
                   <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton asChild>
-                      <NavLink to={item.path} end={item.path === "/"} className={() => getNavCls(isActive(item.path))}>
-                        <item.icon className={collapsed ? "h-5 w-5 mx-auto" : "h-5 w-5"} />
-                        {!collapsed && <span>{item.label}</span>}
+                    <SidebarMenuButton asChild className="h-11">
+                      <NavLink 
+                        to={item.path} 
+                        end={item.path === "/"} 
+                        className={({ isActive: navActive }) => 
+                          `flex items-center gap-3 rounded-md px-3 py-2 transition-all ${getNavCls(isActive(item.path))}`
+                        }
+                      >
+                        <item.icon className="h-5 w-5 shrink-0" />
+                        {!collapsed && <span className="text-sm">{item.label}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -98,19 +113,27 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* Admin Section */}
         {adminItems.some((item) => item.show) && (
-          <SidebarGroup>
-            <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>Administration</SidebarGroupLabel>
+          <SidebarGroup className="mt-auto">
+            <SidebarGroupLabel className={collapsed ? "sr-only" : "px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"}>
+              Administration
+            </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-1 px-2">
                 {adminItems
                   .filter((item) => item.show)
                   .map((item) => (
                     <SidebarMenuItem key={item.path}>
-                      <SidebarMenuButton asChild>
-                        <NavLink to={item.path} className={() => getNavCls(isActive(item.path))}>
-                          <item.icon className={collapsed ? "h-5 w-5 mx-auto" : "h-5 w-5"} />
-                          {!collapsed && <span>{item.label}</span>}
+                      <SidebarMenuButton asChild className="h-11">
+                        <NavLink 
+                          to={item.path} 
+                          className={({ isActive: navActive }) => 
+                            `flex items-center gap-3 rounded-md px-3 py-2 transition-all ${getNavCls(isActive(item.path))}`
+                          }
+                        >
+                          <item.icon className="h-5 w-5 shrink-0" />
+                          {!collapsed && <span className="text-sm">{item.label}</span>}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -120,6 +143,35 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
+
+      {/* Footer */}
+      {!collapsed && (
+        <SidebarFooter className="p-4 border-t">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+              <UserCircle className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{user?.email?.split("@")[0]}</p>
+              {isSuperAdmin && (
+                <Badge variant="default" className="text-xs mt-1">
+                  Super Admin
+                </Badge>
+              )}
+              {isFinanceManager && !isSuperAdmin && (
+                <Badge variant="default" className="text-xs mt-1">
+                  Finance Manager
+                </Badge>
+              )}
+              {isAdmissionReviewer && !isSuperAdmin && (
+                <Badge variant="default" className="text-xs mt-1">
+                  Reviewer
+                </Badge>
+              )}
+            </div>
+          </div>
+        </SidebarFooter>
+      )}
     </Sidebar>
   );
 }

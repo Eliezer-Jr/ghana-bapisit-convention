@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import PendingApproval from "./pages/PendingApproval";
 import SuperAdmin from "./pages/SuperAdmin";
+import UserManagementPage from "./pages/UserManagementPage";
 import Profile from "./pages/Profile";
 import ActivityLogs from "./pages/ActivityLogs";
 import Admissions from "./pages/Admissions";
@@ -82,6 +83,14 @@ const App = () => (
               element={
                 <SuperAdminRoute>
                   <SuperAdmin />
+                </SuperAdminRoute>
+              }
+            />
+            <Route
+              path="/user-management"
+              element={
+                <SuperAdminRoute>
+                  <UserManagementPage />
                 </SuperAdminRoute>
               }
             />
