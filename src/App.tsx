@@ -41,7 +41,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/pending" replace />;
   }
 
-  return <>{children}</>;
+  return <ResponsiveLayout>{children}</ResponsiveLayout>;
 };
 
 const SuperAdminRoute = ({ children }: { children: React.ReactNode }) => {
@@ -63,7 +63,7 @@ const SuperAdminRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/" replace />;
   }
 
-  return <>{children}</>;
+  return <ResponsiveLayout>{children}</ResponsiveLayout>;
 };
 
 const App = () => (
@@ -89,9 +89,7 @@ const App = () => (
               path="/"
               element={
                 <ProtectedRoute>
-                  <ResponsiveLayout>
-                    <Dashboard />
-                  </ResponsiveLayout>
+                  <Dashboard />
                 </ProtectedRoute>
               }
             />
@@ -99,9 +97,7 @@ const App = () => (
               path="/ministers"
               element={
                 <ProtectedRoute>
-                  <ResponsiveLayout>
-                    <Ministers />
-                  </ResponsiveLayout>
+                  <Ministers />
                 </ProtectedRoute>
               }
             />
@@ -109,9 +105,7 @@ const App = () => (
               path="/messages"
               element={
                 <ProtectedRoute>
-                  <ResponsiveLayout>
-                    <Messages />
-                  </ResponsiveLayout>
+                  <Messages />
                 </ProtectedRoute>
               }
             />
@@ -119,9 +113,7 @@ const App = () => (
               path="/profile"
               element={
                 <ProtectedRoute>
-                  <ResponsiveLayout>
-                    <Profile />
-                  </ResponsiveLayout>
+                  <Profile />
                 </ProtectedRoute>
               }
             />
@@ -129,9 +121,7 @@ const App = () => (
               path="/activity-logs"
               element={
                 <SuperAdminRoute>
-                  <ResponsiveLayout>
-                    <ActivityLogs />
-                  </ResponsiveLayout>
+                  <ActivityLogs />
                 </SuperAdminRoute>
               }
             />
@@ -139,9 +129,7 @@ const App = () => (
               path="/admissions"
               element={
                 <ProtectedRoute>
-                  <ResponsiveLayout>
-                    <Admissions />
-                  </ResponsiveLayout>
+                  <Admissions />
                 </ProtectedRoute>
               }
             />
@@ -149,9 +137,7 @@ const App = () => (
               path="/admissions/:id"
               element={
                 <ProtectedRoute>
-                  <ResponsiveLayout>
-                    <AdmissionForm />
-                  </ResponsiveLayout>
+                  <AdmissionForm />
                 </ProtectedRoute>
               }
             />
@@ -159,9 +145,7 @@ const App = () => (
               path="/admissions/:id/edit"
               element={
                 <ProtectedRoute>
-                  <ResponsiveLayout>
-                    <AdmissionForm />
-                  </ResponsiveLayout>
+                  <AdmissionForm />
                 </ProtectedRoute>
               }
             />
@@ -169,9 +153,7 @@ const App = () => (
               path="/admin/admissions"
               element={
                 <SuperAdminRoute>
-                  <ResponsiveLayout>
-                    <AdminAdmissions />
-                  </ResponsiveLayout>
+                  <AdminAdmissions />
                 </SuperAdminRoute>
               }
             />
@@ -179,9 +161,7 @@ const App = () => (
               path="/finance"
               element={
                 <ProtectedRoute>
-                  <ResponsiveLayout>
-                    <FinancePortal />
-                  </ResponsiveLayout>
+                  <FinancePortal />
                 </ProtectedRoute>
               }
             />
