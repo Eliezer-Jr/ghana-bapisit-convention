@@ -3,15 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { LogOut, Menu, Church } from "lucide-react";
+import { LogOut, Church } from "lucide-react";
 import { toast } from "sonner";
 import logoWatermark from "@/assets/logo-watermark.png";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState } from "react";
 
 interface ResponsiveLayoutProps {
   children: ReactNode;
@@ -21,7 +18,6 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
   const navigate = useNavigate();
   const { user, isSuperAdmin } = useAuth();
   const { logActivity } = useActivityLog();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     await logActivity({
@@ -41,33 +37,16 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        {/* Desktop Sidebar */}
-        <div className="hidden md:block">
-          <AppSidebar />
-        </div>
+        {/* Single Sidebar Instance - Works for both mobile and desktop */}
+        <AppSidebar />
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header - Modern Design */}
           <header className="h-16 border-b bg-card/80 backdrop-blur-lg sticky top-0 z-40 flex items-center justify-between px-6 shadow-sm">
-            {/* Left side - Menu and Logo */}
+            {/* Left side - Sidebar Trigger and Logo */}
             <div className="flex items-center gap-4">
-              {/* Mobile Menu Button */}
-              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger asChild className="md:hidden">
-                  <Button variant="ghost" size="icon">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="p-0 w-64">
-                  <AppSidebar />
-                </SheetContent>
-              </Sheet>
-
-              {/* Desktop Sidebar Trigger */}
-              <div className="hidden md:block">
-                <SidebarTrigger />
-              </div>
+              <SidebarTrigger />
 
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary shadow-md">

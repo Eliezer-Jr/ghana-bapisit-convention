@@ -82,7 +82,7 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon">
+    <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon" variant="sidebar">
       <SidebarContent className="py-6">
         {/* Main Navigation */}
         <SidebarGroup>
