@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import ResponsiveLayout from "@/components/ResponsiveLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -87,14 +86,13 @@ export default function SuperAdmin() {
   };
 
   return (
-    <ResponsiveLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">User Approvals</h1>
-          <p className="text-muted-foreground">
-            Review and approve user registrations
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">User Approvals</h1>
+        <p className="text-muted-foreground">
+          Review and approve user registrations
+        </p>
+      </div>
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-3">
@@ -254,7 +252,6 @@ export default function SuperAdmin() {
             )}
           </CardContent>
         </Card>
-      </div>
-    </ResponsiveLayout>
+    </div>
   );
 }
