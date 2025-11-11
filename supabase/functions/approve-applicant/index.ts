@@ -47,23 +47,64 @@ serve(async (req) => {
       formattedPhone = '+' + formattedPhone;
     }
 
-    // Insert approved applicant record
-    const { data: approvedData, error: insertError } = await supabase
+    // Check if phone number already exists
+    const { data: existingApproval, error: checkError } = await supabase
       .from('approved_applicants')
-      .insert({
-        phone_number: formattedPhone,
-        approved_by: user.id,
-        notes: notes || null,
-      })
       .select()
-      .single();
+      .eq('phone_number', formattedPhone)
+      .maybeSingle();
 
-    if (insertError) {
-      console.error('Error inserting approved applicant:', insertError);
+    if (checkError) {
+      console.error('Error checking existing approval:', checkError);
       return new Response(
-        JSON.stringify({ success: false, error: insertError.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: checkError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    let approvedData;
+
+    if (existingApproval) {
+      // Update notes if provided
+      if (notes) {
+        const { data: updatedData, error: updateError } = await supabase
+          .from('approved_applicants')
+          .update({ notes })
+          .eq('id', existingApproval.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('Error updating notes:', updateError);
+        } else {
+          approvedData = updatedData;
+        }
+      } else {
+        approvedData = existingApproval;
+      }
+
+      console.log('Phone number already approved:', formattedPhone);
+    } else {
+      // Insert new approved applicant record
+      const { data: insertedData, error: insertError } = await supabase
+        .from('approved_applicants')
+        .insert({
+          phone_number: formattedPhone,
+          approved_by: user.id,
+          notes: notes || null,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Error inserting approved applicant:', insertError);
+        return new Response(
+          JSON.stringify({ success: false, error: insertError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      approvedData = insertedData;
     }
 
     // Send SMS notification using FrogAPI
