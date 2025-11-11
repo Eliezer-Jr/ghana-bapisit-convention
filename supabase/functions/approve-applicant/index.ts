@@ -12,11 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const { phoneNumber, notes } = await req.json();
+    const { phoneNumber, notes, updateId, newPhoneNumber, reason } = await req.json();
 
-    if (!phoneNumber) {
+    if (!phoneNumber && !updateId) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Phone number is required' }),
+        JSON.stringify({ success: false, error: 'Phone number or update ID is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -38,14 +38,66 @@ serve(async (req) => {
       );
     }
 
-    // Format phone number
-    let formattedPhone = phoneNumber.trim();
-    if (formattedPhone.startsWith('0')) {
-      formattedPhone = '233' + formattedPhone.substring(1);
+    // Handle phone number update
+    if (updateId && newPhoneNumber) {
+      const formattedNewPhone = formatPhone(newPhoneNumber);
+      
+      // Get existing record
+      const { data: existing, error: fetchError } = await supabase
+        .from('approved_applicants')
+        .select()
+        .eq('id', updateId)
+        .single();
+
+      if (fetchError || !existing) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Approved applicant not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Log to history
+      const { error: historyError } = await supabase
+        .from('phone_number_history')
+        .insert({
+          approved_applicant_id: updateId,
+          old_phone_number: existing.phone_number,
+          new_phone_number: formattedNewPhone,
+          changed_by: user.id,
+          reason: reason || 'Phone number updated'
+        });
+
+      if (historyError) {
+        console.error('Error logging history:', historyError);
+      }
+
+      // Update phone number
+      const { data: updatedData, error: updateError } = await supabase
+        .from('approved_applicants')
+        .update({ phone_number: formattedNewPhone })
+        .eq('id', updateId)
+        .select()
+        .single();
+
+      if (updateError) {
+        return new Response(
+          JSON.stringify({ success: false, error: updateError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          data: updatedData,
+          message: 'Phone number updated successfully'
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-    if (!formattedPhone.startsWith('+')) {
-      formattedPhone = '+' + formattedPhone;
-    }
+
+    // Format phone number for new approval
+    const formattedPhone = formatPhone(phoneNumber);
 
     // Check if phone number already exists
     const { data: existingApproval, error: checkError } = await supabase
@@ -53,6 +105,17 @@ serve(async (req) => {
       .select()
       .eq('phone_number', formattedPhone)
       .maybeSingle();
+    
+    function formatPhone(phone: string): string {
+      let cleaned = phone.trim();
+      if (cleaned.startsWith('0')) {
+        cleaned = '233' + cleaned.substring(1);
+      }
+      if (!cleaned.startsWith('+')) {
+        cleaned = '+' + cleaned;
+      }
+      return cleaned;
+    }
 
     if (checkError) {
       console.error('Error checking existing approval:', checkError);

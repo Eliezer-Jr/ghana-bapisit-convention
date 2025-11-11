@@ -165,6 +165,7 @@ export default function Apply() {
     }
 
     console.log("Approved data found:", approvedData);
+    console.log("Database query used phone:", formattedPhone);
 
     if (!approvedData) {
       setLoading(false);

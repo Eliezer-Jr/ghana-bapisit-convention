@@ -10,12 +10,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
-import { CheckCircle, XCircle, Loader2, Upload } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, Upload, Edit, History } from "lucide-react";
+import { EditPhoneDialog } from "@/components/EditPhoneDialog";
+import { PhoneNumberHistoryDialog } from "@/components/PhoneNumberHistoryDialog";
 
 export default function FinancePortal() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [notes, setNotes] = useState("");
   const [bulkPhones, setBulkPhones] = useState("");
+  const [editingApplicant, setEditingApplicant] = useState<{id: string, phone_number: string} | null>(null);
+  const [historyApplicantId, setHistoryApplicantId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: approvedApplicants, isLoading } = useQuery({
@@ -270,6 +274,7 @@ export default function FinancePortal() {
                         <TableHead>Applicant Name</TableHead>
                         <TableHead>App Status</TableHead>
                         <TableHead>Date Approved</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -306,6 +311,26 @@ export default function FinancePortal() {
                           <TableCell className="text-sm text-muted-foreground">
                             {new Date(applicant.created_at).toLocaleDateString()}
                           </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingApplicant({ id: applicant.id, phone_number: applicant.phone_number })}
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setHistoryApplicantId(applicant.id)}
+                              >
+                                <History className="h-3 w-3 mr-1" />
+                                History
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -320,6 +345,18 @@ export default function FinancePortal() {
           </Card>
         </div>
       </div>
+
+      <EditPhoneDialog
+        applicant={editingApplicant}
+        open={!!editingApplicant}
+        onOpenChange={(open) => !open && setEditingApplicant(null)}
+      />
+
+      <PhoneNumberHistoryDialog
+        applicantId={historyApplicantId}
+        open={!!historyApplicantId}
+        onOpenChange={(open) => !open && setHistoryApplicantId(null)}
+      />
     </Layout>
   );
 }

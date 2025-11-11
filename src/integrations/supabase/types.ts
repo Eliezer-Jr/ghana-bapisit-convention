@@ -566,6 +566,44 @@ export type Database = {
           },
         ]
       }
+      phone_number_history: {
+        Row: {
+          approved_applicant_id: string
+          changed_at: string
+          changed_by: string
+          id: string
+          new_phone_number: string
+          old_phone_number: string
+          reason: string | null
+        }
+        Insert: {
+          approved_applicant_id: string
+          changed_at?: string
+          changed_by: string
+          id?: string
+          new_phone_number: string
+          old_phone_number: string
+          reason?: string | null
+        }
+        Update: {
+          approved_applicant_id?: string
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          new_phone_number?: string
+          old_phone_number?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phone_number_history_approved_applicant_id_fkey"
+            columns: ["approved_applicant_id"]
+            isOneToOne: false
+            referencedRelation: "approved_applicants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           approved: boolean | null
