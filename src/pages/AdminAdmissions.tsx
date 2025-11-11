@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { FileText, Search, Calendar, CheckCircle, XCircle } from "lucide-react";
+import { FileText, Search, Calendar, CheckCircle, XCircle, Loader2 } from "lucide-react";
 
 export default function AdminAdmissions() {
   const [applications, setApplications] = useState<any[]>([]);
@@ -29,6 +30,23 @@ export default function AdminAdmissions() {
   useEffect(() => {
     filterApplications();
   }, [searchTerm, filterLevel, filterStatus, applications]);
+
+  const { data: approvedApplicants, isLoading: loadingApproved } = useQuery({
+    queryKey: ["approved-applicants"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("approved_applicants")
+        .select(`
+          *,
+          profiles(full_name),
+          applications(id, full_name, status, submitted_at)
+        `)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const fetchApplications = async () => {
     try {
@@ -179,6 +197,78 @@ export default function AdminAdmissions() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Approved Applicants */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Approved Phone Numbers</CardTitle>
+            <CardDescription>
+              List of phone numbers approved to apply (managed by Finance)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingApproved ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : approvedApplicants && approvedApplicants.length > 0 ? (
+              <div className="max-h-[300px] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Phone Number</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Applicant Name</TableHead>
+                      <TableHead>App Status</TableHead>
+                      <TableHead>Date Approved</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {approvedApplicants.map((applicant) => (
+                      <TableRow key={applicant.id}>
+                        <TableCell className="font-mono text-sm">
+                          {applicant.phone_number}
+                        </TableCell>
+                        <TableCell>
+                          {applicant.used ? (
+                            <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                              <CheckCircle className="h-3 w-3" />
+                              Applied
+                            </Badge>
+                          ) : (
+                            <Badge variant="default" className="flex items-center gap-1 w-fit">
+                              <XCircle className="h-3 w-3" />
+                              Pending
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {applicant.applications?.full_name || "-"}
+                        </TableCell>
+                        <TableCell>
+                          {applicant.applications ? (
+                            <Badge variant="outline" className="text-xs">
+                              {applicant.applications.status}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(applicant.created_at).toLocaleDateString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                No approved applicants yet
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Filters */}
         <Card>
