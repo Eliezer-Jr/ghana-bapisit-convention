@@ -80,6 +80,13 @@ serve(async (req) => {
         .single();
 
       if (updateError) {
+        const code = (updateError as any).code;
+        if (code === '23505') {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Another approved record already uses this phone number', code }),
+            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         return new Response(
           JSON.stringify({ success: false, error: updateError.message }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -160,9 +167,22 @@ serve(async (req) => {
         .single();
 
       if (insertError) {
+        const code = (insertError as any).code;
         console.error('Error inserting approved applicant:', insertError);
+        if (code === '23505') {
+          // Unique violation: fetch and return existing row as success
+          const { data: existing } = await supabase
+            .from('approved_applicants')
+            .select()
+            .eq('phone_number', formattedPhone)
+            .maybeSingle();
+          return new Response(
+            JSON.stringify({ success: true, data: existing, message: 'Phone already approved' }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         return new Response(
-          JSON.stringify({ success: false, error: insertError.message }),
+          JSON.stringify({ success: false, error: insertError.message, code }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

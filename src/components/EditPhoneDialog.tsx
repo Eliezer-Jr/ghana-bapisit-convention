@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -68,6 +68,7 @@ export const EditPhoneDialog = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Phone Number</DialogTitle>
+          <DialogDescription className="sr-only">Update an approved applicant's phone number and optionally add a reason.</DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">

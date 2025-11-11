@@ -62,13 +62,13 @@ export default function FinancePortal() {
 
   const bulkApproveMutation = useMutation({
     mutationFn: async (phoneNumbers: string[]) => {
-      const results = [];
+      const results: { phone: string; success: boolean; error?: string }[] = [];
       for (const phone of phoneNumbers) {
         try {
           const { data } = await supabase.functions.invoke("approve-applicant", {
             body: { phoneNumber: phone.trim(), notes: "Bulk approved" },
           });
-          results.push({ phone, success: data?.success, error: data?.error });
+          results.push({ phone, success: !!data?.success, error: data?.error });
         } catch (error: any) {
           results.push({ phone, success: false, error: error.message });
         }
@@ -105,16 +105,29 @@ export default function FinancePortal() {
 
   const handleBulkSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const phones = bulkPhones
+    const raw = bulkPhones
       .split(/[\n,]/)
-      .map(p => p.trim())
-      .filter(p => p.length > 0);
-    
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0);
+
+    const normalize = (p: string) => {
+      let n = p.trim();
+      if (n.startsWith('0')) n = '233' + n.slice(1);
+      if (!n.startsWith('+')) n = '+' + n;
+      return n;
+    };
+
+    const phones = Array.from(new Set(raw.map(normalize)));
+
     if (phones.length === 0) {
       toast.error("Please enter at least one phone number");
       return;
     }
-    
+
+    if (phones.length !== raw.length) {
+      toast.message('Duplicates removed', { description: `${raw.length - phones.length} duplicate(s) skipped` });
+    }
+
     bulkApproveMutation.mutate(phones);
   };
 

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
@@ -41,6 +41,7 @@ export const PhoneNumberHistoryDialog = ({
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Phone Number Change History</DialogTitle>
+          <DialogDescription className="sr-only">All edits made to this approved phone number with who changed it and when.</DialogDescription>
         </DialogHeader>
         
         {isLoading ? (
