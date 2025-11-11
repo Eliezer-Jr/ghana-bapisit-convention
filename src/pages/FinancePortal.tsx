@@ -10,11 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, Upload } from "lucide-react";
 
 export default function FinancePortal() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [notes, setNotes] = useState("");
+  const [bulkPhones, setBulkPhones] = useState("");
   const queryClient = useQueryClient();
 
   const { data: approvedApplicants, isLoading } = useQuery({
@@ -24,7 +25,6 @@ export default function FinancePortal() {
         .from("approved_applicants")
         .select(`
           *,
-          profiles(full_name),
           applications(id, full_name, status, submitted_at)
         `)
         .order("created_at", { ascending: false });
@@ -56,6 +56,40 @@ export default function FinancePortal() {
     },
   });
 
+  const bulkApproveMutation = useMutation({
+    mutationFn: async (phoneNumbers: string[]) => {
+      const results = [];
+      for (const phone of phoneNumbers) {
+        try {
+          const { data } = await supabase.functions.invoke("approve-applicant", {
+            body: { phoneNumber: phone.trim(), notes: "Bulk approved" },
+          });
+          results.push({ phone, success: data?.success, error: data?.error });
+        } catch (error: any) {
+          results.push({ phone, success: false, error: error.message });
+        }
+      }
+      return results;
+    },
+    onSuccess: (results) => {
+      const successful = results.filter(r => r.success).length;
+      const failed = results.filter(r => !r.success).length;
+      
+      if (successful > 0) {
+        toast.success(`Successfully approved ${successful} applicant(s)`);
+      }
+      if (failed > 0) {
+        toast.error(`Failed to approve ${failed} applicant(s)`);
+      }
+      
+      setBulkPhones("");
+      queryClient.invalidateQueries({ queryKey: ["approved-applicants"] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Bulk approval failed");
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!phoneNumber.trim()) {
@@ -63,6 +97,39 @@ export default function FinancePortal() {
       return;
     }
     approveApplicantMutation.mutate({ phoneNumber, notes });
+  };
+
+  const handleBulkSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const phones = bulkPhones
+      .split(/[\n,]/)
+      .map(p => p.trim())
+      .filter(p => p.length > 0);
+    
+    if (phones.length === 0) {
+      toast.error("Please enter at least one phone number");
+      return;
+    }
+    
+    bulkApproveMutation.mutate(phones);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const phones = text
+        .split(/[\n,]/)
+        .map(p => p.trim())
+        .filter(p => p.length > 0);
+      
+      setBulkPhones(phones.join("\n"));
+      toast.success(`Loaded ${phones.length} phone number(s)`);
+    };
+    reader.readAsText(file);
   };
 
   return (
@@ -73,55 +140,113 @@ export default function FinancePortal() {
           Approve applicants by adding their phone numbers to allow them to submit applications.
         </p>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Approve New Applicant</CardTitle>
-              <CardDescription>
-                Enter the phone number of the person who has made payment
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number *</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="0XXXXXXXXX or +233XXXXXXXXX"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    required
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Format: 0XXXXXXXXX or +233XXXXXXXXX
-                  </p>
-                </div>
+        <div className="grid gap-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Approve Single Applicant</CardTitle>
+                <CardDescription>
+                  Enter the phone number of the person who has made payment
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="0XXXXXXXXX or +233XXXXXXXXX"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      required
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Format: 0XXXXXXXXX or +233XXXXXXXXX
+                    </p>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notes (Optional)</Label>
-                  <Textarea
-                    id="notes"
-                    placeholder="Payment receipt number, amount, or any other notes..."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows={3}
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Notes (Optional)</Label>
+                    <Textarea
+                      id="notes"
+                      placeholder="Payment receipt number, amount, or any other notes..."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
 
-                <Button 
-                  type="submit" 
-                  className="w-full"
-                  disabled={approveApplicantMutation.isPending}
-                >
-                  {approveApplicantMutation.isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  Approve & Send SMS
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={approveApplicantMutation.isPending}
+                  >
+                    {approveApplicantMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Approve & Send SMS
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Bulk Approve Applicants</CardTitle>
+                <CardDescription>
+                  Upload a CSV file or paste multiple phone numbers
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleBulkSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="file">Upload CSV File</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="file"
+                        type="file"
+                        accept=".csv,.txt"
+                        onChange={handleFileUpload}
+                        className="flex-1"
+                      />
+                      <Button type="button" variant="outline" size="icon">
+                        <Upload className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      CSV file with one phone number per line
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bulk">Or Paste Phone Numbers</Label>
+                    <Textarea
+                      id="bulk"
+                      placeholder="0XXXXXXXXX&#10;0XXXXXXXXX&#10;+233XXXXXXXXX"
+                      value={bulkPhones}
+                      onChange={(e) => setBulkPhones(e.target.value)}
+                      rows={8}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      One phone per line, comma or newline separated
+                    </p>
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={bulkApproveMutation.isPending}
+                  >
+                    {bulkApproveMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Bulk Approve & Send SMS
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
 
           <Card>
             <CardHeader>
