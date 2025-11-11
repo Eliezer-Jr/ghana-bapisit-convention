@@ -22,11 +22,7 @@ export default function FinancePortal() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("approved_applicants")
-        .select(`
-          *,
-          profiles(full_name),
-          applications(id, full_name, status, submitted_at)
-        `)
+        .select("*, profiles(full_name)")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -142,9 +138,7 @@ export default function FinancePortal() {
                       <TableRow>
                         <TableHead>Phone</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Applicant Name</TableHead>
-                        <TableHead>App Status</TableHead>
-                        <TableHead>Date Approved</TableHead>
+                        <TableHead>Date</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -164,18 +158,6 @@ export default function FinancePortal() {
                                 <XCircle className="h-3 w-3" />
                                 Pending
                               </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {applicant.applications?.full_name || "-"}
-                          </TableCell>
-                          <TableCell>
-                            {applicant.applications ? (
-                              <Badge variant="outline" className="text-xs">
-                                {applicant.applications.status}
-                              </Badge>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">-</span>
                             )}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">

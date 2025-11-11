@@ -176,43 +176,35 @@ export default function Apply() {
       // Mark the approved applicant as used
       const formattedPhone = phoneNumber.startsWith("+") ? phoneNumber : `+233${phoneNumber.replace(/^0/, "")}`;
       
-      // Insert the application and get the ID
-      const { data: applicationData, error } = await supabase
-        .from("applications")
-        .insert({
-          full_name: formData.fullName,
-          email: formData.email,
-          phone: formData.phone,
-          date_of_birth: formData.dateOfBirth,
-          marital_status: formData.maritalStatus || null,
-          spouse_name: formData.spouseName || null,
-          church_name: formData.churchName,
-          fellowship: formData.fellowship,
-          association: formData.association,
-          sector: formData.sector,
-          admission_level: formData.admissionLevel as "licensing" | "recognition" | "ordination",
-          theological_institution: formData.theologicalInstitution || null,
-          theological_qualification: formData.theologicalQualification || null,
-          vision_statement: formData.visionStatement || null,
-          mentor_name: formData.mentorName || null,
-          mentor_contact: formData.mentorContact || null,
-          ministry_evaluation_paper: formData.ministryEvaluationPaper || null,
-          gazette_receipt_number: formData.gazetteReceiptNumber || null,
-          payment_receipt_number: formData.paymentReceiptNumber || null,
-          submitted_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      const { error } = await supabase.from("applications").insert({
+        full_name: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        date_of_birth: formData.dateOfBirth,
+        marital_status: formData.maritalStatus || null,
+        spouse_name: formData.spouseName || null,
+        church_name: formData.churchName,
+        fellowship: formData.fellowship,
+        association: formData.association,
+        sector: formData.sector,
+        admission_level: formData.admissionLevel as "licensing" | "recognition" | "ordination",
+        theological_institution: formData.theologicalInstitution || null,
+        theological_qualification: formData.theologicalQualification || null,
+        vision_statement: formData.visionStatement || null,
+        mentor_name: formData.mentorName || null,
+        mentor_contact: formData.mentorContact || null,
+        ministry_evaluation_paper: formData.ministryEvaluationPaper || null,
+        gazette_receipt_number: formData.gazetteReceiptNumber || null,
+        payment_receipt_number: formData.paymentReceiptNumber || null,
+        submitted_at: new Date().toISOString(),
+      });
 
       if (error) throw error;
 
-      // Update approved_applicants to mark as used and link to application
+      // Update approved_applicants to mark as used
       await supabase
         .from("approved_applicants")
-        .update({ 
-          used: true,
-          application_id: applicationData.id 
-        })
+        .update({ used: true })
         .eq("phone_number", formattedPhone);
 
       toast.success("Application submitted successfully!");
