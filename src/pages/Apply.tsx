@@ -88,8 +88,18 @@ export default function Apply() {
 
     setLoading(true);
 
+    // Format phone number consistently
+    let formattedPhone = phoneNumber.trim();
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '233' + formattedPhone.substring(1);
+    }
+    if (!formattedPhone.startsWith('+')) {
+      formattedPhone = '+' + formattedPhone;
+    }
+
+    console.log("Checking approval for phone:", formattedPhone);
+
     // Check if phone number is approved
-    const formattedPhone = phoneNumber.startsWith("+") ? phoneNumber : `+233${phoneNumber.replace(/^0/, "")}`;
     const { data: approvedData, error: approvedError } = await supabase
       .from("approved_applicants")
       .select("*")
@@ -98,14 +108,17 @@ export default function Apply() {
       .maybeSingle();
 
     if (approvedError) {
+      console.error("Approval check error:", approvedError);
       setLoading(false);
       toast.error("Error checking approval status");
       return;
     }
 
+    console.log("Approved data found:", approvedData);
+
     if (!approvedData) {
       setLoading(false);
-      toast.error("Your phone number is not approved for application. Please contact finance to make payment first.");
+      toast.error(`Your phone number (${formattedPhone}) is not approved for application. Please contact finance to make payment first.`);
       return;
     }
 
@@ -173,8 +186,14 @@ export default function Apply() {
     setLoading(true);
 
     try {
-      // Mark the approved applicant as used
-      const formattedPhone = phoneNumber.startsWith("+") ? phoneNumber : `+233${phoneNumber.replace(/^0/, "")}`;
+      // Format phone number consistently
+      let formattedPhone = phoneNumber.trim();
+      if (formattedPhone.startsWith('0')) {
+        formattedPhone = '233' + formattedPhone.substring(1);
+      }
+      if (!formattedPhone.startsWith('+')) {
+        formattedPhone = '+' + formattedPhone;
+      }
       
       // Insert the application and get the ID
       const { data: applicationData, error } = await supabase
