@@ -46,6 +46,9 @@ export default function Apply() {
     paymentReceiptNumber: "",
   });
 
+  const [showPhonePreview, setShowPhonePreview] = useState(false);
+  const [formattedPhonePreview, setFormattedPhonePreview] = useState("");
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (resendTimer > 0) {
@@ -66,7 +69,49 @@ export default function Apply() {
       return;
     }
 
+    // Format phone number consistently
+    let formattedPhone = phoneNumber.trim();
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '233' + formattedPhone.substring(1);
+    }
+    if (!formattedPhone.startsWith('+')) {
+      formattedPhone = '+' + formattedPhone;
+    }
+
+    // Show preview if not already shown
+    if (!showPhonePreview) {
+      setFormattedPhonePreview(formattedPhone);
+      setShowPhonePreview(true);
+      return;
+    }
+
     setLoading(true);
+
+    // Check if phone number is approved BEFORE sending OTP
+    console.log("Checking approval for phone:", formattedPhone);
+    const { data: approvedData, error: approvedError } = await supabase
+      .from("approved_applicants")
+      .select("*")
+      .eq("phone_number", formattedPhone)
+      .eq("used", false)
+      .maybeSingle();
+
+    if (approvedError) {
+      console.error("Approval check error:", approvedError);
+      setLoading(false);
+      toast.error("Error checking approval status");
+      return;
+    }
+
+    console.log("Approved data found:", approvedData);
+
+    if (!approvedData) {
+      setLoading(false);
+      toast.error(`Phone number ${formattedPhone} is not approved. Please contact finance to make payment first.`);
+      return;
+    }
+
+    // Phone is approved, proceed to send OTP
     const result = await OTPService.generateOTP(phoneNumber);
     setLoading(false);
 
@@ -78,6 +123,11 @@ export default function Apply() {
     } else {
       toast.error(result.error || "Failed to send OTP");
     }
+  };
+
+  const handleEditPhone = () => {
+    setShowPhonePreview(false);
+    setOtpSent(false);
   };
 
   const handleVerifyOTP = async () => {
@@ -310,21 +360,42 @@ export default function Apply() {
                       placeholder="0XXXXXXXXX"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
-                      disabled={otpSent}
+                      disabled={otpSent || showPhonePreview}
                       required
                     />
+                    {showPhonePreview && !otpSent && (
+                      <div className="p-3 bg-muted rounded-md">
+                        <p className="text-sm font-medium mb-1">Confirm your phone number:</p>
+                        <p className="text-lg font-mono">{formattedPhonePreview}</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          We will send an OTP to this number
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {!otpSent ? (
-                    <Button
-                      type="button"
-                      onClick={handleSendOTP}
-                      disabled={loading}
-                      className="w-full"
-                    >
-                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Send Verification Code
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={handleSendOTP}
+                        disabled={loading}
+                        className="flex-1"
+                      >
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {showPhonePreview ? "Confirm & Send Code" : "Preview Phone Number"}
+                      </Button>
+                      {showPhonePreview && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleEditPhone}
+                          disabled={loading}
+                        >
+                          Edit
+                        </Button>
+                      )}
+                    </div>
                   ) : (
                     <>
                       <div className="space-y-2">
@@ -341,6 +412,9 @@ export default function Apply() {
                             </InputOTPGroup>
                           </InputOTP>
                         </div>
+                        <p className="text-xs text-center text-muted-foreground">
+                          Code sent to {formattedPhonePreview}
+                        </p>
                       </div>
 
                       <div className="flex gap-2">
@@ -362,6 +436,15 @@ export default function Apply() {
                           {resendTimer > 0 ? `Resend (${resendTimer}s)` : "Resend Code"}
                         </Button>
                       </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={handleEditPhone}
+                        disabled={loading}
+                        className="w-full text-sm"
+                      >
+                        Change Phone Number
+                      </Button>
                     </>
                   )}
                 </div>
