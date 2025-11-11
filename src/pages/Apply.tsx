@@ -87,29 +87,25 @@ export default function Apply() {
 
     setLoading(true);
 
-    // Check if phone number is approved BEFORE sending OTP
-    console.log("Checking approval for phone:", formattedPhone);
-    const { data: approvedData, error: approvedError } = await supabase
-      .from("approved_applicants")
-      .select("*")
-      .eq("phone_number", formattedPhone)
-      .eq("used", false)
-      .maybeSingle();
+    // Check if phone number is approved BEFORE sending OTP via backend function (bypasses RLS)
+    const { data: approvalResp, error: approvalErr } = await supabase.functions.invoke('check-approval', {
+      body: { phoneNumber: formattedPhone },
+    });
 
-    if (approvedError) {
-      console.error("Approval check error:", approvedError);
+    if (approvalErr) {
+      console.error('Approval check error:', approvalErr);
       setLoading(false);
-      toast.error("Error checking approval status");
+      toast.error('Error checking approval status');
       return;
     }
 
-    console.log("Approved data found:", approvedData);
-
-    if (!approvedData) {
+    if (!approvalResp?.approved) {
       setLoading(false);
       toast.error(`Phone number ${formattedPhone} is not approved. Please contact finance to make payment first.`);
       return;
     }
+
+    console.log('Phone approved via function:', approvalResp);
 
     // Phone is approved, proceed to send OTP
     const result = await OTPService.generateOTP(phoneNumber);
@@ -149,25 +145,21 @@ export default function Apply() {
 
     console.log("Checking approval for phone:", formattedPhone);
 
-    // Check if phone number is approved
-    const { data: approvedData, error: approvedError } = await supabase
-      .from("approved_applicants")
-      .select("*")
-      .eq("phone_number", formattedPhone)
-      .eq("used", false)
-      .maybeSingle();
+    // Check if phone number is approved via backend function (bypasses RLS)
+    const { data: approvalResp, error: approvalErr } = await supabase.functions.invoke('check-approval', {
+      body: { phoneNumber: formattedPhone },
+    });
 
-    if (approvedError) {
-      console.error("Approval check error:", approvedError);
+    if (approvalErr) {
+      console.error("Approval check error:", approvalErr);
       setLoading(false);
       toast.error("Error checking approval status");
       return;
     }
 
-    console.log("Approved data found:", approvedData);
-    console.log("Database query used phone:", formattedPhone);
+    console.log("Function approval result:", approvalResp);
 
-    if (!approvedData) {
+    if (!approvalResp?.approved) {
       setLoading(false);
       toast.error(`Your phone number (${formattedPhone}) is not approved for application. Please contact finance to make payment first.`);
       return;

@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.approve-applicant]
 verify_jwt = true
+
+[functions.check-approval]
+verify_jwt = false
