@@ -8,6 +8,9 @@ interface AuthContextType {
   loading: boolean;
   isApproved: boolean;
   isSuperAdmin: boolean;
+  isLocalOfficer: boolean;
+  isAssociationHead: boolean;
+  isVPOffice: boolean;
   profile: any;
 }
 
@@ -17,6 +20,9 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   isApproved: false,
   isSuperAdmin: false,
+  isLocalOfficer: false,
+  isAssociationHead: false,
+  isVPOffice: false,
   profile: null,
 });
 
@@ -38,6 +44,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
   const [isApproved, setIsApproved] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isLocalOfficer, setIsLocalOfficer] = useState(false);
+  const [isAssociationHead, setIsAssociationHead] = useState(false);
+  const [isVPOffice, setIsVPOffice] = useState(false);
   const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
@@ -55,6 +64,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         } else {
           setIsApproved(false);
           setIsSuperAdmin(false);
+          setIsLocalOfficer(false);
+          setIsAssociationHead(false);
+          setIsVPOffice(false);
           setProfile(null);
         }
         
@@ -107,13 +119,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       const roles = rolesData?.map((r: any) => r.role) || [];
       setIsSuperAdmin(roles.includes("super_admin"));
+      setIsLocalOfficer(roles.includes("local_officer"));
+      setIsAssociationHead(roles.includes("association_head"));
+      setIsVPOffice(roles.includes("vp_office"));
     } catch (error) {
       console.error("Error in fetchUserProfileAndRoles:", error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isApproved, isSuperAdmin, profile }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      loading, 
+      isApproved, 
+      isSuperAdmin, 
+      isLocalOfficer,
+      isAssociationHead,
+      isVPOffice,
+      profile 
+    }}>
       {children}
     </AuthContext.Provider>
   );
