@@ -679,6 +679,9 @@ export type Database = {
         | "user"
         | "finance_manager"
         | "admission_reviewer"
+        | "local_officer"
+        | "association_head"
+        | "vp_office"
       application_status:
         | "draft"
         | "submitted"
@@ -822,6 +825,9 @@ export const Constants = {
         "user",
         "finance_manager",
         "admission_reviewer",
+        "local_officer",
+        "association_head",
+        "vp_office",
       ],
       application_status: [
         "draft",
