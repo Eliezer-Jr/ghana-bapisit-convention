@@ -99,22 +99,23 @@ export default function ApplyAuth() {
 
     setLoading(true);
 
-    const result = await OTPService.verifyOTP(phoneNumber, otp);
+    // Format phone number
+    let formattedPhone = phoneNumber.trim();
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '233' + formattedPhone.substring(1);
+    }
+    if (!formattedPhone.startsWith('+')) {
+      formattedPhone = '+' + formattedPhone;
+    }
+
+    // Verify OTP and authenticate user
+    const result = await OTPService.verifyOTP(phoneNumber, otp, formattedPhone, true);
     setLoading(false);
 
     if (result.success) {
-      toast.success("Phone verified successfully!");
-      // Store verified phone number in session storage
-      let formattedPhone = phoneNumber.trim();
-      if (formattedPhone.startsWith('0')) {
-        formattedPhone = '233' + formattedPhone.substring(1);
-      }
-      if (!formattedPhone.startsWith('+')) {
-        formattedPhone = '+' + formattedPhone;
-      }
-      sessionStorage.setItem('verifiedPhone', formattedPhone);
-      // Navigate to application form
-      navigate('/apply');
+      toast.success("Logged in successfully!");
+      // Navigate to applicant portal
+      navigate('/applicant-portal');
     } else {
       toast.error(result.error || "Invalid OTP");
       setOtp("");
