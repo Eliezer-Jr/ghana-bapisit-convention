@@ -18,12 +18,7 @@ import Admissions from "./pages/Admissions";
 import AdmissionForm from "./pages/AdmissionForm";
 import AdminAdmissions from "./pages/AdminAdmissions";
 import Apply from "./pages/Apply";
-import ApplyAuth from "./pages/ApplyAuth";
-import ApplicantPortal from "./pages/ApplicantPortal";
 import FinancePortal from "./pages/FinancePortal";
-import LocalOfficerDashboard from "./pages/LocalOfficerDashboard";
-import AssociationDashboard from "./pages/AssociationDashboard";
-import VPOfficeDashboard from "./pages/VPOfficeDashboard";
 import ResponsiveLayout from "./components/ResponsiveLayout";
 
 const queryClient = new QueryClient();
@@ -72,42 +67,6 @@ const SuperAdminRoute = ({ children }: { children: React.ReactNode }) => {
   return <ResponsiveLayout>{children}</ResponsiveLayout>;
 };
 
-const RoleBasedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
-  const { user, loading, isApproved, isSuperAdmin, isLocalOfficer, isAssociationHead, isVPOffice } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  if (!isApproved) {
-    return <Navigate to="/pending" replace />;
-  }
-
-  const hasRole = allowedRoles.some(role => {
-    switch (role) {
-      case 'super_admin': return isSuperAdmin;
-      case 'local_officer': return isLocalOfficer;
-      case 'association_head': return isAssociationHead;
-      case 'vp_office': return isVPOffice;
-      default: return false;
-    }
-  });
-
-  if (!hasRole) {
-    return <Navigate to="/" replace />;
-  }
-
-  return <ResponsiveLayout>{children}</ResponsiveLayout>;
-};
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -117,8 +76,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-        <Route path="/apply-auth" element={<ApplyAuth />} />
-        <Route path="/applicant-portal" element={<ApplicantPortal />} />
+            <Route path="/apply" element={<Apply />} />
             <Route path="/pending" element={<PendingApproval />} />
             <Route
               path="/super-admin"
@@ -214,30 +172,6 @@ const App = () => (
                 <ProtectedRoute>
                   <FinancePortal />
                 </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/local-officer"
-              element={
-                <RoleBasedRoute allowedRoles={['local_officer', 'super_admin']}>
-                  <LocalOfficerDashboard />
-                </RoleBasedRoute>
-              }
-            />
-            <Route
-              path="/association"
-              element={
-                <RoleBasedRoute allowedRoles={['association_head', 'super_admin']}>
-                  <AssociationDashboard />
-                </RoleBasedRoute>
-              }
-            />
-            <Route
-              path="/vp-office"
-              element={
-                <RoleBasedRoute allowedRoles={['vp_office', 'super_admin']}>
-                  <VPOfficeDashboard />
-                </RoleBasedRoute>
               }
             />
             <Route path="*" element={<NotFound />} />

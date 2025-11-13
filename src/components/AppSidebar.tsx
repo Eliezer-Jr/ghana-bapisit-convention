@@ -13,9 +13,6 @@ import {
   DollarSign,
   ClipboardCheck,
   UserCog,
-  FileCheck,
-  Building2,
-  Briefcase,
 } from "lucide-react";
 import {
   Sidebar,
@@ -34,7 +31,7 @@ import { Badge } from "@/components/ui/badge";
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
-  const { isSuperAdmin, user, isLocalOfficer, isAssociationHead, isVPOffice } = useAuth();
+  const { isSuperAdmin, user } = useAuth();
   const currentPath = location.pathname;
 
   // Fetch user roles
@@ -56,21 +53,12 @@ export function AppSidebar() {
   const isFinanceManager = userRoles?.some((r) => r.role === "finance_manager");
   const isAdmissionReviewer = userRoles?.some((r) => r.role === "admission_reviewer");
 
-  // Show workflow dashboards based on role
-  const showWorkflowDashboards = isLocalOfficer || isAssociationHead || isVPOffice || isSuperAdmin;
-
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/", show: true },
     { icon: Users, label: "Ministers", path: "/ministers", show: true },
     { icon: MessageSquare, label: "Messages", path: "/messages", show: true },
     { icon: GraduationCap, label: "My Admissions", path: "/admissions", show: true },
     { icon: UserCircle, label: "Profile", path: "/profile", show: true },
-  ];
-
-  const workflowItems = [
-    { icon: FileCheck, label: "Local Screening", path: "/local-officer", show: isLocalOfficer || isSuperAdmin },
-    { icon: Building2, label: "Association Review", path: "/association", show: isAssociationHead || isSuperAdmin },
-    { icon: Briefcase, label: "VP Office", path: "/vp-office", show: isVPOffice || isSuperAdmin },
   ];
 
   const adminItems = [
@@ -125,36 +113,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Workflow Section */}
-        {showWorkflowDashboards && workflowItems.some((item) => item.show) && (
-          <SidebarGroup className="mt-8">
-            <SidebarGroupLabel className={collapsed ? "sr-only" : "px-6 mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground"}>
-              Admission Workflow
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-2 px-3">
-                {workflowItems
-                  .filter((item) => item.show)
-                  .map((item) => (
-                    <SidebarMenuItem key={item.path}>
-                      <SidebarMenuButton asChild className="h-11" tooltip={collapsed ? item.label : undefined}>
-                        <NavLink 
-                          to={item.path} 
-                          className={({ isActive: navActive }) => 
-                            `flex items-center gap-3 rounded-xl px-4 smooth-transition ${getNavCls(isActive(item.path))}`
-                          }
-                        >
-                          <item.icon className="h-5 w-5 shrink-0" />
-                          {!collapsed && <span className="font-medium">{item.label}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
         {/* Admin Section */}
         {adminItems.some((item) => item.show) && (
           <SidebarGroup className="mt-8">
@@ -208,13 +166,6 @@ export function AppSidebar() {
               {isAdmissionReviewer && !isSuperAdmin && (
                 <Badge variant="default" className="text-xs mt-1 px-2 py-0.5 bg-secondary">
                   Reviewer
-                </Badge>
-              )}
-              {(isLocalOfficer || isAssociationHead || isVPOffice) && !isSuperAdmin && !isFinanceManager && !isAdmissionReviewer && (
-                <Badge variant="default" className="text-xs mt-1 px-2 py-0.5 bg-accent">
-                  {isLocalOfficer && "Local Officer"}
-                  {isAssociationHead && "Association"}
-                  {isVPOffice && "VP Office"}
                 </Badge>
               )}
             </div>

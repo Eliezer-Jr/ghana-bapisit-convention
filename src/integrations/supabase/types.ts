@@ -89,9 +89,6 @@ export type Database = {
           admin_notes: string | null
           admission_level: Database["public"]["Enums"]["admission_level"]
           association: string
-          association_notes: string | null
-          association_reviewed_at: string | null
-          association_reviewed_by: string | null
           church_name: string
           created_at: string
           date_of_birth: string
@@ -104,9 +101,6 @@ export type Database = {
           interview_date: string | null
           interview_location: string | null
           interview_result: string | null
-          local_notes: string | null
-          local_reviewed_at: string | null
-          local_reviewed_by: string | null
           marital_status: string | null
           mentor_contact: string | null
           mentor_name: string | null
@@ -115,7 +109,6 @@ export type Database = {
           payment_date: string | null
           payment_receipt_number: string | null
           phone: string
-          rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           screening_date: string | null
@@ -129,17 +122,11 @@ export type Database = {
           updated_at: string
           user_id: string | null
           vision_statement: string | null
-          vp_notes: string | null
-          vp_reviewed_at: string | null
-          vp_reviewed_by: string | null
         }
         Insert: {
           admin_notes?: string | null
           admission_level: Database["public"]["Enums"]["admission_level"]
           association: string
-          association_notes?: string | null
-          association_reviewed_at?: string | null
-          association_reviewed_by?: string | null
           church_name: string
           created_at?: string
           date_of_birth: string
@@ -152,9 +139,6 @@ export type Database = {
           interview_date?: string | null
           interview_location?: string | null
           interview_result?: string | null
-          local_notes?: string | null
-          local_reviewed_at?: string | null
-          local_reviewed_by?: string | null
           marital_status?: string | null
           mentor_contact?: string | null
           mentor_name?: string | null
@@ -163,7 +147,6 @@ export type Database = {
           payment_date?: string | null
           payment_receipt_number?: string | null
           phone: string
-          rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           screening_date?: string | null
@@ -177,17 +160,11 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           vision_statement?: string | null
-          vp_notes?: string | null
-          vp_reviewed_at?: string | null
-          vp_reviewed_by?: string | null
         }
         Update: {
           admin_notes?: string | null
           admission_level?: Database["public"]["Enums"]["admission_level"]
           association?: string
-          association_notes?: string | null
-          association_reviewed_at?: string | null
-          association_reviewed_by?: string | null
           church_name?: string
           created_at?: string
           date_of_birth?: string
@@ -200,9 +177,6 @@ export type Database = {
           interview_date?: string | null
           interview_location?: string | null
           interview_result?: string | null
-          local_notes?: string | null
-          local_reviewed_at?: string | null
-          local_reviewed_by?: string | null
           marital_status?: string | null
           mentor_contact?: string | null
           mentor_name?: string | null
@@ -211,7 +185,6 @@ export type Database = {
           payment_date?: string | null
           payment_receipt_number?: string | null
           phone?: string
-          rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           screening_date?: string | null
@@ -225,9 +198,6 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           vision_statement?: string | null
-          vp_notes?: string | null
-          vp_reviewed_at?: string | null
-          vp_reviewed_by?: string | null
         }
         Relationships: []
       }
@@ -709,15 +679,12 @@ export type Database = {
         | "user"
         | "finance_manager"
         | "admission_reviewer"
-        | "local_officer"
-        | "association_head"
-        | "vp_office"
       application_status:
         | "draft"
         | "submitted"
-        | "local_screening"
-        | "association_approved"
-        | "vp_review"
+        | "under_review"
+        | "screening_scheduled"
+        | "screening_passed"
         | "interview_scheduled"
         | "approved"
         | "rejected"
@@ -855,16 +822,13 @@ export const Constants = {
         "user",
         "finance_manager",
         "admission_reviewer",
-        "local_officer",
-        "association_head",
-        "vp_office",
       ],
       application_status: [
         "draft",
         "submitted",
-        "local_screening",
-        "association_approved",
-        "vp_review",
+        "under_review",
+        "screening_scheduled",
+        "screening_passed",
         "interview_scheduled",
         "approved",
         "rejected",

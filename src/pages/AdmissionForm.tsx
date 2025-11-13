@@ -30,12 +30,7 @@ const REQUIRED_DOCUMENTS = {
   ordination: ["GBC License Letter", "Recognition Certificate", "Appointment Letter", "Ministry Evaluation Paper"],
 };
 
-type AdmissionFormProps = {
-  currentStep?: number;
-  onStepChange?: (step: number) => void;
-};
-
-export default function AdmissionForm({ currentStep: externalStep, onStepChange }: AdmissionFormProps = {}) {
+export default function AdmissionForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
