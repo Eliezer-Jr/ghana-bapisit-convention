@@ -124,10 +124,22 @@ serve(async (req) => {
 
       if (profileError) console.error('Profile update error:', profileError);
 
+      // Sign in the newly created user to get a session
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (signInError) {
+        console.error('Sign-in after signup failed:', signInError);
+        throw new Error("Account created but login failed. Please try logging in again.");
+      }
+
       return new Response(
         JSON.stringify({ 
           success: true, 
           user: authData.user,
+          session: signInData.session,
           message: "Account created successfully"
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
