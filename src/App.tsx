@@ -18,6 +18,8 @@ import Admissions from "./pages/Admissions";
 import AdmissionForm from "./pages/AdmissionForm";
 import AdminAdmissions from "./pages/AdminAdmissions";
 import Apply from "./pages/Apply";
+import ApplyAuth from "./pages/ApplyAuth";
+import ApplicantPortal from "./pages/ApplicantPortal";
 import FinancePortal from "./pages/FinancePortal";
 import ResponsiveLayout from "./components/ResponsiveLayout";
 
@@ -76,7 +78,8 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/apply" element={<Apply />} />
+            <Route path="/apply" element={<ApplyAuth />} />
+            <Route path="/applicant-portal" element={<ApplicantPortal />} />
             <Route path="/pending" element={<PendingApproval />} />
             <Route
               path="/super-admin"

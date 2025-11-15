@@ -5,6 +5,8 @@ export interface OTPResponse {
   data?: any;
   error?: string;
   message?: string;
+  session?: any;
+  user?: any;
 }
 
 export class OTPService {
@@ -83,6 +85,8 @@ export class OTPService {
       return {
         success: true,
         data: data,
+        session: data.session,
+        user: data.user,
         message: data.message || "Verification successful",
       };
     } catch (error: any) {
