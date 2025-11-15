@@ -116,24 +116,31 @@ export default function ApplyAuth() {
       .from('profiles')
       .select('id')
       .eq('phone_number', formattedPhone)
-      .single();
+      .maybeSingle();
 
     const isSignup = !existingProfile;
 
     const result = await OTPService.verifyOTP(formattedPhone, otp, fullName, isSignup);
-    setLoading(false);
 
-    if (result.success) {
+    if (result.success && result.session) {
+      // Set session first
+      const { error: sessionError } = await supabase.auth.setSession(result.session);
+      
+      if (sessionError) {
+        console.error("Session error:", sessionError);
+        setLoading(false);
+        toast.error("Failed to establish session. Please try again.");
+        return;
+      }
+
       toast.success(isSignup ? "Account created! Redirecting..." : "Login successful! Redirecting...");
       
-      // Set session if returned
-      if (result.session) {
-        await supabase.auth.setSession(result.session);
-      }
-      
-      // Redirect to applicant portal
-      navigate("/applicant-portal");
+      // Small delay to ensure session is properly set
+      setTimeout(() => {
+        navigate("/applicant-portal");
+      }, 500);
     } else {
+      setLoading(false);
       toast.error(result.error || "Invalid OTP");
     }
   };
