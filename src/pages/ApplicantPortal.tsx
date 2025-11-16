@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { LogOut, CheckCircle2, Circle } from "lucide-react";
+import { LogOut, CheckCircle2, Circle, User } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import PersonalInformationStep from "@/components/application/PersonalInformationStep";
 import ChurchInformationStep from "@/components/application/ChurchInformationStep";
 import AdmissionTrainingStep from "@/components/application/AdmissionTrainingStep";
@@ -266,6 +267,15 @@ export default function ApplicantPortal() {
           {/* Sidebar */}
           <div className="lg:col-span-1">
             <Card className="p-4 sticky top-24">
+              <div className="flex flex-col items-center mb-6">
+                <Avatar className="h-24 w-24 mb-3 border-2 border-border">
+                  <AvatarImage src={formData.photo_url} alt="Profile photo" />
+                  <AvatarFallback className="bg-muted">
+                    <User className="h-12 w-12 text-muted-foreground" />
+                  </AvatarFallback>
+                </Avatar>
+                <p className="text-sm font-medium text-center">{formData.full_name || "No name yet"}</p>
+              </div>
               <h2 className="font-semibold mb-4">Application Steps</h2>
               <nav className="space-y-2">
                 {STEPS.map((step, index) => (
