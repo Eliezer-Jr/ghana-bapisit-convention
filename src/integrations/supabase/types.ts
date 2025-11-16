@@ -115,6 +115,7 @@ export type Database = {
           payment_date: string | null
           payment_receipt_number: string | null
           phone: string
+          photo_url: string | null
           rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -163,6 +164,7 @@ export type Database = {
           payment_date?: string | null
           payment_receipt_number?: string | null
           phone: string
+          photo_url?: string | null
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -211,6 +213,7 @@ export type Database = {
           payment_date?: string | null
           payment_receipt_number?: string | null
           phone?: string
+          photo_url?: string | null
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null

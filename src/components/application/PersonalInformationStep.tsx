@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, Save } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { ArrowRight, Save, Upload, User } from "lucide-react";
 
 interface PersonalInformationStepProps {
   formData: any;
   onNext: (data: any) => void;
   onSave: (data: any) => void;
   isSubmitted: boolean;
+  applicationId: string | null;
 }
 
 export default function PersonalInformationStep({
@@ -17,7 +21,10 @@ export default function PersonalInformationStep({
   onNext,
   onSave,
   isSubmitted,
+  applicationId,
 }: PersonalInformationStepProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const [data, setData] = useState({
     full_name: formData.full_name || "",
     date_of_birth: formData.date_of_birth || "",
@@ -25,10 +32,82 @@ export default function PersonalInformationStep({
     email: formData.email || "",
     marital_status: formData.marital_status || "",
     spouse_name: formData.spouse_name || "",
+    photo_url: formData.photo_url || "",
   });
 
   const handleChange = (field: string, value: string) => {
     setData({ ...data, [field]: value });
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    // Validate file size (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Photo size must be less than 2MB");
+      return;
+    }
+
+    // Validate dimensions
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      img.src = event.target?.result as string;
+      img.onload = async () => {
+        if (img.width > 200 || img.height > 200) {
+          toast.error("Photo dimensions must be 200x200px or smaller");
+          return;
+        }
+
+        // Upload to Supabase
+        if (!applicationId) {
+          toast.error("Please save your application first");
+          return;
+        }
+
+        setUploading(true);
+        try {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${applicationId}/photo_${Date.now()}.${fileExt}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('application-documents')
+            .upload(fileName, file);
+
+          if (uploadError) throw uploadError;
+
+          const { data: urlData } = supabase.storage
+            .from('application-documents')
+            .getPublicUrl(fileName);
+
+          const newData = { ...data, photo_url: urlData.publicUrl };
+          setData(newData);
+          
+          // Update the application
+          await supabase
+            .from('applications')
+            .update({ photo_url: urlData.publicUrl })
+            .eq('id', applicationId);
+
+          toast.success("Photo uploaded successfully");
+        } catch (error: any) {
+          console.error("Error uploading photo:", error);
+          toast.error("Failed to upload photo");
+        } finally {
+          setUploading(false);
+        }
+      };
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const handleSave = () => {
@@ -37,7 +116,7 @@ export default function PersonalInformationStep({
 
   const handleNext = () => {
     if (!data.full_name || !data.date_of_birth || !data.phone || !data.email || !data.marital_status) {
-      alert("Please fill in all required fields");
+      toast.error("Please fill in all required fields");
       return;
     }
     onNext(data);
@@ -48,6 +127,38 @@ export default function PersonalInformationStep({
       <div>
         <h2 className="text-2xl font-bold mb-2">Personal Information</h2>
         <p className="text-muted-foreground">Please provide your personal details</p>
+      </div>
+
+      <div className="flex flex-col items-center mb-6">
+        <Avatar className="h-32 w-32 mb-4">
+          <AvatarImage src={data.photo_url} alt="Profile photo" />
+          <AvatarFallback className="bg-muted">
+            <User className="h-16 w-16 text-muted-foreground" />
+          </AvatarFallback>
+        </Avatar>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handlePhotoUpload}
+          className="hidden"
+          disabled={isSubmitted || uploading}
+        />
+        {!isSubmitted && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            {uploading ? "Uploading..." : "Upload Photo"}
+          </Button>
+        )}
+        <p className="text-xs text-muted-foreground mt-2">
+          Max 200x200px, 2MB
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

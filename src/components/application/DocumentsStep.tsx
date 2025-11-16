@@ -94,6 +94,18 @@ export default function DocumentsStep({
       return;
     }
 
+    // Validate file type (PDF only)
+    if (file.type !== 'application/pdf') {
+      toast.error("Only PDF files are allowed");
+      return;
+    }
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File size must be less than 2MB");
+      return;
+    }
+
     setUploading(documentType);
 
     try {
