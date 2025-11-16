@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowRight, ArrowLeft, Save, Upload, FileText, Trash2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Save, Upload, FileText, Trash2, Eye } from "lucide-react";
 
 const REQUIRED_DOCUMENTS = {
   all: [
@@ -47,6 +48,7 @@ export default function DocumentsStep({
 }: DocumentsStepProps) {
   const [documents, setDocuments] = useState<any[]>([]);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<any>(null);
 
   useEffect(() => {
     if (applicationId) {
@@ -201,7 +203,7 @@ export default function DocumentsStep({
                         type="file"
                         id={`file-${docType}`}
                         className="hidden"
-                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        accept=".pdf"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
@@ -233,11 +235,10 @@ export default function DocumentsStep({
                     <Button
                       variant="ghost"
                       size="sm"
-                      asChild
+                      onClick={() => setPreviewDoc(doc)}
                     >
-                      <a href={doc.document_url} target="_blank" rel="noopener noreferrer">
-                        View
-                      </a>
+                      <Eye className="h-4 w-4 mr-2" />
+                      Preview
                     </Button>
                   )}
                 </div>
@@ -267,6 +268,35 @@ export default function DocumentsStep({
           </Button>
         </div>
       )}
+
+      {/* Document Preview Modal */}
+      <Dialog open={!!previewDoc} onOpenChange={(open) => !open && setPreviewDoc(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>{previewDoc?.document_type}</DialogTitle>
+            <p className="text-sm text-muted-foreground">{previewDoc?.document_name}</p>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            {previewDoc && (
+              <iframe
+                src={previewDoc.document_url}
+                className="w-full h-[70vh] border rounded-md"
+                title={previewDoc.document_type}
+              />
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setPreviewDoc(null)}>
+              Close
+            </Button>
+            <Button asChild>
+              <a href={previewDoc?.document_url} target="_blank" rel="noopener noreferrer" download>
+                Download
+              </a>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
