@@ -7,6 +7,16 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { LogOut, CheckCircle2, Circle, User } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
+// Helper function to set phone context for RLS
+const setPhoneContext = async (phone: string) => {
+  await supabase.rpc('set_config', {
+    name: 'app.current_phone',
+    value: phone
+  }).catch(() => {
+    // Fallback: just continue, the RLS will handle it
+  });
+};
 import PersonalInformationStep from "@/components/application/PersonalInformationStep";
 import ChurchInformationStep from "@/components/application/ChurchInformationStep";
 import AdmissionTrainingStep from "@/components/application/AdmissionTrainingStep";
@@ -68,32 +78,23 @@ export default function ApplicantPortal() {
   });
 
   useEffect(() => {
-    checkAuth();
+    checkApplicant();
   }, []);
 
-  const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+  const checkApplicant = async () => {
+    // Get phone number from localStorage (set during OTP verification)
+    const phoneNumber = localStorage.getItem('applicant_phone');
     
-    if (!user) {
+    if (!phoneNumber) {
       navigate("/apply");
       return;
     }
 
-    // Get user's phone number from profile
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("phone_number")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.phone_number) {
-      toast.error("Profile not found");
-      navigate("/apply");
-      return;
-    }
+    // Set phone context for RLS
+    await setPhoneContext(phoneNumber);
 
     // Load existing application if any
-    await loadApplication(profile.phone_number);
+    await loadApplication(phoneNumber);
     setLoading(false);
   };
 
@@ -134,8 +135,9 @@ export default function ApplicantPortal() {
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    localStorage.removeItem('applicant_phone');
+    localStorage.removeItem('applicant_name');
     navigate("/apply");
   };
 
