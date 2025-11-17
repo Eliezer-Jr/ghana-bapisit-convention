@@ -123,7 +123,7 @@ export default function Profile() {
 
     try {
       setVerifying(true);
-      const result = await OTPService.verifyOTP(newPhoneNumber, otp);
+      const result = await OTPService.verifyOTP(newPhoneNumber, otp, user.user_metadata?.full_name || "User");
       
       if (result.success) {
         // Update phone number in profile

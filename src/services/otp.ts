@@ -49,13 +49,12 @@ export class OTPService {
   }
 
   /**
-   * Verify OTP and authenticate user
+   * Verify OTP - no auth user creation
    */
   static async verifyOTP(
     phoneNumber: string,
     otp: string,
-    fullName?: string,
-    isSignup?: boolean
+    fullName: string
   ): Promise<OTPResponse> {
     try {
       const { data, error } = await supabase.functions.invoke("frogapi-otp-verify", {
@@ -63,7 +62,6 @@ export class OTPService {
           phoneNumber,
           otp: String(otp).trim(),
           fullName,
-          isSignup,
         },
       });
 
@@ -82,11 +80,12 @@ export class OTPService {
         };
       }
 
+      // Store phone number in localStorage for session management
+      localStorage.setItem('applicant_phone', phoneNumber);
+      localStorage.setItem('applicant_name', fullName);
+
       return {
         success: true,
-        data: data,
-        session: data.session,
-        user: data.user,
         message: data.message || "Verification successful",
       };
     } catch (error: any) {

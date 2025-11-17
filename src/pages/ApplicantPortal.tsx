@@ -7,16 +7,6 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { LogOut, CheckCircle2, Circle, User } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-
-// Helper function to set phone context for RLS
-const setPhoneContext = async (phone: string) => {
-  await supabase.rpc('set_config', {
-    name: 'app.current_phone',
-    value: phone
-  }).catch(() => {
-    // Fallback: just continue, the RLS will handle it
-  });
-};
 import PersonalInformationStep from "@/components/application/PersonalInformationStep";
 import ChurchInformationStep from "@/components/application/ChurchInformationStep";
 import AdmissionTrainingStep from "@/components/application/AdmissionTrainingStep";
@@ -90,9 +80,6 @@ export default function ApplicantPortal() {
       return;
     }
 
-    // Set phone context for RLS
-    await setPhoneContext(phoneNumber);
-
     // Load existing application if any
     await loadApplication(phoneNumber);
     setLoading(false);
@@ -143,10 +130,10 @@ export default function ApplicantPortal() {
 
   const saveProgress = async (data: any) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const phoneNumber = localStorage.getItem('applicant_phone');
       
-      if (!user) {
-        toast.error("Please login again");
+      if (!phoneNumber) {
+        toast.error("Session expired. Please log in again.");
         navigate("/apply");
         return;
       }
@@ -154,7 +141,7 @@ export default function ApplicantPortal() {
       const payload = {
         ...formData,
         ...data,
-        user_id: user.id,
+        user_id: null, // No user_id for applicants
         status: applicationStatus === "submitted" ? "submitted" : "draft",
       };
 
