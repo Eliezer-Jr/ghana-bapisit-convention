@@ -11,7 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { FileText, Search, Calendar, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { FileText, Search, Calendar, CheckCircle, XCircle, Loader2, Download, Filter } from "lucide-react";
+import * as XLSX from 'xlsx';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
 export default function AdminAdmissions() {
   const [applications, setApplications] = useState<any[]>([]);
@@ -20,8 +22,11 @@ export default function AdminAdmissions() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLevel, setFilterLevel] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterAssociation, setFilterAssociation] = useState("all");
   const [selectedApp, setSelectedApp] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchApplications();
@@ -29,7 +34,7 @@ export default function AdminAdmissions() {
 
   useEffect(() => {
     filterApplications();
-  }, [searchTerm, filterLevel, filterStatus, applications]);
+  }, [searchTerm, filterLevel, filterStatus, filterAssociation, applications]);
 
   const { data: approvedApplicants, isLoading: loadingApproved } = useQuery({
     queryKey: ["approved-applicants"],
@@ -70,9 +75,11 @@ export default function AdminAdmissions() {
 
     if (searchTerm) {
       filtered = filtered.filter((app) =>
-        app.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.church_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.email.toLowerCase().includes(searchTerm.toLowerCase())
+        app.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.church_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.phone?.includes(searchTerm) ||
+        app.sector?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -84,8 +91,54 @@ export default function AdminAdmissions() {
       filtered = filtered.filter((app) => app.status === filterStatus);
     }
 
+    if (filterAssociation !== "all") {
+      filtered = filtered.filter((app) => app.association === filterAssociation);
+    }
+
     setFilteredApps(filtered);
+    setCurrentPage(1); // Reset to first page on filter change
   };
+
+  const exportToExcel = () => {
+    try {
+      const exportData = filteredApps.map(app => ({
+        'Full Name': app.full_name,
+        'Email': app.email,
+        'Phone': app.phone,
+        'Church': app.church_name,
+        'Association': app.association,
+        'Sector': app.sector,
+        'Fellowship': app.fellowship,
+        'Admission Level': app.admission_level,
+        'Status': app.status,
+        'Date of Birth': app.date_of_birth,
+        'Marital Status': app.marital_status,
+        'Submitted At': app.submitted_at ? new Date(app.submitted_at).toLocaleDateString() : 'N/A',
+        'Theological Institution': app.theological_institution || 'N/A',
+        'Theological Qualification': app.theological_qualification || 'N/A',
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Applications');
+      
+      // Auto-size columns
+      const maxWidth = 50;
+      const colWidths = Object.keys(exportData[0] || {}).map(key => ({
+        wch: Math.min(maxWidth, Math.max(key.length, ...exportData.map(row => String(row[key as keyof typeof row] || '').length)))
+      }));
+      ws['!cols'] = colWidths;
+
+      XLSX.writeFile(wb, `applications_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast.success("Applications exported successfully!");
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export applications");
+    }
+  };
+
+  // Get unique associations for filter
+  const associations = Array.from(new Set(applications.map(app => app.association).filter(Boolean)));
 
   const updateApplicationStatus = async (appId: string, status: string, notes?: string) => {
     try {
@@ -273,14 +326,14 @@ export default function AdminAdmissions() {
         {/* Filters */}
         <Card>
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="md:col-span-2">
                 <Label htmlFor="search">Search</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="search"
-                    placeholder="Search by name, church, or email..."
+                    placeholder="Search by name, church, email, phone, sector..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-9"
@@ -302,6 +355,20 @@ export default function AdminAdmissions() {
                 </Select>
               </div>
               <div>
+                <Label htmlFor="association">Association</Label>
+                <Select value={filterAssociation} onValueChange={setFilterAssociation}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Associations</SelectItem>
+                    {associations.map(assoc => (
+                      <SelectItem key={assoc} value={assoc}>{assoc}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label htmlFor="status">Status</Label>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
                   <SelectTrigger>
@@ -309,15 +376,36 @@ export default function AdminAdmissions() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="submitted">Submitted</SelectItem>
-                    <SelectItem value="under_review">Under Review</SelectItem>
-                    <SelectItem value="screening_scheduled">Screening Scheduled</SelectItem>
+                    <SelectItem value="local_screening">Local Screening</SelectItem>
+                    <SelectItem value="association_approved">Association Approved</SelectItem>
+                    <SelectItem value="vp_review">VP Review</SelectItem>
                     <SelectItem value="interview_scheduled">Interview Scheduled</SelectItem>
                     <SelectItem value="approved">Approved</SelectItem>
                     <SelectItem value="rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <Button onClick={exportToExcel} variant="outline" className="gap-2">
+                <Download className="h-4 w-4" />
+                Export to Excel
+              </Button>
+              {(searchTerm || filterLevel !== "all" || filterStatus !== "all" || filterAssociation !== "all") && (
+                <Button 
+                  onClick={() => {
+                    setSearchTerm("");
+                    setFilterLevel("all");
+                    setFilterStatus("all");
+                    setFilterAssociation("all");
+                  }} 
+                  variant="ghost"
+                >
+                  Clear Filters
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -337,25 +425,29 @@ export default function AdminAdmissions() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
+                    <TableHead>Phone</TableHead>
                     <TableHead>Level</TableHead>
                     <TableHead>Church</TableHead>
-                    <TableHead>Sector</TableHead>
+                    <TableHead>Association</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Submitted</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredApps.map((app) => (
+                  {filteredApps
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((app) => (
                     <TableRow key={app.id}>
                       <TableCell className="font-medium">{app.full_name}</TableCell>
+                      <TableCell className="font-mono text-sm">{app.phone}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">{app.admission_level.toUpperCase()}</Badge>
+                        <Badge variant="outline">{app.admission_level?.toUpperCase()}</Badge>
                       </TableCell>
                       <TableCell>{app.church_name}</TableCell>
-                      <TableCell>{app.sector}</TableCell>
+                      <TableCell className="text-sm">{app.association}</TableCell>
                       <TableCell>{getStatusBadge(app.status)}</TableCell>
-                      <TableCell>
+                      <TableCell className="text-sm">
                         {app.submitted_at ? new Date(app.submitted_at).toLocaleDateString() : "Not submitted"}
                       </TableCell>
                       <TableCell>
@@ -470,6 +562,61 @@ export default function AdminAdmissions() {
                 </TableBody>
               </Table>
             )}
+            
+            {/* Pagination */}
+            {filteredApps.length > itemsPerPage && (
+              <div className="mt-6 flex items-center justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    
+                    {Array.from({ length: Math.ceil(filteredApps.length / itemsPerPage) }, (_, i) => i + 1)
+                      .filter(page => {
+                        // Show first, last, current, and adjacent pages
+                        const totalPages = Math.ceil(filteredApps.length / itemsPerPage);
+                        return page === 1 || 
+                               page === totalPages || 
+                               Math.abs(page - currentPage) <= 1;
+                      })
+                      .map((page, index, array) => (
+                        <>
+                          {index > 0 && array[index - 1] !== page - 1 && (
+                            <PaginationItem key={`ellipsis-${page}`}>
+                              <span className="px-4">...</span>
+                            </PaginationItem>
+                          )}
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              onClick={() => setCurrentPage(page)}
+                              isActive={currentPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        </>
+                      ))
+                    }
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredApps.length / itemsPerPage), p + 1))}
+                        className={currentPage === Math.ceil(filteredApps.length / itemsPerPage) ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+            
+            <div className="text-sm text-muted-foreground mt-4 text-center">
+              Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filteredApps.length)} to {Math.min(currentPage * itemsPerPage, filteredApps.length)} of {filteredApps.length} applications
+            </div>
           </CardContent>
         </Card>
     </div>
