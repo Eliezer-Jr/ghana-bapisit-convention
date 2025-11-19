@@ -119,36 +119,66 @@ const Auth = () => {
         throw new Error("Please enter the complete 6-digit OTP");
       }
 
-      // Verify OTP
-      const { data, error } = await supabase.functions.invoke('frogapi-otp-verify', {
+      // Verify OTP for system login
+      const { data, error } = await supabase.functions.invoke('system-otp-verify', {
         body: { 
           phoneNumber, 
           otp,
           fullName: isSignup ? fullName : undefined,
-          isSignup 
+          isSignup
         }
       });
 
       if (error) throw error;
-      if (!data.success) throw new Error(data.error || "Invalid OTP");
+      if (!data.success) throw new Error(data.error || "OTP verification failed");
 
-      toast.success(data.message || "Verification successful!");
-      
-      // Set the session if returned (for login)
-      if (data.session) {
-        await supabase.auth.setSession(data.session);
-        
-        // Log the activity
-        await logActivity({
-          action: isSignup ? 'user_signup' : 'user_login',
-          details: { phone_number: phoneNumber, method: 'otp' }
+      // For login, use the email returned to sign in
+      if (!isSignup && data.email) {
+        const { error: signInError } = await supabase.auth.signInWithOtp({
+          email: data.email,
+          options: {
+            shouldCreateUser: false
+          }
         });
+        
+        if (signInError) {
+          console.error("Sign in error:", signInError);
+          // Continue anyway as the OTP was verified
+        }
       }
+
+      toast.success(isSignup ? "Account created successfully!" : "Login successful!");
       
-      // Small delay to ensure auth state updates
-      setTimeout(() => {
-        navigate("/");
-      }, 100);
+      // Clear timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+
+      // Log activity
+      await logActivity({
+        action: isSignup ? 'user_signup' : 'user_login',
+        details: { 
+          phoneNumber,
+          method: 'OTP'
+        }
+      });
+
+      // For signup, redirect to login
+      if (isSignup) {
+        setTimeout(() => {
+          toast.info("Please login with your phone number");
+          setOtpSent(false);
+          setIsSignup(false);
+          setOtp("");
+        }, 1500);
+      } else {
+        // Force session refresh for login
+        await supabase.auth.refreshSession();
+        
+        // Navigate to dashboard
+        setTimeout(() => navigate("/"), 800);
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to verify OTP");
     } finally {
