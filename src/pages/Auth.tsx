@@ -236,16 +236,29 @@ const Auth = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="phoneNumber" className="text-sm font-medium">Phone Number</Label>
-                <Input
-                  id="phoneNumber"
-                  type="tel"
-                  placeholder="0241234567"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  disabled={loading}
-                  maxLength={10}
-                  className="h-11"
-                />
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none text-sm">
+                    +233
+                  </div>
+                  <Input
+                    id="phoneNumber"
+                    type="tel"
+                    placeholder="241234567"
+                    value={phoneNumber.startsWith('0') ? phoneNumber.substring(1) : phoneNumber}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                      if (value.length <= 9) {
+                        setPhoneNumber('0' + value);
+                      }
+                    }}
+                    disabled={loading}
+                    maxLength={9}
+                    className="h-11 pl-16"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Enter 9 digits after 0 (e.g., 0241234567)
+                </p>
               </div>
 
               <Button
