@@ -26,10 +26,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Plus, Search, Pencil, Trash2, Eye, Download, Upload } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Eye, Download, Upload, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const Ministers = () => {
   const [ministers, setMinisters] = useState<any[]>([]);
@@ -215,6 +217,47 @@ const Ministers = () => {
     toast.success("Ministers exported successfully");
   };
 
+  const handleExportPDF = () => {
+    if (filteredMinisters.length === 0) {
+      toast.error("No ministers to export");
+      return;
+    }
+
+    const doc = new jsPDF('landscape');
+    
+    // Add title
+    doc.setFontSize(18);
+    doc.text('Ministers Directory', 14, 15);
+    
+    // Add date
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+    
+    // Prepare table data
+    const tableData = filteredMinisters.map((minister) => [
+      minister.full_name,
+      minister.role,
+      minister.location || "-",
+      minister.email || "-",
+      minister.phone || "-",
+      new Date(minister.date_joined).toLocaleDateString(),
+      minister.status.charAt(0).toUpperCase() + minister.status.slice(1)
+    ]);
+
+    // Add table
+    autoTable(doc, {
+      head: [['Name', 'Role', 'Location', 'Email', 'Phone', 'Date Joined', 'Status']],
+      body: tableData,
+      startY: 28,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+    });
+
+    doc.save(`ministers_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success("PDF exported successfully");
+  };
+
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -337,7 +380,11 @@ const Ministers = () => {
             </Button>
             <Button onClick={handleExport} variant="outline" className="gap-2">
               <Download className="h-4 w-4" />
-              Export
+              Export Excel
+            </Button>
+            <Button onClick={handleExportPDF} variant="outline" className="gap-2">
+              <FileText className="h-4 w-4" />
+              Export PDF
             </Button>
             <Button variant="outline" className="gap-2 relative">
               <Upload className="h-4 w-4" />
