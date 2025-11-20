@@ -146,14 +146,27 @@ serve(async (req) => {
         throw new Error("No account found with this phone number. Please sign up first.");
       }
 
-      console.log("User found, logging in:", existingUser.id);
+      console.log("User found, generating session:", existingUser.id);
+
+      // Update user password to enable sign in
+      const loginPassword = `${phoneNumber}_login_${Date.now()}`;
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        existingUser.id,
+        { password: loginPassword }
+      );
+
+      if (updateError) {
+        console.error("Failed to update password:", updateError);
+        throw new Error("Failed to generate login session");
+      }
 
       return new Response(
         JSON.stringify({
           success: true,
           message: "Login successful. You will be redirected shortly.",
           userId: existingUser.id,
-          email: email
+          email: email,
+          password: loginPassword
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

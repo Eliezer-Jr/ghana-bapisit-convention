@@ -132,18 +132,16 @@ const Auth = () => {
       if (error) throw error;
       if (!data.success) throw new Error(data.error || "OTP verification failed");
 
-      // For login, use the email returned to sign in
-      if (!isSignup && data.email) {
-        const { error: signInError } = await supabase.auth.signInWithOtp({
+      // For login, use the email and password returned to sign in
+      if (!isSignup && data.email && data.password) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
           email: data.email,
-          options: {
-            shouldCreateUser: false
-          }
+          password: data.password
         });
         
         if (signInError) {
           console.error("Sign in error:", signInError);
-          // Continue anyway as the OTP was verified
+          throw new Error("Failed to establish session. Please try again.");
         }
       }
 
