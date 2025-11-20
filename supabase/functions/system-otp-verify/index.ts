@@ -167,7 +167,18 @@ serve(async (req) => {
           phone: u.phone,
           metadata: u.user_metadata
         })));
-        throw new Error("No account found with this phone number. Please sign up first.");
+        
+        // Check if this might be an applicant-only account
+        const isApplicantAccount = users.some(u => 
+          u.email?.includes('@otp.gbc.local') && 
+          u.user_metadata?.phone_number === phoneNumber
+        );
+        
+        if (isApplicantAccount) {
+          throw new Error("This phone number is registered for applications only. Please use the 'Apply' page to access your application, or contact an administrator to get system access.");
+        }
+        
+        throw new Error(`No system account found with phone number ${phoneNumber}. Please contact an administrator to create your account, or use 'Sign Up' if you're creating a new account.`);
       }
 
       console.log("User found, generating session:", existingUser.id);
