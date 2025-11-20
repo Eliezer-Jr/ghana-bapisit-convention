@@ -16,6 +16,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import logoWatermark from "@/assets/logo-watermark.png";
 
 export default function AdminAdmissions() {
   const [applications, setApplications] = useState<any[]>([]);
@@ -148,14 +149,30 @@ export default function AdminAdmissions() {
     try {
       const doc = new jsPDF('landscape');
       
-      // Add title
+      // Add watermark (centered, semi-transparent)
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const imgWidth = 100;
+      const imgHeight = 100;
+      const x = (pageWidth - imgWidth) / 2;
+      const y = (pageHeight - imgHeight) / 2;
+      
+      doc.saveGraphicsState();
+      doc.setGState({ opacity: 0.1 });
+      doc.addImage(logoWatermark, 'PNG', x, y, imgWidth, imgHeight);
+      doc.restoreGraphicsState();
+      
+      // Add logo at top left
+      doc.addImage(logoWatermark, 'PNG', 14, 8, 25, 25);
+      
+      // Add title next to logo
       doc.setFontSize(18);
-      doc.text('Admission Applications Report', 14, 15);
+      doc.text('Admission Applications Report', 45, 15);
       
       // Add date and stats
       doc.setFontSize(10);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
-      doc.text(`Total Applications: ${filteredApps.length}`, 14, 28);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 45, 22);
+      doc.text(`Total Applications: ${filteredApps.length}`, 45, 28);
       
       // Prepare table data
       const tableData = filteredApps.map((app) => [
@@ -173,7 +190,7 @@ export default function AdminAdmissions() {
       autoTable(doc, {
         head: [['Name', 'Level', 'Church', 'Association', 'Sector', 'Phone', 'Status', 'Submitted']],
         body: tableData,
-        startY: 35,
+        startY: 38,
         styles: { fontSize: 7, cellPadding: 1.5 },
         headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' },
         alternateRowStyles: { fillColor: [245, 247, 250] },
