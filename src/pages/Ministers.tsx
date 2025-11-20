@@ -32,6 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import logoWatermark from "@/assets/logo-watermark.png";
 
 const Ministers = () => {
   const [ministers, setMinisters] = useState<any[]>([]);
@@ -225,13 +226,30 @@ const Ministers = () => {
 
     const doc = new jsPDF('landscape');
     
-    // Add title
+    // Add watermark (centered, semi-transparent)
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const imgWidth = 100;
+    const imgHeight = 100;
+    const x = (pageWidth - imgWidth) / 2;
+    const y = (pageHeight - imgHeight) / 2;
+    
+    doc.saveGraphicsState();
+    doc.setGState({ opacity: 0.1 });
+    doc.addImage(logoWatermark, 'PNG', x, y, imgWidth, imgHeight);
+    doc.restoreGraphicsState();
+    
+    // Add logo at top left
+    doc.addImage(logoWatermark, 'PNG', 14, 8, 25, 25);
+    
+    // Add title next to logo
     doc.setFontSize(18);
-    doc.text('Ministers Directory', 14, 15);
+    doc.text('Ministers Directory', 45, 15);
     
     // Add date
     doc.setFontSize(10);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 45, 22);
+    doc.text(`Total Ministers: ${filteredMinisters.length}`, 45, 28);
     
     // Prepare table data
     const tableData = filteredMinisters.map((minister) => [
@@ -248,7 +266,7 @@ const Ministers = () => {
     autoTable(doc, {
       head: [['Name', 'Role', 'Location', 'Email', 'Phone', 'Date Joined', 'Status']],
       body: tableData,
-      startY: 28,
+      startY: 38,
       styles: { fontSize: 8, cellPadding: 2 },
       headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [245, 247, 250] },
