@@ -36,17 +36,35 @@ serve(async (req) => {
 
     const otpCode = String(otp).trim();
     
-    // Format phone number for Ghana (E.164 format required by Supabase)
-    let formattedNumber = phoneNumber;
-    if (phoneNumber.startsWith('0')) {
-      formattedNumber = '+233' + phoneNumber.substring(1);
-    } else if (!phoneNumber.startsWith('+')) {
-      formattedNumber = '+' + phoneNumber;
+    // Format phone number for Ghana (E.164 format: +233XXXXXXXXX, total 13 chars)
+    let formattedNumber = phoneNumber.trim();
+    
+    // Remove any spaces or dashes
+    formattedNumber = formattedNumber.replace(/[\s-]/g, '');
+    
+    // Convert to E.164 format
+    if (formattedNumber.startsWith('0')) {
+      // Ghana local format: 0XXXXXXXXX -> +233XXXXXXXXX
+      formattedNumber = '+233' + formattedNumber.substring(1);
+    } else if (formattedNumber.startsWith('233')) {
+      // Already has country code but missing +
+      formattedNumber = '+' + formattedNumber;
+    } else if (!formattedNumber.startsWith('+233')) {
+      // Invalid format
+      throw new Error("Phone number must start with 0 or 233");
     }
+    
+    // Validate E.164 format: +233XXXXXXXXX (13 characters total)
+    if (!formattedNumber.match(/^\+233\d{9}$/)) {
+      console.error("Invalid phone format:", formattedNumber);
+      throw new Error("Invalid phone number format (E.164 required)");
+    }
+    
+    console.log("Formatted phone number:", formattedNumber);
     
     const verifyPayload = {
       otpcode: otpCode,
-      number: formattedNumber.startsWith('+') ? formattedNumber.substring(1) : formattedNumber // FrogAPI expects without +
+      number: formattedNumber.substring(1) // FrogAPI expects without + (233XXXXXXXXX)
     };
 
     // Verify OTP with FrogAPI
@@ -93,10 +111,12 @@ serve(async (req) => {
     const tempPassword = `${phoneNumber}_verified_${Date.now()}`;
     
     if (isSignup) {
+      console.log("Creating user with phone:", formattedNumber, "email:", email);
+      
       // Create new user account with password (use E.164 formatted phone)
       const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        phone: formattedNumber, // E.164 format: +233XXXXXXXXX
+        phone: formattedNumber, // Must be E.164: +233XXXXXXXXX
         password: tempPassword,
         email_confirm: true,
         phone_confirm: true,
