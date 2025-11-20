@@ -36,15 +36,17 @@ serve(async (req) => {
 
     const otpCode = String(otp).trim();
     
-    // Format phone number for Ghana
+    // Format phone number for Ghana (E.164 format required by Supabase)
     let formattedNumber = phoneNumber;
     if (phoneNumber.startsWith('0')) {
-      formattedNumber = '233' + phoneNumber.substring(1);
+      formattedNumber = '+233' + phoneNumber.substring(1);
+    } else if (!phoneNumber.startsWith('+')) {
+      formattedNumber = '+' + phoneNumber;
     }
     
     const verifyPayload = {
       otpcode: otpCode,
-      number: formattedNumber
+      number: formattedNumber.startsWith('+') ? formattedNumber.substring(1) : formattedNumber // FrogAPI expects without +
     };
 
     // Verify OTP with FrogAPI
@@ -91,16 +93,16 @@ serve(async (req) => {
     const tempPassword = `${phoneNumber}_verified_${Date.now()}`;
     
     if (isSignup) {
-      // Create new user account with password
+      // Create new user account with password (use E.164 formatted phone)
       const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        phone: phoneNumber,
+        phone: formattedNumber, // E.164 format: +233XXXXXXXXX
         password: tempPassword,
         email_confirm: true,
         phone_confirm: true,
         user_metadata: {
           full_name: fullName,
-          phone_number: phoneNumber
+          phone_number: phoneNumber // Keep original format in metadata for display
         }
       });
 
