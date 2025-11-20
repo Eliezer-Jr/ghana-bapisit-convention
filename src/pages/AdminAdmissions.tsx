@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { FileText, Search, Calendar, CheckCircle, XCircle, Loader2, Download, Filter } from "lucide-react";
 import * as XLSX from 'xlsx';
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
 export default function AdminAdmissions() {
@@ -134,6 +136,64 @@ export default function AdminAdmissions() {
     } catch (error) {
       console.error("Export error:", error);
       toast.error("Failed to export applications");
+    }
+  };
+
+  const exportToPDF = () => {
+    if (filteredApps.length === 0) {
+      toast.error("No applications to export");
+      return;
+    }
+
+    try {
+      const doc = new jsPDF('landscape');
+      
+      // Add title
+      doc.setFontSize(18);
+      doc.text('Admission Applications Report', 14, 15);
+      
+      // Add date and stats
+      doc.setFontSize(10);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+      doc.text(`Total Applications: ${filteredApps.length}`, 14, 28);
+      
+      // Prepare table data
+      const tableData = filteredApps.map((app) => [
+        app.full_name,
+        app.admission_level.charAt(0).toUpperCase() + app.admission_level.slice(1),
+        app.church_name,
+        app.association,
+        app.sector,
+        app.phone,
+        app.status.replace('_', ' ').toUpperCase(),
+        app.submitted_at ? new Date(app.submitted_at).toLocaleDateString() : 'N/A'
+      ]);
+
+      // Add table
+      autoTable(doc, {
+        head: [['Name', 'Level', 'Church', 'Association', 'Sector', 'Phone', 'Status', 'Submitted']],
+        body: tableData,
+        startY: 35,
+        styles: { fontSize: 7, cellPadding: 1.5 },
+        headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 25 },
+          2: { cellWidth: 35 },
+          3: { cellWidth: 30 },
+          4: { cellWidth: 25 },
+          5: { cellWidth: 30 },
+          6: { cellWidth: 30 },
+          7: { cellWidth: 25 }
+        }
+      });
+
+      doc.save(`applications_report_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success("PDF exported successfully!");
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export PDF");
     }
   };
 
@@ -391,7 +451,11 @@ export default function AdminAdmissions() {
             <div className="flex gap-2 mt-4">
               <Button onClick={exportToExcel} variant="outline" className="gap-2">
                 <Download className="h-4 w-4" />
-                Export to Excel
+                Export Excel
+              </Button>
+              <Button onClick={exportToPDF} variant="outline" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Export PDF
               </Button>
               {(searchTerm || filterLevel !== "all" || filterStatus !== "all" || filterAssociation !== "all") && (
                 <Button 
