@@ -138,11 +138,35 @@ serve(async (req) => {
         throw new Error("Failed to verify user");
       }
 
-      const existingUser = users.find(u => 
-        u.phone === phoneNumber || u.email === email
-      );
+      console.log(`Searching for user with phone: ${phoneNumber}, email: ${email}`);
+      console.log(`Total users in system: ${users.length}`);
+
+      // Try multiple matching strategies
+      const existingUser = users.find(u => {
+        const matches = 
+          u.phone === phoneNumber || 
+          u.email === email ||
+          u.user_metadata?.phone_number === phoneNumber ||
+          (u.phone && u.phone.endsWith(phoneNumber.substring(1))) || // Handle 233 prefix
+          (u.email && u.email.startsWith(phoneNumber + '@'));
+        
+        if (matches) {
+          console.log(`Found matching user:`, {
+            id: u.id,
+            email: u.email,
+            phone: u.phone,
+            metadata: u.user_metadata
+          });
+        }
+        return matches;
+      });
 
       if (!existingUser) {
+        console.error("No matching user found. Available users:", users.map(u => ({
+          email: u.email,
+          phone: u.phone,
+          metadata: u.user_metadata
+        })));
         throw new Error("No account found with this phone number. Please sign up first.");
       }
 
