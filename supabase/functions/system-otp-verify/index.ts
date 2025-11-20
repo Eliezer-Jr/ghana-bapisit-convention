@@ -189,7 +189,7 @@ serve(async (req) => {
           success: true,
           message: "Login successful. You will be redirected shortly.",
           userId: existingUser.id,
-          email: email,
+          email: existingUser.email, // Use the actual user email, not the generated one
           password: loginPassword
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
