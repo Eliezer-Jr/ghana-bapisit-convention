@@ -218,62 +218,79 @@ const Ministers = () => {
     toast.success("Ministers exported successfully");
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (filteredMinisters.length === 0) {
       toast.error("No ministers to export");
       return;
     }
 
-    const doc = new jsPDF('landscape');
-    
-    // Add watermark (centered, semi-transparent)
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const imgWidth = 100;
-    const imgHeight = 100;
-    const x = (pageWidth - imgWidth) / 2;
-    const y = (pageHeight - imgHeight) / 2;
-    
-    doc.saveGraphicsState();
-    doc.setGState({ opacity: 0.1 });
-    doc.addImage(logoWatermark, 'PNG', x, y, imgWidth, imgHeight);
-    doc.restoreGraphicsState();
-    
-    // Add logo at top left
-    doc.addImage(logoWatermark, 'PNG', 14, 8, 25, 25);
-    
-    // Add title next to logo
-    doc.setFontSize(18);
-    doc.text('Ministers Directory', 45, 15);
-    
-    // Add date
-    doc.setFontSize(10);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 45, 22);
-    doc.text(`Total Ministers: ${filteredMinisters.length}`, 45, 28);
-    
-    // Prepare table data
-    const tableData = filteredMinisters.map((minister) => [
-      minister.full_name,
-      minister.role,
-      minister.location || "-",
-      minister.email || "-",
-      minister.phone || "-",
-      new Date(minister.date_joined).toLocaleDateString(),
-      minister.status.charAt(0).toUpperCase() + minister.status.slice(1)
-    ]);
+    try {
+      const doc = new jsPDF('landscape');
+      
+      // Load and convert image to base64
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      await new Promise((resolve, reject) => {
+        img.onload = () => {
+          // Add watermark (centered, semi-transparent)
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const pageHeight = doc.internal.pageSize.getHeight();
+          const imgWidth = 100;
+          const imgHeight = 100;
+          const x = (pageWidth - imgWidth) / 2;
+          const y = (pageHeight - imgHeight) / 2;
+          
+          doc.saveGraphicsState();
+          doc.setGState({ opacity: 0.1 });
+          doc.addImage(img, 'PNG', x, y, imgWidth, imgHeight);
+          doc.restoreGraphicsState();
+          
+          // Add logo at top left
+          doc.addImage(img, 'PNG', 14, 8, 25, 25);
+          
+          resolve(true);
+        };
+        img.onerror = reject;
+        img.src = logoWatermark;
+      });
+      
+      // Add title next to logo
+      doc.setFontSize(18);
+      doc.text('Ministers Directory', 45, 15);
+      
+      // Add date
+      doc.setFontSize(10);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 45, 22);
+      doc.text(`Total Ministers: ${filteredMinisters.length}`, 45, 28);
+      
+      // Prepare table data
+      const tableData = filteredMinisters.map((minister) => [
+        minister.full_name,
+        minister.role,
+        minister.location || "-",
+        minister.email || "-",
+        minister.phone || "-",
+        new Date(minister.date_joined).toLocaleDateString(),
+        minister.status.charAt(0).toUpperCase() + minister.status.slice(1)
+      ]);
 
-    // Add table
-    autoTable(doc, {
-      head: [['Name', 'Role', 'Location', 'Email', 'Phone', 'Date Joined', 'Status']],
-      body: tableData,
-      startY: 38,
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [245, 247, 250] },
-    });
+      // Add table
+      autoTable(doc, {
+        head: [['Name', 'Role', 'Location', 'Email', 'Phone', 'Date Joined', 'Status']],
+        body: tableData,
+        startY: 38,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+      });
 
-    doc.save(`ministers_${new Date().toISOString().split('T')[0]}.pdf`);
-    toast.success("PDF exported successfully");
+      doc.save(`ministers_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success("PDF exported successfully");
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.error("Failed to export PDF");
+    }
   };
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {

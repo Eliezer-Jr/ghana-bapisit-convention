@@ -140,7 +140,7 @@ export default function AdminAdmissions() {
     }
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     if (filteredApps.length === 0) {
       toast.error("No applications to export");
       return;
@@ -149,21 +149,33 @@ export default function AdminAdmissions() {
     try {
       const doc = new jsPDF('landscape');
       
-      // Add watermark (centered, semi-transparent)
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const imgWidth = 100;
-      const imgHeight = 100;
-      const x = (pageWidth - imgWidth) / 2;
-      const y = (pageHeight - imgHeight) / 2;
+      // Load and convert image to base64
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
       
-      doc.saveGraphicsState();
-      doc.setGState({ opacity: 0.1 });
-      doc.addImage(logoWatermark, 'PNG', x, y, imgWidth, imgHeight);
-      doc.restoreGraphicsState();
-      
-      // Add logo at top left
-      doc.addImage(logoWatermark, 'PNG', 14, 8, 25, 25);
+      await new Promise((resolve, reject) => {
+        img.onload = () => {
+          // Add watermark (centered, semi-transparent)
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const pageHeight = doc.internal.pageSize.getHeight();
+          const imgWidth = 100;
+          const imgHeight = 100;
+          const x = (pageWidth - imgWidth) / 2;
+          const y = (pageHeight - imgHeight) / 2;
+          
+          doc.saveGraphicsState();
+          doc.setGState({ opacity: 0.1 });
+          doc.addImage(img, 'PNG', x, y, imgWidth, imgHeight);
+          doc.restoreGraphicsState();
+          
+          // Add logo at top left
+          doc.addImage(img, 'PNG', 14, 8, 25, 25);
+          
+          resolve(true);
+        };
+        img.onerror = reject;
+        img.src = logoWatermark;
+      });
       
       // Add title next to logo
       doc.setFontSize(18);
