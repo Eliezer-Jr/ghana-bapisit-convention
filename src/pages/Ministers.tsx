@@ -902,28 +902,27 @@ const Ministers = () => {
                         />
                       </TableCell>
                     <TableCell><Input value={row.location} onChange={(e) => updatePreviewCell(row._rowId, 'location', e.target.value)} /></TableCell>
-                    <TableCell>
-                      <Select value={row.status} onValueChange={(value) => updatePreviewCell(row._rowId, 'status', value)}>
-                        <SelectTrigger className="min-w-[90px]"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                          <SelectItem value="retired">Retired</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
+                      <TableCell>
+                        <Select value={row.status} onValueChange={(value) => updatePreviewCell(row._rowId, 'status', value)}>
+                          <SelectTrigger className="min-w-[90px]"><SelectValue /></SelectTrigger>
+                          <SelectContent className="bg-background z-50">
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                            <SelectItem value="retired">Retired</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
                     <TableCell><Input type="date" value={row.date_joined} onChange={(e) => updatePreviewCell(row._rowId, 'date_joined', e.target.value)} /></TableCell>
                     <TableCell><Input type="date" value={row.date_of_birth} onChange={(e) => updatePreviewCell(row._rowId, 'date_of_birth', e.target.value)} /></TableCell>
                       <TableCell>
                         <Select 
-                          value={row.marital_status || ""} 
+                          value={row.marital_status || undefined} 
                           onValueChange={(value) => updatePreviewCell(row._rowId, 'marital_status', value)}
                         >
                           <SelectTrigger className={row.marital_status && !['married', 'single', 'divorced', 'widowed'].includes(row.marital_status) ? 'border-destructive' : ''}>
-                            <SelectValue placeholder="Select..." />
+                            <SelectValue placeholder="None / Select..." />
                           </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                          <SelectContent className="bg-background z-50">
                             <SelectItem value="married">Married</SelectItem>
                             <SelectItem value="single">Single</SelectItem>
                             <SelectItem value="divorced">Divorced</SelectItem>
@@ -934,14 +933,13 @@ const Ministers = () => {
                       <TableCell><Input value={row.spouse_name} onChange={(e) => updatePreviewCell(row._rowId, 'spouse_name', e.target.value)} /></TableCell>
                       <TableCell>
                         <Select 
-                          value={row.marriage_type || ""} 
+                          value={row.marriage_type || undefined} 
                           onValueChange={(value) => updatePreviewCell(row._rowId, 'marriage_type', value)}
                         >
                           <SelectTrigger className={row.marriage_type && !['ordinance', 'customary'].includes(row.marriage_type) ? 'border-destructive' : ''}>
-                            <SelectValue placeholder="Select..." />
+                            <SelectValue placeholder="None / Select..." />
                           </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                          <SelectContent className="bg-background z-50">
                             <SelectItem value="ordinance">Ordinance</SelectItem>
                             <SelectItem value="customary">Customary</SelectItem>
                           </SelectContent>
