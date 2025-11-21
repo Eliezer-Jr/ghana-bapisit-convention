@@ -241,8 +241,9 @@ const Ministers = () => {
           const x = (pageWidth - imgWidth) / 2;
           const y = (pageHeight - imgHeight) / 2;
           
+          // Add watermark with reduced opacity
           doc.saveGraphicsState();
-          doc.setGState({ opacity: 0.1 });
+          (doc as any).setGState(new (doc as any).GState({ opacity: 0.1 }));
           doc.addImage(img, 'PNG', x, y, imgWidth, imgHeight);
           doc.restoreGraphicsState();
           
