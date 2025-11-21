@@ -430,6 +430,17 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                 </div>
               </div>
 
+              {/* Minister ID - Auto-generated and read-only */}
+              {minister?.minister_id && (
+                <div className="space-y-2 p-4 bg-muted/30 rounded-lg border border-border">
+                  <Label className="text-sm font-medium">Minister ID (Auto-generated)</Label>
+                  <div className="font-mono text-lg font-bold text-primary">
+                    {minister.minister_id}
+                  </div>
+                  <p className="text-xs text-muted-foreground">This ID is automatically assigned and cannot be changed</p>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="full_name">Full Name *</Label>
