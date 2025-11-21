@@ -150,9 +150,9 @@ const Ministers = () => {
         status: "active",
         date_joined: "2024-01-01",
         date_of_birth: "1980-01-01",
-        marital_status: "Married",
+        marital_status: "married",
         spouse_name: "Jane Doe",
-        marriage_type: "Traditional",
+        marriage_type: "ordinance",
         number_of_children: "2",
         titles: "Rev.",
         gps_address: "GA-123-4567",
@@ -172,7 +172,7 @@ const Ministers = () => {
         emergency_contact_2_name: "John Doe Jr",
         emergency_contact_2_relationship: "Child",
         emergency_contact_2_phone: "+233456789123",
-        notes: "Additional notes here"
+        notes: "Additional notes here (marital_status MUST be: married/single/divorced/widowed, marriage_type MUST be: ordinance/customary)"
       }
     ];
 
@@ -340,40 +340,55 @@ const Ministers = () => {
         }
 
         // Show preview instead of importing directly
-        const ministersPreview = jsonData.map((row: any, index: number) => ({
-          _rowId: index,
-          full_name: row.full_name || "",
-          email: row.email || "",
-          phone: row.phone || "",
-          role: row.role || "",
-          location: row.location || "",
-          status: row.status || "active",
-          date_joined: row.date_joined || new Date().toISOString().split('T')[0],
-          date_of_birth: row.date_of_birth || "",
-          marital_status: row.marital_status || "",
-          spouse_name: row.spouse_name || "",
-          marriage_type: row.marriage_type || "",
-          number_of_children: row.number_of_children || 0,
-          titles: row.titles || "",
-          gps_address: row.gps_address || "",
-          whatsapp: row.whatsapp || "",
-          current_church_name: row.current_church_name || "",
-          position_at_church: row.position_at_church || "",
-          church_address: row.church_address || "",
-          association: row.association || "",
-          sector: row.sector || "",
-          fellowship: row.fellowship || "",
-          ordination_year: row.ordination_year || "",
-          recognition_year: row.recognition_year || "",
-          licensing_year: row.licensing_year || "",
-          emergency_contact_1_name: row.emergency_contact_1_name || "",
-          emergency_contact_1_relationship: row.emergency_contact_1_relationship || "",
-          emergency_contact_1_phone: row.emergency_contact_1_phone || "",
-          emergency_contact_2_name: row.emergency_contact_2_name || "",
-          emergency_contact_2_relationship: row.emergency_contact_2_relationship || "",
-          emergency_contact_2_phone: row.emergency_contact_2_phone || "",
-          notes: row.notes || ""
-        }));
+        // Normalize values to match database constraints
+        const ministersPreview = jsonData.map((row: any, index: number) => {
+          // Normalize marital_status to lowercase and validate
+          let maritalStatus = row.marital_status ? String(row.marital_status).toLowerCase().trim() : "";
+          if (maritalStatus && !['married', 'single', 'divorced', 'widowed'].includes(maritalStatus)) {
+            maritalStatus = ""; // Clear invalid values
+          }
+          
+          // Normalize marriage_type to lowercase and validate
+          let marriageType = row.marriage_type ? String(row.marriage_type).toLowerCase().trim() : "";
+          if (marriageType && !['ordinance', 'customary'].includes(marriageType)) {
+            marriageType = ""; // Clear invalid values
+          }
+
+          return {
+            _rowId: index,
+            full_name: row.full_name || "",
+            email: row.email || "",
+            phone: row.phone || "",
+            role: row.role || "",
+            location: row.location || "",
+            status: row.status || "active",
+            date_joined: row.date_joined || new Date().toISOString().split('T')[0],
+            date_of_birth: row.date_of_birth || "",
+            marital_status: maritalStatus,
+            spouse_name: row.spouse_name || "",
+            marriage_type: marriageType,
+            number_of_children: row.number_of_children || 0,
+            titles: row.titles || "",
+            gps_address: row.gps_address || "",
+            whatsapp: row.whatsapp || "",
+            current_church_name: row.current_church_name || "",
+            position_at_church: row.position_at_church || "",
+            church_address: row.church_address || "",
+            association: row.association || "",
+            sector: row.sector || "",
+            fellowship: row.fellowship || "",
+            ordination_year: row.ordination_year || "",
+            recognition_year: row.recognition_year || "",
+            licensing_year: row.licensing_year || "",
+            emergency_contact_1_name: row.emergency_contact_1_name || "",
+            emergency_contact_1_relationship: row.emergency_contact_1_relationship || "",
+            emergency_contact_1_phone: row.emergency_contact_1_phone || "",
+            emergency_contact_2_name: row.emergency_contact_2_name || "",
+            emergency_contact_2_relationship: row.emergency_contact_2_relationship || "",
+            emergency_contact_2_phone: row.emergency_contact_2_phone || "",
+            notes: row.notes || ""
+          };
+        });
 
         setImportPreview(ministersPreview);
         setShowImportPreview(true);
@@ -782,64 +797,51 @@ const Ministers = () => {
           <AlertDialogHeader className="p-6 pb-4">
             <AlertDialogTitle>Import Preview - {importPreview.length} Ministers</AlertDialogTitle>
             <AlertDialogDescription>
-              Review and edit the data before importing. Click on any cell to edit.
+              Review ALL fields before importing. Marital Status must be: married/single/divorced/widowed. Marriage Type must be: ordinance/customary.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="overflow-auto max-h-[60vh] px-6">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[150px]">Full Name</TableHead>
+                  <TableHead className="sticky left-0 bg-background z-10 min-w-[150px]">Full Name *</TableHead>
                   <TableHead className="min-w-[150px]">Email</TableHead>
                   <TableHead className="min-w-[120px]">Phone</TableHead>
-                  <TableHead className="min-w-[120px]">Role</TableHead>
+                  <TableHead className="min-w-[120px]">Role *</TableHead>
                   <TableHead className="min-w-[120px]">Location</TableHead>
                   <TableHead className="min-w-[100px]">Status</TableHead>
+                  <TableHead className="min-w-[120px]">Date Joined</TableHead>
+                  <TableHead className="min-w-[120px]">Date of Birth</TableHead>
+                  <TableHead className="min-w-[120px]">Marital Status</TableHead>
+                  <TableHead className="min-w-[120px]">Spouse Name</TableHead>
+                  <TableHead className="min-w-[120px]">Marriage Type</TableHead>
+                  <TableHead className="min-w-[80px]">Children</TableHead>
+                  <TableHead className="min-w-[100px]">Titles</TableHead>
+                  <TableHead className="min-w-[120px]">WhatsApp</TableHead>
+                  <TableHead className="min-w-[150px]">Church Name</TableHead>
+                  <TableHead className="min-w-[120px]">Position</TableHead>
+                  <TableHead className="min-w-[120px]">Association</TableHead>
+                  <TableHead className="min-w-[120px]">Sector</TableHead>
+                  <TableHead className="min-w-[120px]">Fellowship</TableHead>
+                  <TableHead className="min-w-[100px]">EC 1 Name</TableHead>
+                  <TableHead className="min-w-[100px]">EC 1 Relation</TableHead>
+                  <TableHead className="min-w-[120px]">EC 1 Phone</TableHead>
+                  <TableHead className="min-w-[200px]">Notes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {importPreview.map((row) => (
                   <TableRow key={row._rowId}>
-                    <TableCell>
-                      <Input
-                        value={row.full_name}
-                        onChange={(e) => updatePreviewCell(row._rowId, 'full_name', e.target.value)}
-                        className="min-w-[140px]"
-                      />
+                    <TableCell className="sticky left-0 bg-background z-10">
+                      <Input value={row.full_name} onChange={(e) => updatePreviewCell(row._rowId, 'full_name', e.target.value)} className="min-w-[140px]" />
                     </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.email}
-                        onChange={(e) => updatePreviewCell(row._rowId, 'email', e.target.value)}
-                        className="min-w-[140px]"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.phone}
-                        onChange={(e) => updatePreviewCell(row._rowId, 'phone', e.target.value)}
-                        className="min-w-[110px]"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.role}
-                        onChange={(e) => updatePreviewCell(row._rowId, 'role', e.target.value)}
-                        className="min-w-[110px]"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.location}
-                        onChange={(e) => updatePreviewCell(row._rowId, 'location', e.target.value)}
-                        className="min-w-[110px]"
-                      />
-                    </TableCell>
+                    <TableCell><Input value={row.email} onChange={(e) => updatePreviewCell(row._rowId, 'email', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.phone} onChange={(e) => updatePreviewCell(row._rowId, 'phone', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.role} onChange={(e) => updatePreviewCell(row._rowId, 'role', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.location} onChange={(e) => updatePreviewCell(row._rowId, 'location', e.target.value)} /></TableCell>
                     <TableCell>
                       <Select value={row.status} onValueChange={(value) => updatePreviewCell(row._rowId, 'status', value)}>
-                        <SelectTrigger className="min-w-[90px]">
-                          <SelectValue />
-                        </SelectTrigger>
+                        <SelectTrigger className="min-w-[90px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="active">Active</SelectItem>
                           <SelectItem value="inactive">Inactive</SelectItem>
@@ -847,6 +849,41 @@ const Ministers = () => {
                         </SelectContent>
                       </Select>
                     </TableCell>
+                    <TableCell><Input type="date" value={row.date_joined} onChange={(e) => updatePreviewCell(row._rowId, 'date_joined', e.target.value)} /></TableCell>
+                    <TableCell><Input type="date" value={row.date_of_birth} onChange={(e) => updatePreviewCell(row._rowId, 'date_of_birth', e.target.value)} /></TableCell>
+                    <TableCell>
+                      <Select value={row.marital_status} onValueChange={(value) => updatePreviewCell(row._rowId, 'marital_status', value)}>
+                        <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="married">Married</SelectItem>
+                          <SelectItem value="single">Single</SelectItem>
+                          <SelectItem value="divorced">Divorced</SelectItem>
+                          <SelectItem value="widowed">Widowed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell><Input value={row.spouse_name} onChange={(e) => updatePreviewCell(row._rowId, 'spouse_name', e.target.value)} /></TableCell>
+                    <TableCell>
+                      <Select value={row.marriage_type} onValueChange={(value) => updatePreviewCell(row._rowId, 'marriage_type', value)}>
+                        <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ordinance">Ordinance</SelectItem>
+                          <SelectItem value="customary">Customary</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell><Input type="number" value={row.number_of_children} onChange={(e) => updatePreviewCell(row._rowId, 'number_of_children', e.target.value)} className="w-20" /></TableCell>
+                    <TableCell><Input value={row.titles} onChange={(e) => updatePreviewCell(row._rowId, 'titles', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.whatsapp} onChange={(e) => updatePreviewCell(row._rowId, 'whatsapp', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.current_church_name} onChange={(e) => updatePreviewCell(row._rowId, 'current_church_name', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.position_at_church} onChange={(e) => updatePreviewCell(row._rowId, 'position_at_church', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.association} onChange={(e) => updatePreviewCell(row._rowId, 'association', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.sector} onChange={(e) => updatePreviewCell(row._rowId, 'sector', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.fellowship} onChange={(e) => updatePreviewCell(row._rowId, 'fellowship', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.emergency_contact_1_name} onChange={(e) => updatePreviewCell(row._rowId, 'emergency_contact_1_name', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.emergency_contact_1_relationship} onChange={(e) => updatePreviewCell(row._rowId, 'emergency_contact_1_relationship', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.emergency_contact_1_phone} onChange={(e) => updatePreviewCell(row._rowId, 'emergency_contact_1_phone', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.notes} onChange={(e) => updatePreviewCell(row._rowId, 'notes', e.target.value)} className="min-w-[180px]" /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
