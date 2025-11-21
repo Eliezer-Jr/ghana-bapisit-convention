@@ -21,6 +21,7 @@ import Apply from "./pages/Apply";
 import ApplyAuth from "./pages/ApplyAuth";
 import ApplicantPortal from "./pages/ApplicantPortal";
 import FinancePortal from "./pages/FinancePortal";
+import Reports from "./pages/Reports";
 import ResponsiveLayout from "./components/ResponsiveLayout";
 
 const queryClient = new QueryClient();
@@ -118,6 +119,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Messages />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute>
+                  <Reports />
                 </ProtectedRoute>
               }
             />
