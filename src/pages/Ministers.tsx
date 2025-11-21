@@ -403,8 +403,36 @@ const Ministers = () => {
     event.target.value = ""; // Reset input
   };
 
+  const validateRow = (row: any) => {
+    const errors: string[] = [];
+    if (!row.full_name?.trim()) errors.push("Full Name is required");
+    if (!row.role?.trim()) errors.push("Role is required");
+    if (row.marital_status && !['married', 'single', 'divorced', 'widowed'].includes(row.marital_status)) {
+      errors.push("Marital Status must be: married, single, divorced, or widowed");
+    }
+    if (row.marriage_type && !['ordinance', 'customary'].includes(row.marriage_type)) {
+      errors.push("Marriage Type must be: ordinance or customary");
+    }
+    return errors;
+  };
+
   const confirmImport = async () => {
     try {
+      // Validate all rows first
+      const validationErrors: Record<number, string[]> = {};
+      importPreview.forEach(row => {
+        const errors = validateRow(row);
+        if (errors.length > 0) {
+          validationErrors[row._rowId] = errors;
+        }
+      });
+
+      if (Object.keys(validationErrors).length > 0) {
+        const errorCount = Object.keys(validationErrors).length;
+        toast.error(`${errorCount} row(s) have validation errors. Please fix them before importing.`);
+        return;
+      }
+
       const ministersToInsert = importPreview.map(({ 
         _rowId, 
         emergency_contact_1_name,
@@ -414,7 +442,15 @@ const Ministers = () => {
         emergency_contact_2_relationship,
         emergency_contact_2_phone,
         ...minister 
-      }) => minister);
+      }) => ({
+        ...minister,
+        // Convert empty strings to null for constrained fields
+        marital_status: minister.marital_status?.trim() || null,
+        marriage_type: minister.marriage_type?.trim() || null,
+        date_of_birth: minister.date_of_birth?.trim() || null,
+        spouse_name: minister.spouse_name?.trim() || null,
+        number_of_children: minister.number_of_children || 0,
+      }));
 
       const { data: insertedMinisters, error } = await supabase
         .from("ministers")
@@ -797,19 +833,20 @@ const Ministers = () => {
           <AlertDialogHeader className="p-6 pb-4">
             <AlertDialogTitle>Import Preview - {importPreview.length} Ministers</AlertDialogTitle>
             <AlertDialogDescription>
-              Review ALL fields before importing. Marital Status must be: married/single/divorced/widowed. Marriage Type must be: ordinance/customary.
+              Review ALL fields before importing. Red borders indicate validation errors. Required fields: Full Name, Role.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="overflow-auto max-h-[60vh] px-6">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="sticky left-0 bg-background z-10 min-w-[150px]">Full Name *</TableHead>
+                  <TableHead className="sticky left-0 bg-background z-10 min-w-[50px]">✓</TableHead>
+                  <TableHead className="sticky left-[50px] bg-background z-10 min-w-[150px]">Full Name *</TableHead>
                   <TableHead className="min-w-[150px]">Email</TableHead>
                   <TableHead className="min-w-[120px]">Phone</TableHead>
                   <TableHead className="min-w-[120px]">Role *</TableHead>
                   <TableHead className="min-w-[120px]">Location</TableHead>
-                  <TableHead className="min-w-[100px]">Status</TableHead>
+                  <TableHead className="min-w-[100px]">Minister Status</TableHead>
                   <TableHead className="min-w-[120px]">Date Joined</TableHead>
                   <TableHead className="min-w-[120px]">Date of Birth</TableHead>
                   <TableHead className="min-w-[120px]">Marital Status</TableHead>
@@ -830,14 +867,40 @@ const Ministers = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {importPreview.map((row) => (
-                  <TableRow key={row._rowId}>
-                    <TableCell className="sticky left-0 bg-background z-10">
-                      <Input value={row.full_name} onChange={(e) => updatePreviewCell(row._rowId, 'full_name', e.target.value)} className="min-w-[140px]" />
-                    </TableCell>
-                    <TableCell><Input value={row.email} onChange={(e) => updatePreviewCell(row._rowId, 'email', e.target.value)} /></TableCell>
-                    <TableCell><Input value={row.phone} onChange={(e) => updatePreviewCell(row._rowId, 'phone', e.target.value)} /></TableCell>
-                    <TableCell><Input value={row.role} onChange={(e) => updatePreviewCell(row._rowId, 'role', e.target.value)} /></TableCell>
+                {importPreview.map((row) => {
+                  const errors = validateRow(row);
+                  const hasErrors = errors.length > 0;
+                  return (
+                    <TableRow key={row._rowId} className={hasErrors ? "bg-destructive/5" : ""}>
+                      <TableCell className="sticky left-0 bg-background z-10">
+                        {hasErrors ? (
+                          <div className="flex items-center gap-2" title={errors.join(", ")}>
+                            <div className="w-3 h-3 rounded-full bg-destructive animate-pulse" />
+                            <span className="text-xs text-destructive font-semibold">{errors.length}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-green-500" />
+                            <span className="text-xs text-green-600 font-semibold">✓</span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="sticky left-[50px] bg-background z-10">
+                        <Input 
+                          value={row.full_name} 
+                          onChange={(e) => updatePreviewCell(row._rowId, 'full_name', e.target.value)} 
+                          className={`min-w-[140px] ${!row.full_name?.trim() ? 'border-destructive' : ''}`}
+                        />
+                      </TableCell>
+                      <TableCell><Input value={row.email} onChange={(e) => updatePreviewCell(row._rowId, 'email', e.target.value)} /></TableCell>
+                      <TableCell><Input value={row.phone} onChange={(e) => updatePreviewCell(row._rowId, 'phone', e.target.value)} /></TableCell>
+                      <TableCell>
+                        <Input 
+                          value={row.role} 
+                          onChange={(e) => updatePreviewCell(row._rowId, 'role', e.target.value)}
+                          className={!row.role?.trim() ? 'border-destructive' : ''}
+                        />
+                      </TableCell>
                     <TableCell><Input value={row.location} onChange={(e) => updatePreviewCell(row._rowId, 'location', e.target.value)} /></TableCell>
                     <TableCell>
                       <Select value={row.status} onValueChange={(value) => updatePreviewCell(row._rowId, 'status', value)}>
@@ -851,27 +914,39 @@ const Ministers = () => {
                     </TableCell>
                     <TableCell><Input type="date" value={row.date_joined} onChange={(e) => updatePreviewCell(row._rowId, 'date_joined', e.target.value)} /></TableCell>
                     <TableCell><Input type="date" value={row.date_of_birth} onChange={(e) => updatePreviewCell(row._rowId, 'date_of_birth', e.target.value)} /></TableCell>
-                    <TableCell>
-                      <Select value={row.marital_status} onValueChange={(value) => updatePreviewCell(row._rowId, 'marital_status', value)}>
-                        <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="married">Married</SelectItem>
-                          <SelectItem value="single">Single</SelectItem>
-                          <SelectItem value="divorced">Divorced</SelectItem>
-                          <SelectItem value="widowed">Widowed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell><Input value={row.spouse_name} onChange={(e) => updatePreviewCell(row._rowId, 'spouse_name', e.target.value)} /></TableCell>
-                    <TableCell>
-                      <Select value={row.marriage_type} onValueChange={(value) => updatePreviewCell(row._rowId, 'marriage_type', value)}>
-                        <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ordinance">Ordinance</SelectItem>
-                          <SelectItem value="customary">Customary</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
+                      <TableCell>
+                        <Select 
+                          value={row.marital_status || ""} 
+                          onValueChange={(value) => updatePreviewCell(row._rowId, 'marital_status', value)}
+                        >
+                          <SelectTrigger className={row.marital_status && !['married', 'single', 'divorced', 'widowed'].includes(row.marital_status) ? 'border-destructive' : ''}>
+                            <SelectValue placeholder="Select..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="married">Married</SelectItem>
+                            <SelectItem value="single">Single</SelectItem>
+                            <SelectItem value="divorced">Divorced</SelectItem>
+                            <SelectItem value="widowed">Widowed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell><Input value={row.spouse_name} onChange={(e) => updatePreviewCell(row._rowId, 'spouse_name', e.target.value)} /></TableCell>
+                      <TableCell>
+                        <Select 
+                          value={row.marriage_type || ""} 
+                          onValueChange={(value) => updatePreviewCell(row._rowId, 'marriage_type', value)}
+                        >
+                          <SelectTrigger className={row.marriage_type && !['ordinance', 'customary'].includes(row.marriage_type) ? 'border-destructive' : ''}>
+                            <SelectValue placeholder="Select..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="ordinance">Ordinance</SelectItem>
+                            <SelectItem value="customary">Customary</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
                     <TableCell><Input type="number" value={row.number_of_children} onChange={(e) => updatePreviewCell(row._rowId, 'number_of_children', e.target.value)} className="w-20" /></TableCell>
                     <TableCell><Input value={row.titles} onChange={(e) => updatePreviewCell(row._rowId, 'titles', e.target.value)} /></TableCell>
                     <TableCell><Input value={row.whatsapp} onChange={(e) => updatePreviewCell(row._rowId, 'whatsapp', e.target.value)} /></TableCell>
@@ -883,9 +958,10 @@ const Ministers = () => {
                     <TableCell><Input value={row.emergency_contact_1_name} onChange={(e) => updatePreviewCell(row._rowId, 'emergency_contact_1_name', e.target.value)} /></TableCell>
                     <TableCell><Input value={row.emergency_contact_1_relationship} onChange={(e) => updatePreviewCell(row._rowId, 'emergency_contact_1_relationship', e.target.value)} /></TableCell>
                     <TableCell><Input value={row.emergency_contact_1_phone} onChange={(e) => updatePreviewCell(row._rowId, 'emergency_contact_1_phone', e.target.value)} /></TableCell>
-                    <TableCell><Input value={row.notes} onChange={(e) => updatePreviewCell(row._rowId, 'notes', e.target.value)} className="min-w-[180px]" /></TableCell>
-                  </TableRow>
-                ))}
+                      <TableCell><Input value={row.notes} onChange={(e) => updatePreviewCell(row._rowId, 'notes', e.target.value)} className="min-w-[180px]" /></TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
