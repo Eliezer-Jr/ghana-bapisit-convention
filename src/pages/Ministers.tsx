@@ -184,6 +184,7 @@ const Ministers = () => {
     }
 
     const exportData = filteredMinisters.map((minister) => ({
+      minister_id: minister.minister_id || "",
       full_name: minister.full_name,
       email: minister.email || "",
       phone: minister.phone || "",
@@ -267,6 +268,7 @@ const Ministers = () => {
       
       // Prepare table data
       const tableData = filteredMinisters.map((minister) => [
+        minister.minister_id || "-",
         minister.full_name,
         minister.role,
         minister.location || "-",
@@ -278,7 +280,7 @@ const Ministers = () => {
 
       // Add table
       autoTable(doc, {
-        head: [['Name', 'Role', 'Location', 'Email', 'Phone', 'Date Joined', 'Status']],
+        head: [['Minister ID', 'Name', 'Role', 'Location', 'Email', 'Phone', 'Date Joined', 'Status']],
         body: tableData,
         startY: 38,
         styles: { fontSize: 8, cellPadding: 2 },
@@ -475,6 +477,7 @@ const Ministers = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Minister ID</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Location</TableHead>
@@ -487,20 +490,23 @@ const Ministers = () => {
                 </TableHeader>
                 <TableBody>
                   {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                     <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         Loading...
                       </TableCell>
                     </TableRow>
                   ) : filteredMinisters.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         No ministers found
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredMinisters.map((minister) => (
                   <TableRow key={minister.id}>
+                        <TableCell className="font-mono text-sm">
+                          {minister.minister_id || "-"}
+                        </TableCell>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
@@ -608,6 +614,15 @@ const Ministers = () => {
                 </AlertDialogHeader>
 
                 <div className="space-y-6">
+                  {/* Minister ID & Basic Info */}
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-primary border-b pb-2">Identification</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <InfoField label="Minister ID" value={ministerToView.minister_id || "-"} />
+                      <InfoField label="Titles" value={ministerToView.titles || "-"} />
+                    </div>
+                  </div>
+
                   {/* Personal Information */}
                   <div className="space-y-3">
                     <h3 className="text-lg font-semibold text-primary border-b pb-2">Personal Information</h3>
