@@ -847,7 +847,6 @@ const Ministers = () => {
                   <TableHead className="min-w-[120px]">Role *</TableHead>
                   <TableHead className="min-w-[120px]">Location</TableHead>
                   <TableHead className="min-w-[100px]">Minister Status</TableHead>
-                  <TableHead className="min-w-[120px]">Date Joined</TableHead>
                   <TableHead className="min-w-[120px]">Date of Birth</TableHead>
                   <TableHead className="min-w-[120px]">Marital Status</TableHead>
                   <TableHead className="min-w-[120px]">Spouse Name</TableHead>
@@ -912,7 +911,6 @@ const Ministers = () => {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                    <TableCell><Input type="date" value={row.date_joined} onChange={(e) => updatePreviewCell(row._rowId, 'date_joined', e.target.value)} /></TableCell>
                     <TableCell><Input type="date" value={row.date_of_birth} onChange={(e) => updatePreviewCell(row._rowId, 'date_of_birth', e.target.value)} /></TableCell>
                       <TableCell>
                         <Select 

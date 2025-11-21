@@ -19,7 +19,7 @@ const ministerSchema = z.object({
   whatsapp: z.string().trim().max(20).optional(),
   role: z.string().trim().min(1, "Role is required").max(100),
   location: z.string().trim().max(100).optional(),
-  date_joined: z.string().min(1, "Date is required"),
+  date_joined: z.string().min(1, "Date is required"), // System-managed field
   status: z.enum(["active", "inactive", "retired"]),
   notes: z.string().max(1000).optional(),
   titles: z.string().trim().max(200).optional(),
@@ -712,17 +712,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                     disabled={loading}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="date_joined">Date Joined *</Label>
-                  <Input
-                    id="date_joined"
-                    type="date"
-                    value={formData.date_joined}
-                    required
-                    disabled
-                    className="bg-muted"
-                  />
-                </div>
+                {/* Date Joined - Hidden system field, automatically set on creation */}
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
                   <Select
