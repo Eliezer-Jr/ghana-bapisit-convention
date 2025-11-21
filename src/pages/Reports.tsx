@@ -346,8 +346,18 @@ const Reports = () => {
   })).filter(item => item.count > 0).sort((a, b) => b.count - a.count).slice(0, 10);
 
   const chartConfig = {
-    count: { label: "Ministers", color: "hsl(var(--primary))" },
-    value: { label: "Count", color: "hsl(var(--primary))" },
+    count: { 
+      label: "Ministers", 
+      color: "hsl(var(--primary))" 
+    },
+    value: { 
+      label: "Count", 
+      color: "hsl(var(--primary))" 
+    },
+    region: {
+      label: "Association",
+      color: "hsl(var(--muted-foreground))"
+    }
   };
 
   return (
@@ -497,7 +507,10 @@ const Reports = () => {
             <CardContent>
               <ChartContainer config={chartConfig} className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={ageDistributionData}>
+                  <BarChart 
+                    data={ageDistributionData}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="ageGroup" 
@@ -507,12 +520,19 @@ const Reports = () => {
                     <YAxis 
                       stroke="hsl(var(--muted-foreground))"
                       fontSize={12}
+                      label={{ value: 'Number of Ministers', angle: -90, position: 'insideLeft' }}
                     />
-                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartTooltip 
+                      content={<ChartTooltipContent 
+                        labelFormatter={(value) => `Age Group: ${value}`}
+                        formatter={(value, name) => [value, 'Ministers']}
+                      />} 
+                    />
                     <Bar 
                       dataKey="count" 
                       fill="hsl(var(--primary))" 
                       radius={[8, 8, 0, 0]}
+                      label={{ position: 'top', fill: 'hsl(var(--foreground))' }}
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -539,9 +559,9 @@ const Reports = () => {
                       data={maritalStatusData}
                       cx="50%"
                       cy="50%"
-                      labelLine={false}
-                      label={({ status, percent }) => `${status} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
+                      labelLine={true}
+                      label={({ status, value, percent }) => `${status}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                      outerRadius={90}
                       fill="hsl(var(--primary))"
                       dataKey="value"
                     >
@@ -549,8 +569,14 @@ const Reports = () => {
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                       ))}
                     </Pie>
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Legend />
+                    <ChartTooltip 
+                      content={<ChartTooltipContent 
+                        formatter={(value, name) => [value, 'Ministers']}
+                      />} 
+                    />
+                    <Legend 
+                      formatter={(value) => value}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -572,12 +598,17 @@ const Reports = () => {
               {regionData.length > 0 ? (
                 <ChartContainer config={chartConfig} className="h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={regionData} layout="horizontal">
+                    <BarChart 
+                      data={regionData} 
+                      layout="horizontal"
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis 
                         type="number"
                         stroke="hsl(var(--muted-foreground))"
                         fontSize={12}
+                        label={{ value: 'Number of Ministers', position: 'insideBottom', offset: -5 }}
                       />
                       <YAxis 
                         dataKey="region" 
@@ -586,11 +617,17 @@ const Reports = () => {
                         fontSize={12}
                         width={150}
                       />
-                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartTooltip 
+                        content={<ChartTooltipContent 
+                          labelFormatter={(value) => `Association: ${value}`}
+                          formatter={(value, name) => [value, 'Ministers']}
+                        />} 
+                      />
                       <Bar 
                         dataKey="count" 
                         fill="hsl(var(--primary))" 
                         radius={[0, 8, 8, 0]}
+                        label={{ position: 'right', fill: 'hsl(var(--foreground))' }}
                       />
                     </BarChart>
                   </ResponsiveContainer>
