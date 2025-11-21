@@ -474,6 +474,7 @@ export type Database = {
           location: string | null
           marital_status: string | null
           marriage_type: string | null
+          minister_id: string | null
           notes: string | null
           number_of_children: number | null
           ordination_year: number | null
@@ -508,6 +509,7 @@ export type Database = {
           location?: string | null
           marital_status?: string | null
           marriage_type?: string | null
+          minister_id?: string | null
           notes?: string | null
           number_of_children?: number | null
           ordination_year?: number | null
@@ -542,6 +544,7 @@ export type Database = {
           location?: string | null
           marital_status?: string | null
           marriage_type?: string | null
+          minister_id?: string | null
           notes?: string | null
           number_of_children?: number | null
           ordination_year?: number | null
@@ -696,6 +699,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_minister_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
