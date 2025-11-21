@@ -305,6 +305,13 @@ export type Database = {
             foreignKeyName: "convention_positions_minister_id_fkey"
             columns: ["minister_id"]
             isOneToOne: false
+            referencedRelation: "minister_audit_info"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "convention_positions_minister_id_fkey"
+            columns: ["minister_id"]
+            isOneToOne: false
             referencedRelation: "ministers"
             referencedColumns: ["id"]
           },
@@ -336,6 +343,13 @@ export type Database = {
           year_obtained?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "educational_qualifications_minister_id_fkey"
+            columns: ["minister_id"]
+            isOneToOne: false
+            referencedRelation: "minister_audit_info"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "educational_qualifications_minister_id_fkey"
             columns: ["minister_id"]
@@ -375,6 +389,13 @@ export type Database = {
             foreignKeyName: "emergency_contacts_minister_id_fkey"
             columns: ["minister_id"]
             isOneToOne: false
+            referencedRelation: "minister_audit_info"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_contacts_minister_id_fkey"
+            columns: ["minister_id"]
+            isOneToOne: false
             referencedRelation: "ministers"
             referencedColumns: ["id"]
           },
@@ -403,6 +424,13 @@ export type Database = {
           minister_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "minister_children_minister_id_fkey"
+            columns: ["minister_id"]
+            isOneToOne: false
+            referencedRelation: "minister_audit_info"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "minister_children_minister_id_fkey"
             columns: ["minister_id"]
@@ -451,6 +479,13 @@ export type Database = {
             foreignKeyName: "ministerial_history_minister_id_fkey"
             columns: ["minister_id"]
             isOneToOne: false
+            referencedRelation: "minister_audit_info"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ministerial_history_minister_id_fkey"
+            columns: ["minister_id"]
+            isOneToOne: false
             referencedRelation: "ministers"
             referencedColumns: ["id"]
           },
@@ -462,6 +497,7 @@ export type Database = {
           association: string | null
           church_address: string | null
           created_at: string
+          created_by: string | null
           current_church_name: string | null
           date_joined: string
           date_of_birth: string | null
@@ -490,6 +526,7 @@ export type Database = {
           status: string
           titles: string | null
           updated_at: string
+          updated_by: string | null
           whatsapp: string | null
         }
         Insert: {
@@ -497,6 +534,7 @@ export type Database = {
           association?: string | null
           church_address?: string | null
           created_at?: string
+          created_by?: string | null
           current_church_name?: string | null
           date_joined?: string
           date_of_birth?: string | null
@@ -525,6 +563,7 @@ export type Database = {
           status?: string
           titles?: string | null
           updated_at?: string
+          updated_by?: string | null
           whatsapp?: string | null
         }
         Update: {
@@ -532,6 +571,7 @@ export type Database = {
           association?: string | null
           church_address?: string | null
           created_at?: string
+          created_by?: string | null
           current_church_name?: string | null
           date_joined?: string
           date_of_birth?: string | null
@@ -560,6 +600,7 @@ export type Database = {
           status?: string
           titles?: string | null
           updated_at?: string
+          updated_by?: string | null
           whatsapp?: string | null
         }
         Relationships: []
@@ -593,6 +634,13 @@ export type Database = {
           period_start?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "non_church_work_minister_id_fkey"
+            columns: ["minister_id"]
+            isOneToOne: false
+            referencedRelation: "minister_audit_info"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "non_church_work_minister_id_fkey"
             columns: ["minister_id"]
@@ -696,7 +744,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      minister_audit_info: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          created_by_email: string | null
+          created_by_name: string | null
+          full_name: string | null
+          id: string | null
+          minister_id: string | null
+          updated_at: string | null
+          updated_by: string | null
+          updated_by_email: string | null
+          updated_by_name: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       generate_minister_id: { Args: never; Returns: string }
