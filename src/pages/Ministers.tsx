@@ -166,6 +166,12 @@ const Ministers = () => {
         ordination_year: "2010",
         recognition_year: "2008",
         licensing_year: "2006",
+        emergency_contact_1_name: "Jane Doe",
+        emergency_contact_1_relationship: "Spouse",
+        emergency_contact_1_phone: "+233987654321",
+        emergency_contact_2_name: "John Doe Jr",
+        emergency_contact_2_relationship: "Child",
+        emergency_contact_2_phone: "+233456789123",
         notes: "Additional notes here"
       }
     ];
@@ -177,40 +183,56 @@ const Ministers = () => {
     toast.success("Template downloaded successfully");
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (filteredMinisters.length === 0) {
       toast.error("No ministers to export");
       return;
     }
 
-    const exportData = filteredMinisters.map((minister) => ({
-      minister_id: minister.minister_id || "",
-      full_name: minister.full_name,
-      email: minister.email || "",
-      phone: minister.phone || "",
-      role: minister.role,
-      location: minister.location || "",
-      status: minister.status,
-      date_joined: minister.date_joined,
-      date_of_birth: minister.date_of_birth || "",
-      marital_status: minister.marital_status || "",
-      spouse_name: minister.spouse_name || "",
-      marriage_type: minister.marriage_type || "",
-      number_of_children: minister.number_of_children || 0,
-      titles: minister.titles || "",
-      gps_address: minister.gps_address || "",
-      whatsapp: minister.whatsapp || "",
-      current_church_name: minister.current_church_name || "",
-      position_at_church: minister.position_at_church || "",
-      church_address: minister.church_address || "",
-      association: minister.association || "",
-      sector: minister.sector || "",
-      fellowship: minister.fellowship || "",
-      ordination_year: minister.ordination_year || "",
-      recognition_year: minister.recognition_year || "",
-      licensing_year: minister.licensing_year || "",
-      notes: minister.notes || ""
-    }));
+    // Fetch emergency contacts for all ministers
+    const ministerIds = filteredMinisters.map(m => m.id);
+    const { data: emergencyContacts } = await supabase
+      .from("emergency_contacts")
+      .select("*")
+      .in("minister_id", ministerIds);
+
+    const exportData = filteredMinisters.map((minister) => {
+      const contacts = emergencyContacts?.filter(c => c.minister_id === minister.id) || [];
+      return {
+        minister_id: minister.minister_id || "",
+        full_name: minister.full_name,
+        email: minister.email || "",
+        phone: minister.phone || "",
+        role: minister.role,
+        location: minister.location || "",
+        status: minister.status,
+        date_joined: minister.date_joined,
+        date_of_birth: minister.date_of_birth || "",
+        marital_status: minister.marital_status || "",
+        spouse_name: minister.spouse_name || "",
+        marriage_type: minister.marriage_type || "",
+        number_of_children: minister.number_of_children || 0,
+        titles: minister.titles || "",
+        gps_address: minister.gps_address || "",
+        whatsapp: minister.whatsapp || "",
+        current_church_name: minister.current_church_name || "",
+        position_at_church: minister.position_at_church || "",
+        church_address: minister.church_address || "",
+        association: minister.association || "",
+        sector: minister.sector || "",
+        fellowship: minister.fellowship || "",
+        ordination_year: minister.ordination_year || "",
+        recognition_year: minister.recognition_year || "",
+        licensing_year: minister.licensing_year || "",
+        emergency_contact_1_name: contacts[0]?.contact_name || "",
+        emergency_contact_1_relationship: contacts[0]?.relationship || "",
+        emergency_contact_1_phone: contacts[0]?.phone_number || "",
+        emergency_contact_2_name: contacts[1]?.contact_name || "",
+        emergency_contact_2_relationship: contacts[1]?.relationship || "",
+        emergency_contact_2_phone: contacts[1]?.phone_number || "",
+        notes: minister.notes || ""
+      };
+    });
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
@@ -344,6 +366,12 @@ const Ministers = () => {
           ordination_year: row.ordination_year || "",
           recognition_year: row.recognition_year || "",
           licensing_year: row.licensing_year || "",
+          emergency_contact_1_name: row.emergency_contact_1_name || "",
+          emergency_contact_1_relationship: row.emergency_contact_1_relationship || "",
+          emergency_contact_1_phone: row.emergency_contact_1_phone || "",
+          emergency_contact_2_name: row.emergency_contact_2_name || "",
+          emergency_contact_2_relationship: row.emergency_contact_2_relationship || "",
+          emergency_contact_2_phone: row.emergency_contact_2_phone || "",
           notes: row.notes || ""
         }));
 
@@ -362,15 +390,58 @@ const Ministers = () => {
 
   const confirmImport = async () => {
     try {
-      const ministersToInsert = importPreview.map(({ _rowId, ...minister }) => minister);
+      const ministersToInsert = importPreview.map(({ 
+        _rowId, 
+        emergency_contact_1_name,
+        emergency_contact_1_relationship,
+        emergency_contact_1_phone,
+        emergency_contact_2_name,
+        emergency_contact_2_relationship,
+        emergency_contact_2_phone,
+        ...minister 
+      }) => minister);
 
-      const { error } = await supabase
+      const { data: insertedMinisters, error } = await supabase
         .from("ministers")
-        .insert(ministersToInsert);
+        .insert(ministersToInsert)
+        .select();
 
       if (error) throw error;
 
-      toast.success(`Successfully imported ${ministersToInsert.length} ministers`);
+      // Now insert emergency contacts
+      const emergencyContactsToInsert = [];
+      for (let i = 0; i < importPreview.length; i++) {
+        const preview = importPreview[i];
+        const minister = insertedMinisters![i];
+        
+        if (preview.emergency_contact_1_name && preview.emergency_contact_1_phone) {
+          emergencyContactsToInsert.push({
+            minister_id: minister.id,
+            contact_name: preview.emergency_contact_1_name,
+            relationship: preview.emergency_contact_1_relationship || "",
+            phone_number: preview.emergency_contact_1_phone
+          });
+        }
+        
+        if (preview.emergency_contact_2_name && preview.emergency_contact_2_phone) {
+          emergencyContactsToInsert.push({
+            minister_id: minister.id,
+            contact_name: preview.emergency_contact_2_name,
+            relationship: preview.emergency_contact_2_relationship || "",
+            phone_number: preview.emergency_contact_2_phone
+          });
+        }
+      }
+
+      if (emergencyContactsToInsert.length > 0) {
+        const { error: contactsError } = await supabase
+          .from("emergency_contacts")
+          .insert(emergencyContactsToInsert);
+        
+        if (contactsError) throw contactsError;
+      }
+
+      toast.success(`Successfully imported ${ministersToInsert.length} ministers with emergency contacts`);
       setShowImportPreview(false);
       setImportPreview([]);
       fetchMinisters();
