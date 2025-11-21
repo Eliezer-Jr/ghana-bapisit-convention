@@ -13,6 +13,7 @@ import {
   DollarSign,
   ClipboardCheck,
   UserCog,
+  BarChart3,
 } from "lucide-react";
 import {
   Sidebar,
@@ -56,6 +57,7 @@ export function AppSidebar() {
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/", show: true },
     { icon: Users, label: "Ministers", path: "/ministers", show: true },
+    { icon: BarChart3, label: "Reports", path: "/reports", show: true },
     { icon: MessageSquare, label: "Messages", path: "/messages", show: true },
     { icon: GraduationCap, label: "My Admissions", path: "/admissions", show: true },
     { icon: UserCircle, label: "Profile", path: "/profile", show: true },
