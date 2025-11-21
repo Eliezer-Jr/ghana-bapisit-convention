@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, TrendingUp, Users, Calendar, Heart, UserCheck } from "lucide-react";
+import { FileText, Download, TrendingUp, Users, Calendar, Heart, UserCheck, BarChart3, PieChart as PieChartIcon } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import logoWatermark from "@/assets/logo-watermark.png";
 import { differenceInYears } from "date-fns";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 
 interface Minister {
   id: string;
@@ -321,6 +323,33 @@ const Reports = () => {
 
   const stats = getStatistics();
 
+  // Prepare chart data
+  const ageDistributionData = [
+    { ageGroup: "Under 30", count: filteredMinisters.filter(m => { const age = calculateAge(m.date_of_birth); return age !== null && age < 30; }).length },
+    { ageGroup: "30-40", count: filteredMinisters.filter(m => { const age = calculateAge(m.date_of_birth); return age !== null && age >= 30 && age < 40; }).length },
+    { ageGroup: "40-50", count: filteredMinisters.filter(m => { const age = calculateAge(m.date_of_birth); return age !== null && age >= 40 && age < 50; }).length },
+    { ageGroup: "50-60", count: filteredMinisters.filter(m => { const age = calculateAge(m.date_of_birth); return age !== null && age >= 50 && age < 60; }).length },
+    { ageGroup: "60+", count: filteredMinisters.filter(m => { const age = calculateAge(m.date_of_birth); return age !== null && age >= 60; }).length },
+  ];
+
+  const maritalStatusData = [
+    { status: "Married", value: filteredMinisters.filter(m => m.marital_status === "married").length, fill: "hsl(var(--primary))" },
+    { status: "Single", value: filteredMinisters.filter(m => m.marital_status === "single").length, fill: "hsl(var(--chart-2))" },
+    { status: "Divorced", value: filteredMinisters.filter(m => m.marital_status === "divorced").length, fill: "hsl(var(--chart-3))" },
+    { status: "Widowed", value: filteredMinisters.filter(m => m.marital_status === "widowed").length, fill: "hsl(var(--chart-4))" },
+    { status: "Not Specified", value: filteredMinisters.filter(m => !m.marital_status).length, fill: "hsl(var(--muted))" },
+  ].filter(item => item.value > 0);
+
+  const regionData = associations.map(association => ({
+    region: association,
+    count: filteredMinisters.filter(m => m.association === association).length,
+  })).filter(item => item.count > 0).sort((a, b) => b.count - a.count).slice(0, 10);
+
+  const chartConfig = {
+    count: { label: "Ministers", color: "hsl(var(--primary))" },
+    value: { label: "Count", color: "hsl(var(--primary))" },
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -448,6 +477,129 @@ const Reports = () => {
                 <span className="text-sm">Inactive</span>
                 <Badge variant="secondary">{stats.total - stats.active}</Badge>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Age Distribution Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Age Distribution
+              </CardTitle>
+              <CardDescription>
+                Ministers grouped by age ranges
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={ageDistributionData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="ageGroup" 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar 
+                      dataKey="count" 
+                      fill="hsl(var(--primary))" 
+                      radius={[8, 8, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          {/* Marital Status Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PieChartIcon className="h-5 w-5 text-primary" />
+                Marital Status Breakdown
+              </CardTitle>
+              <CardDescription>
+                Distribution of marital status
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={maritalStatusData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ status, percent }) => `${status} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="hsl(var(--primary))"
+                      dataKey="value"
+                    >
+                      {maritalStatusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          {/* Ministers per Region Chart */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Ministers per Association
+              </CardTitle>
+              <CardDescription>
+                Top associations by minister count {regionData.length > 0 && `(showing top ${regionData.length})`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {regionData.length > 0 ? (
+                <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={regionData} layout="horizontal">
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis 
+                        type="number"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                      />
+                      <YAxis 
+                        dataKey="region" 
+                        type="category"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        width={150}
+                      />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar 
+                        dataKey="count" 
+                        fill="hsl(var(--primary))" 
+                        radius={[0, 8, 8, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  No regional data available
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

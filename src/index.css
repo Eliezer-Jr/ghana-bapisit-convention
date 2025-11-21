@@ -43,6 +43,13 @@ All colors MUST be HSL.
     --ring: 221 83% 53%;
     --radius: 0.75rem;
     
+    /* Chart Colors */
+    --chart-1: 221 83% 53%;
+    --chart-2: 142 70% 45%;
+    --chart-3: 262 52% 47%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 84% 60%;
+    
     /* Sidebar - Premium Light */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
@@ -83,6 +90,13 @@ All colors MUST be HSL.
     --border: 217 33% 17%;
     --input: 217 33% 17%;
     --ring: 221 83% 53%;
+    
+    /* Chart Colors */
+    --chart-1: 221 83% 53%;
+    --chart-2: 142 70% 50%;
+    --chart-3: 262 52% 47%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 63% 31%;
     
     --sidebar-background: 222 47% 14%;
     --sidebar-foreground: 210 40% 98%;
