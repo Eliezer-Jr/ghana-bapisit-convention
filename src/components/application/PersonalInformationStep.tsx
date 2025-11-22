@@ -26,7 +26,6 @@ export default function PersonalInformationStep({
 }: PersonalInformationStepProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [croppedImageBlob, setCroppedImageBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>(formData.photo_url || "");
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string>("");
@@ -42,6 +41,41 @@ export default function PersonalInformationStep({
 
   const handleChange = (field: string, value: string) => {
     setData({ ...data, [field]: value });
+  };
+
+  const ensureApplicationExists = async (): Promise<string> => {
+    if (applicationId) return applicationId;
+
+    const phoneNumber = localStorage.getItem('applicant_phone');
+    if (!phoneNumber) {
+      throw new Error('No phone number found');
+    }
+
+    const { data: newApp, error } = await supabase
+      .from('applications')
+      .insert({
+        full_name: data.full_name || '',
+        phone: phoneNumber,
+        email: data.email || '',
+        date_of_birth: data.date_of_birth || '',
+        marital_status: data.marital_status || '',
+        spouse_name: data.spouse_name || '',
+        church_name: '',
+        association: '',
+        sector: '',
+        fellowship: '',
+        admission_level: 'licensing',
+        status: 'draft',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    // Update parent with new application ID via onSave
+    onSave({ ...data, id: newApp.id });
+    
+    return newApp.id;
   };
 
   const uploadPhotoToStorage = async (blob: Blob, appId: string) => {
@@ -86,11 +120,35 @@ export default function PersonalInformationStep({
   };
 
   const handleCropComplete = async (croppedBlob: Blob) => {
-    setCroppedImageBlob(croppedBlob);
     const objectUrl = URL.createObjectURL(croppedBlob);
     setPreviewUrl(objectUrl);
     setCropDialogOpen(false);
-    toast.success("Photo cropped successfully. It will be uploaded when you save.");
+
+    // Auto-upload immediately
+    setUploading(true);
+    try {
+      const appId = await ensureApplicationExists();
+      const photoUrl = await uploadPhotoToStorage(croppedBlob, appId);
+
+      const updatedData = { ...data, photo_url: photoUrl };
+      setData(updatedData);
+
+      // Update database
+      await supabase
+        .from('applications')
+        .update({ photo_url: photoUrl })
+        .eq('id', appId);
+
+      // Sync with parent
+      onSave(updatedData);
+
+      toast.success("Photo uploaded successfully!");
+    } catch (error: any) {
+      console.error('Photo upload error:', error);
+      toast.error(error.message || "Failed to upload photo");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleCropCancel = () => {
@@ -99,33 +157,12 @@ export default function PersonalInformationStep({
   };
 
   const handleSave = async () => {
-    // Upload cropped image if exists
-    if (croppedImageBlob && applicationId) {
-      setUploading(true);
-      try {
-        const photoUrl = await uploadPhotoToStorage(croppedImageBlob, applicationId);
-        const updatedData = { ...data, photo_url: photoUrl };
-        setData(updatedData);
-        
-        await supabase
-          .from('applications')
-          .update({ photo_url: photoUrl })
-          .eq('id', applicationId);
-
-        setCroppedImageBlob(null);
-        toast.success("Photo uploaded successfully");
-        onSave(updatedData);
-      } catch (error: any) {
-        console.error("Error uploading photo:", error);
-        toast.error("Failed to upload photo");
-      } finally {
-        setUploading(false);
-      }
-    } else {
-      if (croppedImageBlob && !applicationId) {
-        toast.info("Photo will be uploaded after creating application...");
-      }
-      onSave(data);
+    try {
+      await onSave(data);
+      toast.success("Progress saved successfully!");
+    } catch (error: any) {
+      console.error('Save error:', error);
+      toast.error(error.message || "Failed to save progress");
     }
   };
 
@@ -135,30 +172,11 @@ export default function PersonalInformationStep({
       return;
     }
 
-    // Upload photo before proceeding if we have a cropped image
-    if (croppedImageBlob && applicationId && !data.photo_url) {
-      setUploading(true);
-      try {
-        const photoUrl = await uploadPhotoToStorage(croppedImageBlob, applicationId);
-        const updatedData = { ...data, photo_url: photoUrl };
-        setData(updatedData);
-        
-        await supabase
-          .from('applications')
-          .update({ photo_url: photoUrl })
-          .eq('id', applicationId);
-
-        setCroppedImageBlob(null);
-        toast.success("Photo uploaded successfully");
-        onNext(updatedData);
-      } catch (error: any) {
-        console.error("Error uploading photo:", error);
-        toast.error("Failed to upload photo");
-      } finally {
-        setUploading(false);
-      }
-    } else {
-      onNext(data);
+    try {
+      await onNext(data);
+    } catch (error: any) {
+      console.error('Next error:', error);
+      toast.error(error.message || "Failed to proceed");
     }
   };
 
@@ -200,7 +218,7 @@ export default function PersonalInformationStep({
             disabled={uploading}
           >
             <Upload className="mr-2 h-4 w-4" />
-            {uploading ? "Uploading..." : croppedImageBlob || previewUrl ? "Change Photo" : "Upload Photo"}
+            {uploading ? "Uploading..." : previewUrl ? "Change Photo" : "Upload Photo"}
           </Button>
         )}
         <p className="text-xs text-muted-foreground mt-2">
