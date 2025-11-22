@@ -7,6 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowRight, Save, Upload, User } from "lucide-react";
+import ImageCropDialog from "./ImageCropDialog";
 
 interface PersonalInformationStepProps {
   formData: any;
@@ -25,8 +26,10 @@ export default function PersonalInformationStep({
 }: PersonalInformationStepProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [croppedImageBlob, setCroppedImageBlob] = useState<Blob | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>(formData.photo_url || "");
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string>("");
   const [data, setData] = useState({
     full_name: formData.full_name || "",
     date_of_birth: formData.date_of_birth || "",
@@ -41,13 +44,13 @@ export default function PersonalInformationStep({
     setData({ ...data, [field]: value });
   };
 
-  const uploadPhotoToStorage = async (file: File, appId: string) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${appId}/photo_${Date.now()}.${fileExt}`;
+  const uploadPhotoToStorage = async (blob: Blob, appId: string) => {
+    const fileName = `${appId}/photo_${Date.now()}.jpg`;
 
     const { error: uploadError } = await supabase.storage
       .from('application-documents')
-      .upload(fileName, file, {
+      .upload(fileName, blob, {
+        contentType: 'image/jpeg',
         upsert: true
       });
 
@@ -76,52 +79,98 @@ export default function PersonalInformationStep({
       return;
     }
 
-    // Store file and show preview immediately
-    setSelectedFile(file);
+    // Open crop dialog
     const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
-    toast.success("Photo selected. It will be uploaded when you save.");
+    setImageToCrop(objectUrl);
+    setCropDialogOpen(true);
+  };
 
-    // If applicationId exists, upload immediately
-    if (applicationId) {
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setCroppedImageBlob(croppedBlob);
+    const objectUrl = URL.createObjectURL(croppedBlob);
+    setPreviewUrl(objectUrl);
+    setCropDialogOpen(false);
+    toast.success("Photo cropped successfully. It will be uploaded when you save.");
+  };
+
+  const handleCropCancel = () => {
+    setCropDialogOpen(false);
+    setImageToCrop("");
+  };
+
+  const handleSave = async () => {
+    // Upload cropped image if exists
+    if (croppedImageBlob && applicationId) {
       setUploading(true);
       try {
-        const photoUrl = await uploadPhotoToStorage(file, applicationId);
-        setData({ ...data, photo_url: photoUrl });
+        const photoUrl = await uploadPhotoToStorage(croppedImageBlob, applicationId);
+        const updatedData = { ...data, photo_url: photoUrl };
+        setData(updatedData);
         
         await supabase
           .from('applications')
           .update({ photo_url: photoUrl })
           .eq('id', applicationId);
 
+        setCroppedImageBlob(null);
         toast.success("Photo uploaded successfully");
+        onSave(updatedData);
       } catch (error: any) {
         console.error("Error uploading photo:", error);
         toast.error("Failed to upload photo");
       } finally {
         setUploading(false);
       }
+    } else {
+      if (croppedImageBlob && !applicationId) {
+        toast.info("Photo will be uploaded after creating application...");
+      }
+      onSave(data);
     }
   };
 
-  const handleSave = async () => {
-    // If there's a selected file and no applicationId, we need to upload after saving
-    if (selectedFile && !data.photo_url) {
-      toast.info("Photo will be uploaded after saving...");
-    }
-    onSave(data);
-  };
-
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!data.full_name || !data.date_of_birth || !data.phone || !data.email || !data.marital_status) {
       toast.error("Please fill in all required fields");
       return;
     }
-    onNext(data);
+
+    // Upload photo before proceeding if we have a cropped image
+    if (croppedImageBlob && applicationId && !data.photo_url) {
+      setUploading(true);
+      try {
+        const photoUrl = await uploadPhotoToStorage(croppedImageBlob, applicationId);
+        const updatedData = { ...data, photo_url: photoUrl };
+        setData(updatedData);
+        
+        await supabase
+          .from('applications')
+          .update({ photo_url: photoUrl })
+          .eq('id', applicationId);
+
+        setCroppedImageBlob(null);
+        toast.success("Photo uploaded successfully");
+        onNext(updatedData);
+      } catch (error: any) {
+        console.error("Error uploading photo:", error);
+        toast.error("Failed to upload photo");
+      } finally {
+        setUploading(false);
+      }
+    } else {
+      onNext(data);
+    }
   };
 
   return (
     <div className="space-y-6">
+      <ImageCropDialog
+        open={cropDialogOpen}
+        imageSrc={imageToCrop}
+        onCropComplete={handleCropComplete}
+        onCancel={handleCropCancel}
+      />
+
       <div>
         <h2 className="text-2xl font-bold mb-2">Personal Information</h2>
         <p className="text-muted-foreground">Please provide your personal details</p>
@@ -151,7 +200,7 @@ export default function PersonalInformationStep({
             disabled={uploading}
           >
             <Upload className="mr-2 h-4 w-4" />
-            {uploading ? "Uploading..." : selectedFile ? "Change Photo" : "Upload Photo"}
+            {uploading ? "Uploading..." : croppedImageBlob || previewUrl ? "Change Photo" : "Upload Photo"}
           </Button>
         )}
         <p className="text-xs text-muted-foreground mt-2">
