@@ -108,7 +108,7 @@ export const generateAdmissionLetter = async (data: AdmissionLetterData) => {
   let yPosition = 90;
   
   doc.text('Dear ' + data.full_name + ',', 20, yPosition);
-  yPosition += 10;
+  yPosition += 8;
   
   // Main content
   const admissionLevelText = data.admission_level.charAt(0).toUpperCase() + 
@@ -129,12 +129,12 @@ export const generateAdmissionLetter = async (data: AdmissionLetterData) => {
     yPosition += 7;
   });
   
-  yPosition += 5;
+  yPosition += 3;
   
   // Applicant Details Section
   doc.setFont(fontFamily, 'bold');
   doc.text('APPLICANT DETAILS:', 20, yPosition);
-  yPosition += 8;
+  yPosition += 5;
   
   doc.setFont(fontFamily, 'normal');
   const details = [
@@ -156,7 +156,7 @@ export const generateAdmissionLetter = async (data: AdmissionLetterData) => {
     yPosition += 7;
   });
   
-  yPosition += 10;
+  yPosition += 5;
   
   // Closing
   const closing = [
@@ -172,7 +172,7 @@ export const generateAdmissionLetter = async (data: AdmissionLetterData) => {
     yPosition += 7;
   });
   
-  yPosition += 15;
+  yPosition += 5;
   
   // Signature section
   if (signatures && signatures.length > 0) {

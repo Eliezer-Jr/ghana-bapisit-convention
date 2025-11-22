@@ -105,7 +105,7 @@ export const generateInterviewLetter = async (data: InterviewLetterData) => {
   let yPosition = 90;
   
   doc.text('Dear ' + data.full_name + ',', 20, yPosition);
-  yPosition += 10;
+  yPosition += 8;
   
   const admissionLevelText = data.admission_level.charAt(0).toUpperCase() + 
                             data.admission_level.slice(1);
@@ -124,12 +124,12 @@ export const generateInterviewLetter = async (data: InterviewLetterData) => {
     yPosition += 7;
   });
   
-  yPosition += 5;
+  yPosition += 3;
   
   // Interview Details Section
   doc.setFont(fontFamily, 'bold');
   doc.text('INTERVIEW DETAILS:', 20, yPosition);
-  yPosition += 8;
+  yPosition += 5;
   
   doc.setFont(fontFamily, 'normal');
   const details = [
@@ -158,12 +158,12 @@ export const generateInterviewLetter = async (data: InterviewLetterData) => {
     yPosition += 7;
   });
   
-  yPosition += 10;
+  yPosition += 6;
   
   // Instructions
   doc.setFont(fontFamily, 'bold');
   doc.text('WHAT TO BRING:', 20, yPosition);
-  yPosition += 8;
+  yPosition += 5;
   
   doc.setFont(fontFamily, 'normal');
   const instructions = [
@@ -178,7 +178,7 @@ export const generateInterviewLetter = async (data: InterviewLetterData) => {
     yPosition += 7;
   });
   
-  yPosition += 10;
+  yPosition += 5;
   
   // Closing
   const closing = [
@@ -193,7 +193,7 @@ export const generateInterviewLetter = async (data: InterviewLetterData) => {
     yPosition += 7;
   });
   
-  yPosition += 15;
+  yPosition += 5;
   
   // Signature section
   if (signatures && signatures.length > 0) {
