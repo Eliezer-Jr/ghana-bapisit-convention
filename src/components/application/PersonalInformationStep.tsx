@@ -51,6 +51,24 @@ export default function PersonalInformationStep({
       throw new Error('No phone number found');
     }
 
+    // First, check if an application already exists for this phone number
+    const { data: existing, error: fetchError } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('phone', phoneNumber)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+
+    // If application exists, use it
+    if (existing) {
+      onSave({ ...data, id: existing.id });
+      return existing.id;
+    }
+
+    // Only create new application if none exists
     const { data: newApp, error } = await supabase
       .from('applications')
       .insert({
