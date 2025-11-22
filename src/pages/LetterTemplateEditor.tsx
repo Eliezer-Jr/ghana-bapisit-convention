@@ -11,7 +11,7 @@ import { ArrowLeft, Save, Eye } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SignatureManager } from "@/components/SignatureManager";
 import { generateSampleLetter } from "@/utils/letterGenerator";
-import logoImg from "@/assets/logo-watermark.png";
+import logoImg from "@/assets/logo-gbcc.png";
 
 interface LetterTemplate {
   id: string;
