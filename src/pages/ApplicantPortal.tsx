@@ -169,15 +169,37 @@ export default function ApplicantPortal() {
 
         if (error) throw error;
       } else {
-        // Create new application
-        const { data: newApp, error } = await supabase
-          .from("applications")
-          .insert(payload)
-          .select()
-          .single();
+        // Check if application already exists for this phone number
+        const { data: existing, error: fetchError } = await supabase
+          .from('applications')
+          .select('id')
+          .eq('phone', phoneNumber)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-        if (error) throw error;
-        setApplicationId(newApp.id);
+        if (fetchError) throw fetchError;
+
+        if (existing) {
+          // Application exists, update it instead of creating new
+          const { error } = await supabase
+            .from("applications")
+            .update(payload)
+            .eq("id", existing.id);
+
+          if (error) throw error;
+          setApplicationId(existing.id);
+        } else {
+          // No application exists, create new one
+          const { data: newApp, error } = await supabase
+            .from("applications")
+            .insert(payload)
+            .select()
+            .single();
+
+          if (error) throw error;
+          setApplicationId(newApp.id);
+        }
       }
 
       setFormData(payload);
