@@ -57,9 +57,12 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Use the configured sender ID from environment or fallback
+    const senderId = Deno.env.get('FROGAPI_OTP_SENDER_ID') || 'GBCC';
+
     const { data, error } = await supabase.functions.invoke('frogapi-send-general', {
       body: {
-        senderid: 'GBCC',
+        senderid: senderId,
         destinations: [{
           destination: recipientPhone
         }],
