@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Send, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Send, CheckCircle2, Download } from "lucide-react";
+import { generateAdmissionLetter } from "@/utils/admissionLetter";
+import { toast } from "sonner";
 
 interface SummaryStepProps {
   formData: any;
@@ -15,6 +17,27 @@ export default function SummaryStep({
   onSubmit,
   isSubmitted,
 }: SummaryStepProps) {
+  const handleDownloadLetter = () => {
+    try {
+      generateAdmissionLetter({
+        full_name: formData.full_name,
+        phone: formData.phone,
+        email: formData.email,
+        admission_level: formData.admission_level,
+        church_name: formData.church_name,
+        association: formData.association,
+        sector: formData.sector,
+        fellowship: formData.fellowship,
+        submitted_at: formData.submitted_at,
+        date_of_birth: formData.date_of_birth,
+      });
+      toast.success("Admission letter downloaded successfully!");
+    } catch (error) {
+      console.error("Error generating admission letter:", error);
+      toast.error("Failed to generate admission letter");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -42,6 +65,17 @@ export default function SummaryStep({
                   <p>Submitted: {new Date(formData.submitted_at).toLocaleDateString()}</p>
                 )}
               </div>
+              
+              {formData.status === 'approved' && (
+                <Button 
+                  onClick={handleDownloadLetter}
+                  size="lg"
+                  className="mt-4"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Admission Letter
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
