@@ -27,28 +27,28 @@ serve(async (req) => {
     let message = '';
     switch (status) {
       case 'submitted':
-        message = `Dear ${recipientName}, your ministerial application has been submitted successfully and is under review. You will be notified of any updates. - Gospel Believers Church`;
+        message = `Dear ${recipientName}, your ministerial application has been submitted successfully and is under review. You will be notified of any updates. - Ghana Baptist Convention Conference`;
         break;
       case 'local_screening':
-        message = `Dear ${recipientName}, your application is currently under local screening. We will keep you informed of the progress. - Gospel Believers Church`;
+        message = `Dear ${recipientName}, your application is currently under local screening. We will keep you informed of the progress. - Ghana Baptist Convention Conference`;
         break;
       case 'association_approved':
-        message = `Dear ${recipientName}, your application has been approved at the association level and is proceeding to the next stage. - Gospel Believers Church`;
+        message = `Dear ${recipientName}, your application has been approved at the association level and is proceeding to the next stage. - Ghana Baptist Convention Conference`;
         break;
       case 'vp_review':
-        message = `Dear ${recipientName}, your application is now under Vice President review. - Gospel Believers Church`;
+        message = `Dear ${recipientName}, your application is now under Vice President review. - Ghana Baptist Convention Conference`;
         break;
       case 'interview_scheduled':
-        message = `Dear ${recipientName}, your interview has been scheduled! Please check your applicant portal for details and download your interview letter. - Gospel Believers Church`;
+        message = `Dear ${recipientName}, your interview has been scheduled! Please check your applicant portal for details and download your interview letter. - Ghana Baptist Convention Conference`;
         break;
       case 'approved':
-        message = `Congratulations ${recipientName}! Your ministerial application has been approved. Please log in to download your admission letter. - Gospel Believers Church`;
+        message = `Congratulations ${recipientName}! Your ministerial application has been approved. Please log in to download your admission letter. - Ghana Baptist Convention Conference`;
         break;
       case 'rejected':
-        message = `Dear ${recipientName}, your application status has been updated. Please check your portal for detailed feedback and next steps. - Gospel Believers Church`;
+        message = `Dear ${recipientName}, your application status has been updated. Please check your portal for detailed feedback and next steps. - Ghana Baptist Convention Conference`;
         break;
       default:
-        message = `Dear ${recipientName}, your application status has been updated to: ${status.replace(/_/g, ' ')}. Please check your portal for details. - Gospel Believers Church`;
+        message = `Dear ${recipientName}, your application status has been updated to: ${status.replace(/_/g, ' ')}. Please check your portal for details. - Ghana Baptist Convention Conference`;
     }
 
     // Call FrogAPI to send SMS

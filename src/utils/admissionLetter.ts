@@ -37,7 +37,7 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text('GOSPEL BELIEVERS CHURCH', 105, 20, { align: 'center' });
+  doc.text('Ghana Baptist Convention Conference', 105, 20, { align: 'center' });
   
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
