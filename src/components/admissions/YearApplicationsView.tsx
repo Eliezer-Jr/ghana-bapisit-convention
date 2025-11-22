@@ -5,11 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Search, FileText, Calendar, Download } from "lucide-react";
+import { ArrowLeft, Search, FileText, Download } from "lucide-react";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { ApplicationReviewDialog } from "./ApplicationReviewDialog";
 
 interface YearApplicationsViewProps {
   year: string;
@@ -34,7 +33,7 @@ export function YearApplicationsView({
   const [filterLevel, setFilterLevel] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedApp, setSelectedApp] = useState<any>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -232,67 +231,17 @@ export function YearApplicationsView({
                     {app.submitted_at ? new Date(app.submitted_at).toLocaleDateString() : 'N/A'}
                   </TableCell>
                   <TableCell>
-                    <Dialog open={dialogOpen && selectedApp?.id === app.id} onOpenChange={(open) => {
-                      setDialogOpen(open);
-                      if (open) setSelectedApp(app);
-                    }}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <FileText className="h-4 w-4 mr-1" />
-                          Review
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>Application Details - {app.full_name}</DialogTitle>
-                        </DialogHeader>
-                        {/* Application details would go here */}
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label className="text-muted-foreground">Email</Label>
-                              <p className="font-medium">{app.email}</p>
-                            </div>
-                            <div>
-                              <Label className="text-muted-foreground">Phone</Label>
-                              <p className="font-medium">{app.phone}</p>
-                            </div>
-                            <div>
-                              <Label className="text-muted-foreground">Church</Label>
-                              <p className="font-medium">{app.church_name}</p>
-                            </div>
-                            <div>
-                              <Label className="text-muted-foreground">Association</Label>
-                              <p className="font-medium">{app.association}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="pt-4 border-t space-y-3">
-                            <h3 className="font-semibold">Actions</h3>
-                            <div className="flex gap-2">
-                              <Button 
-                                variant="default" 
-                                onClick={() => {
-                                  onUpdateStatus(app.id, "approved");
-                                  setDialogOpen(false);
-                                }}
-                              >
-                                Approve
-                              </Button>
-                              <Button 
-                                variant="destructive"
-                                onClick={() => {
-                                  onUpdateStatus(app.id, "rejected");
-                                  setDialogOpen(false);
-                                }}
-                              >
-                                Reject
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedApp(app);
+                        setReviewDialogOpen(true);
+                      }}
+                    >
+                      <FileText className="h-4 w-4 mr-1" />
+                      Review
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -333,6 +282,15 @@ export function YearApplicationsView({
           )}
         </CardContent>
       </Card>
+
+      {/* Application Review Dialog */}
+      <ApplicationReviewDialog
+        application={selectedApp}
+        open={reviewDialogOpen}
+        onOpenChange={setReviewDialogOpen}
+        onUpdateStatus={onUpdateStatus}
+        onScheduleInterview={onScheduleInterview}
+      />
     </div>
   );
 }
