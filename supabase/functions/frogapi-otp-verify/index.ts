@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { phoneNumber, otp, fullName, isSignup } = await req.json();
+    const { phoneNumber, otp } = await req.json();
     
     if (!phoneNumber || !otp) {
       throw new Error("Phone number and OTP are required");
