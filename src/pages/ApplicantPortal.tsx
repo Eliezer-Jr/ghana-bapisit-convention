@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { LogOut, CheckCircle2, Circle, User } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { formatDistanceToNow } from "date-fns";
 import PersonalInformationStep from "@/components/application/PersonalInformationStep";
 import ChurchInformationStep from "@/components/application/ChurchInformationStep";
 import AdmissionTrainingStep from "@/components/application/AdmissionTrainingStep";
@@ -132,7 +133,13 @@ export default function ApplicantPortal() {
         }
         
         setCurrentStep(stepToShow);
-        toast.success(`Continuing from ${STEPS[stepToShow].title}`);
+        
+        // Show welcome back message with last saved time
+        const lastSaved = formatDistanceToNow(new Date(app.updated_at), { addSuffix: true });
+        toast.success(
+          `Welcome back! Last saved ${lastSaved}. Continuing from ${STEPS[stepToShow].title}.`,
+          { duration: 5000 }
+        );
       }
     }
   };
