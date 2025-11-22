@@ -46,23 +46,44 @@ export default function SummaryStep({
       </div>
 
       {isSubmitted ? (
-        <Card className="border-green-500 bg-green-50 dark:bg-green-950">
+        <Card className="border-primary bg-primary/5">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center text-center space-y-4">
-              <CheckCircle2 className="h-16 w-16 text-green-500" />
+              <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+                <CheckCircle2 className="h-12 w-12 text-primary" />
+              </div>
               <div>
-                <h3 className="text-xl font-bold text-green-700 dark:text-green-400">
-                  Application Submitted Successfully!
+                <h3 className="text-2xl font-bold text-foreground mb-2">
+                  {formData.status === 'approved' 
+                    ? 'Application Approved!' 
+                    : formData.status === 'rejected'
+                    ? 'Application Status'
+                    : 'Application Submitted Successfully!'}
                 </h3>
-                <p className="text-muted-foreground mt-2">
-                  Your application has been submitted and is being reviewed. You can check back
-                  here anytime to view your status or make corrections if needed.
+                <p className="text-muted-foreground">
+                  {formData.status === 'approved' 
+                    ? 'Congratulations! Your application has been approved. You can now download your admission letter.'
+                    : formData.status === 'rejected'
+                    ? 'Your application has been reviewed. Please check the notes for more information.'
+                    : 'Your application is being reviewed. You can still edit your information if needed until the review is complete.'}
                 </p>
               </div>
-              <div className="text-sm text-muted-foreground">
-                <p>Status: <strong className="capitalize">{formData.status}</strong></p>
+              
+              <div className="bg-card rounded-lg p-4 w-full max-w-md border">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Current Status:</span>
+                  <span className="text-sm font-bold capitalize px-3 py-1 rounded-full bg-primary/10 text-primary">
+                    {formData.status.replace(/_/g, ' ')}
+                  </span>
+                </div>
                 {formData.submitted_at && (
-                  <p>Submitted: {new Date(formData.submitted_at).toLocaleDateString()}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Submitted on {new Date(formData.submitted_at).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </p>
                 )}
               </div>
               
