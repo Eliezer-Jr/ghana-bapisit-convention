@@ -181,7 +181,7 @@ export const generateInterviewLetter = (data: InterviewLetterData) => {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(100, 100, 100);
-  doc.text('This is an official document of the Gospel Believers Church Convention', 105, 280, { align: 'center' });
+  doc.text('This is an official document of the Ghana Baptist Convention Conference', 105, 280, { align: 'center' });
   
   // Save the PDF
   const fileName = `Interview_Letter_${data.full_name.replace(/\s+/g, '_')}.pdf`;

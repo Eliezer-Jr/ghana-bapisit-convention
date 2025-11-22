@@ -35,7 +35,7 @@ const PendingApproval = () => {
           <div className="hidden md:block relative">
             <img 
               src={approvalHero} 
-              alt="Ghana Baptist Convention" 
+              alt="Ghana Baptist Convention Conference" 
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/20" />

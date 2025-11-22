@@ -204,7 +204,7 @@ const Auth = () => {
               <Church className="h-10 w-10 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Ghana Baptist Convention</CardTitle>
+          <CardTitle className="text-2xl font-bold">Ghana Baptist Convention Conference</CardTitle>
           <CardDescription className="text-base">Minister Data Management System</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

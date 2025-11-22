@@ -87,7 +87,7 @@ export const generateRejectionLetter = (data: RejectionLetterData) => {
   
   const content = [
     'Thank you for your interest in pursuing ministerial ' + admissionLevelText.toLowerCase() + ' with the',
-    'Gospel Believers Church Convention. We appreciate the time and effort you invested',
+    'Ghana Baptist Convention Conference. We appreciate the time and effort you invested',
     'in completing your application.',
     '',
     'After careful consideration and review of your application, we regret to inform you that',
@@ -166,7 +166,7 @@ export const generateRejectionLetter = (data: RejectionLetterData) => {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(100, 100, 100);
-  doc.text('This is an official document of the Gospel Believers Church Convention', 105, 280, { align: 'center' });
+  doc.text('This is an official document of the Ghana Baptist Convention Conference', 105, 280, { align: 'center' });
   
   // Save the PDF
   const fileName = `Application_Status_${data.full_name.replace(/\s+/g, '_')}.pdf`;

@@ -93,11 +93,11 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   const content = [
     'We are pleased to inform you that your application for ministerial ' + 
     admissionLevelText.toLowerCase() + ' has been',
-    'approved by the Gospel Believers Church Convention.',
+    'approved by the Ghana Baptist Convention Conference.',
     '',
     'This admission is granted based on your demonstrated commitment to ministry, theological',
     'training, and service to the church. You are hereby recognized to serve in the capacity of',
-    admissionLevelText + ' within the Gospel Believers Church Convention.',
+    admissionLevelText + ' within the Ghana Baptist Convention Conference.',
   ];
   
   content.forEach(line => {
@@ -137,7 +137,7 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   // Closing
   const closing = [
     'Please ensure that you adhere to the code of conduct and ministerial guidelines as',
-    'outlined by the Gospel Believers Church Convention.',
+    'outlined by the Ghana Baptist Convention Conference.',
     '',
     'We congratulate you on this achievement and pray for God\'s continued blessing upon',
     'your ministry.',
@@ -164,7 +164,7 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(100, 100, 100);
-  doc.text('This is an official document of the Gospel Believers Church Convention', 105, 280, { align: 'center' });
+  doc.text('This is an official document of the Ghana Baptist Convention Conference', 105, 280, { align: 'center' });
   
   // Save the PDF
   const fileName = `Admission_Letter_${data.full_name.replace(/\s+/g, '_')}.pdf`;

@@ -74,7 +74,7 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
                   <Church className="h-5 w-5 text-white" />
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-lg font-bold text-gradient leading-none">Ghana Baptist Convention</h1>
+                  <h1 className="text-lg font-bold text-gradient leading-none">Ghana Baptist Convention Conference</h1>
                   <p className="text-xs text-muted-foreground">Ministry Portal</p>
                 </div>
               </div>
