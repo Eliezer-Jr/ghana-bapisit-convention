@@ -53,15 +53,13 @@ export class OTPService {
    */
   static async verifyOTP(
     phoneNumber: string,
-    otp: string,
-    fullName: string
+    otp: string
   ): Promise<OTPResponse> {
     try {
       const { data, error } = await supabase.functions.invoke("frogapi-otp-verify", {
         body: {
           phoneNumber,
           otp: String(otp).trim(),
-          fullName,
         },
       });
 
@@ -79,10 +77,6 @@ export class OTPService {
           error: data?.error || "Invalid or expired OTP",
         };
       }
-
-      // Store phone number in localStorage for session management
-      localStorage.setItem('applicant_phone', phoneNumber);
-      localStorage.setItem('applicant_name', fullName);
 
       return {
         success: true,

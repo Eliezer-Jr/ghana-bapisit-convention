@@ -20,7 +20,6 @@ export default function ApplyAuth() {
   const [resendTimer, setResendTimer] = useState(0);
   const [showPhonePreview, setShowPhonePreview] = useState(false);
   const [formattedPhonePreview, setFormattedPhonePreview] = useState("");
-  const [fullName, setFullName] = useState("");
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -37,11 +36,6 @@ export default function ApplyAuth() {
   const handleSendOTP = async () => {
     if (!phoneNumber.trim()) {
       toast.error("Please enter your phone number");
-      return;
-    }
-
-    if (!fullName.trim()) {
-      toast.error("Please enter your full name");
       return;
     }
 
@@ -111,16 +105,41 @@ export default function ApplyAuth() {
       formattedPhone = '+' + formattedPhone;
     }
 
-    const result = await OTPService.verifyOTP(formattedPhone, otp, fullName);
+    // First verify the OTP
+    const result = await OTPService.verifyOTP(formattedPhone, otp);
+
+    if (!result.success) {
+      setLoading(false);
+      toast.error(result.error || 'Invalid OTP');
+      return;
+    }
+
+    // Check if an application exists for this phone number
+    const { data: application, error } = await supabase
+      .from('applications')
+      .select('id, full_name')
+      .eq('phone', formattedPhone)
+      .maybeSingle();
 
     setLoading(false);
 
-    if (result.success) {
-      toast.success('Verification successful!');
-      navigate('/applicant-portal');
-    } else {
-      toast.error(result.error || 'Invalid OTP');
+    if (error) {
+      console.error('Error checking application:', error);
+      toast.error('Error verifying application status');
+      return;
     }
+
+    if (!application) {
+      toast.error('No application found for this phone number. Please contact support.');
+      return;
+    }
+
+    // Store phone and name in localStorage
+    localStorage.setItem('applicant_phone', formattedPhone);
+    localStorage.setItem('applicant_name', application.full_name);
+
+    toast.success('Verification successful!');
+    navigate('/applicant-portal');
   };
 
   const handleResendOTP = async () => {
@@ -157,17 +176,6 @@ export default function ApplyAuth() {
         <CardContent className="space-y-6">
           {!otpSent ? (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  placeholder="Enter your full name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  disabled={loading}
-                />
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
@@ -252,7 +260,6 @@ export default function ApplyAuth() {
                       setOtpSent(false);
                       setOtp("");
                       setPhoneNumber("");
-                      setFullName("");
                       setShowPhonePreview(false);
                     }}
                     disabled={loading}
