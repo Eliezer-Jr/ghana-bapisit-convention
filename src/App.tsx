@@ -22,6 +22,7 @@ import ApplyAuth from "./pages/ApplyAuth";
 import ApplicantPortal from "./pages/ApplicantPortal";
 import FinancePortal from "./pages/FinancePortal";
 import Reports from "./pages/Reports";
+import LetterTemplateEditor from "./pages/LetterTemplateEditor";
 import ResponsiveLayout from "./components/ResponsiveLayout";
 
 const queryClient = new QueryClient();
@@ -95,6 +96,14 @@ const App = () => (
               element={
                 <SuperAdminRoute>
                   <UserManagementPage />
+                </SuperAdminRoute>
+              }
+            />
+            <Route
+              path="/letter-templates"
+              element={
+                <SuperAdminRoute>
+                  <LetterTemplateEditor />
                 </SuperAdminRoute>
               }
             />
