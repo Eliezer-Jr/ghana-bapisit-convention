@@ -6,23 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Download, Eye, FileText, User, Church, GraduationCap, MessageSquare, Palette } from "lucide-react";
+import { Calendar, Download, Eye, FileText, User, Church, GraduationCap, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import { InfoField } from "@/components/InfoField";
 import logoWatermark from "@/assets/logo-watermark.png";
-
-type PDFTemplate = "professional" | "modern" | "classic" | "minimal";
-
-interface TemplateTheme {
-  primary: [number, number, number];
-  secondary: [number, number, number];
-  accent: [number, number, number];
-  text: [number, number, number];
-  headerBg: [number, number, number];
-}
 
 interface ApplicationReviewDialogProps {
   application: any;
@@ -44,38 +33,6 @@ export function ApplicationReviewDialog({
   const [notes, setNotes] = useState("");
   const [interviewDate, setInterviewDate] = useState("");
   const [interviewLocation, setInterviewLocation] = useState("");
-  const [selectedTemplate, setSelectedTemplate] = useState<PDFTemplate>("professional");
-
-  const templateThemes: Record<PDFTemplate, TemplateTheme> = {
-    professional: {
-      primary: [41, 98, 255],      // Blue
-      secondary: [100, 116, 139],  // Slate
-      accent: [59, 130, 246],      // Light blue
-      text: [30, 41, 59],          // Dark slate
-      headerBg: [239, 246, 255],   // Light blue bg
-    },
-    modern: {
-      primary: [147, 51, 234],     // Purple
-      secondary: [168, 85, 247],   // Light purple
-      accent: [236, 72, 153],      // Pink
-      text: [17, 24, 39],          // Gray 900
-      headerBg: [250, 245, 255],   // Purple bg
-    },
-    classic: {
-      primary: [0, 0, 0],          // Black
-      secondary: [120, 53, 15],    // Brown
-      accent: [180, 83, 9],        // Orange brown
-      text: [0, 0, 0],             // Black
-      headerBg: [254, 243, 199],   // Amber bg
-    },
-    minimal: {
-      primary: [0, 0, 0],          // Black
-      secondary: [107, 114, 128],  // Gray
-      accent: [75, 85, 99],        // Dark gray
-      text: [0, 0, 0],             // Black
-      headerBg: [249, 250, 251],   // Gray bg
-    },
-  };
 
   useEffect(() => {
     if (application?.id) {
@@ -101,7 +58,6 @@ export function ApplicationReviewDialog({
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
-    const theme = templateThemes[selectedTemplate];
     let yPos = 20;
 
     // Add watermark
@@ -114,12 +70,6 @@ export function ApplicationReviewDialog({
       doc.addImage(watermarkImg, "PNG", pageWidth / 2 - 40, pageHeight / 2 - 40, 80, 80, "", "NONE", 0.1);
     } catch (error) {
       console.error("Failed to add watermark:", error);
-    }
-
-    // Header background based on template
-    if (selectedTemplate !== "minimal") {
-      doc.setFillColor(...theme.headerBg);
-      doc.rect(0, 0, pageWidth, 45, "F");
     }
 
     // Add logo at top
@@ -152,32 +102,17 @@ export function ApplicationReviewDialog({
 
     yPos = 50;
 
-    // Title with template color
+    // Title
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...theme.primary);
     doc.text("Application Review", pageWidth / 2, yPos, { align: "center" });
-    doc.setTextColor(...theme.text);
     yPos += 15;
 
-    // Section header styling function
-    const addSectionHeader = (title: string) => {
-      if (selectedTemplate === "modern" || selectedTemplate === "professional") {
-        doc.setFillColor(...theme.accent);
-        doc.rect(15, yPos - 3, pageWidth - 30, 8, "F");
-        doc.setTextColor(255, 255, 255);
-      } else {
-        doc.setTextColor(...theme.primary);
-      }
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text(title, 20, yPos + 2);
-      doc.setTextColor(...theme.text);
-      yPos += 10;
-    };
-
     // Personal Information
-    addSectionHeader("Personal Information");
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Personal Information", 20, yPos);
+    yPos += 8;
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
@@ -198,7 +133,10 @@ export function ApplicationReviewDialog({
     yPos += 5;
 
     // Church Information
-    addSectionHeader("Church Information");
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Church Information", 20, yPos);
+    yPos += 8;
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
@@ -212,7 +150,10 @@ export function ApplicationReviewDialog({
     yPos += 10;
 
     // Admission Details
-    addSectionHeader("Admission Details");
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Admission Details", 20, yPos);
+    yPos += 8;
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
@@ -228,7 +169,10 @@ export function ApplicationReviewDialog({
 
     // Theological Training
     if (application.theological_institution || application.theological_qualification) {
-      addSectionHeader("Theological Training");
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Theological Training", 20, yPos);
+      yPos += 8;
 
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
@@ -245,7 +189,10 @@ export function ApplicationReviewDialog({
 
     // Mentorship
     if (application.mentor_name || application.mentor_contact) {
-      addSectionHeader("Mentorship");
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Mentorship", 20, yPos);
+      yPos += 8;
 
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
@@ -272,44 +219,10 @@ export function ApplicationReviewDialog({
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle className="text-2xl">Application Review</DialogTitle>
-              <div className="flex items-center gap-2">
-                <Select value={selectedTemplate} onValueChange={(value: PDFTemplate) => setSelectedTemplate(value)}>
-                  <SelectTrigger className="w-[180px]">
-                    <Palette className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Select template" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="professional">
-                      <span className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                        Professional
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="modern">
-                      <span className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-purple-500"></span>
-                        Modern
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="classic">
-                      <span className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-amber-700"></span>
-                        Classic
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="minimal">
-                      <span className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-gray-500"></span>
-                        Minimal
-                      </span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" size="sm" onClick={downloadApplicationPDF}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download PDF
-                </Button>
-              </div>
+              <Button variant="outline" size="sm" onClick={downloadApplicationPDF}>
+                <Download className="h-4 w-4 mr-2" />
+                Download PDF
+              </Button>
             </div>
           </DialogHeader>
 
