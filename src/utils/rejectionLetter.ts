@@ -20,29 +20,32 @@ export const generateRejectionLetter = (data: RejectionLetterData) => {
   
   // Add letterhead
   doc.setFillColor(...primaryColor);
-  doc.rect(0, 0, 210, 40, 'F');
+  doc.rect(0, 0, 210, 45, 'F');
   
-  // Add logo
+  // Add logo (larger and more prominent)
   try {
-    doc.addImage(logoImg, 'PNG', 15, 8, 25, 25);
+    doc.addImage(logoImg, 'PNG', 15, 10, 30, 30);
   } catch (error) {
     console.error('Error adding logo:', error);
   }
   
-  // Organization name
+  // Organization name (centered)
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
+  doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text('GOSPEL BELIEVERS CHURCH', 120, 20, { align: 'center' });
+  doc.text('GOSPEL BELIEVERS CHURCH', 105, 20, { align: 'center' });
   
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
-  doc.text('CONVENTION MINISTERIAL ADMISSION', 120, 30, { align: 'center' });
+  doc.text('CONVENTION MINISTERIAL ADMISSION', 105, 28, { align: 'center' });
   
-  // Add applicant photo if available
+  // Add applicant photo with border (right side)
   if (data.photo_url) {
     try {
-      doc.addImage(data.photo_url, 'JPEG', 170, 8, 25, 25);
+      // White border for photo
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(163, 8, 32, 32, 2, 2, 'F');
+      doc.addImage(data.photo_url, 'JPEG', 165, 10, 28, 28);
     } catch (error) {
       console.error('Error adding photo:', error);
     }
@@ -58,17 +61,17 @@ export const generateRejectionLetter = (data: RejectionLetterData) => {
     month: 'long', 
     year: 'numeric' 
   });
-  doc.text(today, 20, 55);
+  doc.text(today, 20, 60);
   
   // Letter title
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('APPLICATION STATUS NOTIFICATION', 105, 70, { align: 'center' });
+  doc.text('APPLICATION STATUS NOTIFICATION', 105, 75, { align: 'center' });
   
   // Horizontal line
   doc.setDrawColor(...primaryColor);
   doc.setLineWidth(0.5);
-  doc.line(20, 75, 190, 75);
+  doc.line(20, 80, 190, 80);
   
   // Body content
   doc.setFontSize(11);

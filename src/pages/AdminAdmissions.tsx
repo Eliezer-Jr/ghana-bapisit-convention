@@ -224,12 +224,32 @@ export default function AdminAdmissions() {
       const updates: any = { status };
       if (notes) updates.admin_notes = notes;
 
+      // Get application details for SMS notification
+      const { data: appData } = await supabase
+        .from("applications")
+        .select("phone, full_name")
+        .eq("id", appId)
+        .single();
+
       const { error } = await supabase
         .from("applications")
         .update(updates)
         .eq("id", appId);
 
       if (error) throw error;
+
+      // Send SMS notification
+      if (appData) {
+        await supabase.functions.invoke('notify-status-change', {
+          body: {
+            applicationId: appId,
+            status: status,
+            recipientPhone: appData.phone,
+            recipientName: appData.full_name
+          }
+        });
+      }
+
       toast.success("Application updated successfully");
       fetchApplications();
     } catch (error: any) {

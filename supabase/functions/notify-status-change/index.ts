@@ -59,8 +59,12 @@ serve(async (req) => {
 
     const { data, error } = await supabase.functions.invoke('frogapi-send-general', {
       body: {
-        recipients: [recipientPhone],
-        message: message
+        senderid: 'GBCC',
+        destinations: [{
+          destination: recipientPhone
+        }],
+        message: message,
+        smstype: 'text'
       }
     });
 
