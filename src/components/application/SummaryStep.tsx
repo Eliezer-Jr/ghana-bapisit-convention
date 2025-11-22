@@ -19,10 +19,10 @@ export default function SummaryStep({
   onSubmit,
   isSubmitted,
 }: SummaryStepProps) {
-  const handleDownloadLetter = () => {
+  const handleDownloadLetter = async () => {
     try {
       if (formData.status === 'approved') {
-        generateAdmissionLetter({
+        await generateAdmissionLetter({
           full_name: formData.full_name,
           phone: formData.phone,
           email: formData.email,
@@ -37,7 +37,7 @@ export default function SummaryStep({
         });
         toast.success("Admission letter downloaded successfully!");
       } else if (formData.status === 'interview_scheduled') {
-        generateInterviewLetter({
+        await generateInterviewLetter({
           full_name: formData.full_name,
           phone: formData.phone,
           email: formData.email,
@@ -49,7 +49,7 @@ export default function SummaryStep({
         });
         toast.success("Interview letter downloaded successfully!");
       } else if (formData.status === 'rejected') {
-        generateRejectionLetter({
+        await generateRejectionLetter({
           full_name: formData.full_name,
           phone: formData.phone,
           email: formData.email,
