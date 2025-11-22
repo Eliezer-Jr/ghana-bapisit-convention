@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Download, Eye, FileText, User, Church, GraduationCap, MessageSquare } from "lucide-react";
+import { Calendar, Download, Eye, FileText, User, Church, GraduationCap, MessageSquare, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -33,6 +33,7 @@ export function ApplicationReviewDialog({
   const [notes, setNotes] = useState("");
   const [interviewDate, setInterviewDate] = useState("");
   const [interviewLocation, setInterviewLocation] = useState("");
+  const [sendingSMS, setSendingSMS] = useState(false);
 
   useEffect(() => {
     if (application?.id) {
@@ -208,6 +209,28 @@ export function ApplicationReviewDialog({
 
     doc.save(`Application_${application.full_name.replace(/\s+/g, "_")}_${application.id.slice(0, 8)}.pdf`);
     toast.success("PDF downloaded successfully");
+  };
+
+  const handleResendSMS = async () => {
+    setSendingSMS(true);
+    try {
+      const { error } = await supabase.functions.invoke('notify-status-change', {
+        body: {
+          applicationId: application.id,
+          status: application.status,
+          recipientPhone: application.phone,
+          recipientName: application.full_name
+        }
+      });
+
+      if (error) throw error;
+      toast.success("SMS notification sent successfully");
+    } catch (error: any) {
+      console.error("Error sending SMS:", error);
+      toast.error(error.message || "Failed to send SMS notification");
+    } finally {
+      setSendingSMS(false);
+    }
   };
 
   if (!application) return null;
@@ -479,6 +502,29 @@ export function ApplicationReviewDialog({
                     <Calendar className="h-4 w-4 mr-2" />
                     Schedule Interview
                   </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>SMS Notifications</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-sm text-muted-foreground">
+                    <p>Current Status: <span className="font-medium text-foreground">{application.status.replace("_", " ").toUpperCase()}</span></p>
+                    <p className="mt-2">Applicant Phone: <span className="font-medium text-foreground">{application.phone}</span></p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={handleResendSMS}
+                    disabled={sendingSMS}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    {sendingSMS ? "Sending..." : "Resend SMS Notification"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    This will send an SMS notification to the applicant based on their current application status.
+                  </p>
                 </CardContent>
               </Card>
             </TabsContent>
