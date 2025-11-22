@@ -32,11 +32,11 @@ export const generateInterviewLetter = (data: InterviewLetterData) => {
   
   // Organization name (centered)
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22);
+  doc.setFontSize(15);
   doc.setFont('helvetica', 'bold');
   doc.text('Ghana Baptist Convention Conference', 105, 20, { align: 'center' });
   
-  doc.setFontSize(11);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.text('MINISTERIAL ADMISSION', 105, 28, { align: 'center' });
   
