@@ -108,16 +108,31 @@ export default function ApplicantPortal() {
       if (app.status === "submitted") {
         setCurrentStep(4); // Show summary for submitted applications
       } else {
-        // Find the first incomplete step
-        if (!app.full_name || !app.date_of_birth) {
-          setCurrentStep(0);
-        } else if (!app.church_name || !app.association) {
-          setCurrentStep(1);
-        } else if (!app.theological_institution) {
-          setCurrentStep(2);
-        } else {
-          setCurrentStep(3);
+        // Calculate the furthest completed step
+        let stepToShow = 0;
+        
+        // Check Step 0: Personal Information
+        const hasPersonalInfo = app.full_name && app.date_of_birth && app.phone && app.email && app.marital_status;
+        if (hasPersonalInfo) {
+          stepToShow = 1;
+          
+          // Check Step 1: Church Information
+          const hasChurchInfo = app.church_name && app.association && app.sector && app.fellowship;
+          if (hasChurchInfo) {
+            stepToShow = 2;
+            
+            // Check Step 2: Admission & Training
+            const hasAdmissionInfo = app.theological_institution && app.theological_qualification;
+            if (hasAdmissionInfo) {
+              stepToShow = 3;
+              
+              // If all previous steps are complete, go to documents step
+            }
+          }
         }
+        
+        setCurrentStep(stepToShow);
+        toast.success(`Continuing from ${STEPS[stepToShow].title}`);
       }
     }
   };
