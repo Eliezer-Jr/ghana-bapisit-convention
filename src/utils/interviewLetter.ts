@@ -38,7 +38,7 @@ export const generateInterviewLetter = (data: InterviewLetterData) => {
   
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
-  doc.text('CONVENTION MINISTERIAL ADMISSION', 105, 28, { align: 'center' });
+  doc.text('MINISTERIAL ADMISSION', 105, 28, { align: 'center' });
   
   // Add applicant photo with border (right side)
   if (data.photo_url) {
