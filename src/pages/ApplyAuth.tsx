@@ -117,7 +117,7 @@ export default function ApplyAuth() {
     // Check if an application exists for this phone number
     const { data: application, error } = await supabase
       .from('applications')
-      .select('id, full_name')
+      .select('id, full_name, status')
       .eq('phone', formattedPhone)
       .maybeSingle();
 
@@ -129,16 +129,19 @@ export default function ApplyAuth() {
       return;
     }
 
+    // Store phone in localStorage
+    localStorage.setItem('applicant_phone', formattedPhone);
+
     if (!application) {
-      toast.error('No application found for this phone number. Please contact support.');
+      // No application exists - create new one
+      toast.success('Verification successful! Complete your application.');
+      navigate('/applicant-portal');
       return;
     }
 
-    // Store phone and name in localStorage
-    localStorage.setItem('applicant_phone', formattedPhone);
+    // Application exists - load it
     localStorage.setItem('applicant_name', application.full_name);
-
-    toast.success('Verification successful!');
+    toast.success('Welcome back! Loading your application...');
     navigate('/applicant-portal');
   };
 
