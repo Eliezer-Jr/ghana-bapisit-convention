@@ -401,6 +401,60 @@ export type Database = {
           },
         ]
       }
+      letter_templates: {
+        Row: {
+          created_at: string
+          font_family: string
+          font_size_body: number
+          font_size_title: number
+          footer_text: string
+          id: string
+          letterhead_height: number
+          logo_height: number
+          logo_width: number
+          organization_name: string
+          organization_subtitle: string
+          primary_color: string
+          secondary_color: string
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          font_family?: string
+          font_size_body?: number
+          font_size_title?: number
+          footer_text?: string
+          id?: string
+          letterhead_height?: number
+          logo_height?: number
+          logo_width?: number
+          organization_name?: string
+          organization_subtitle?: string
+          primary_color?: string
+          secondary_color?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          font_family?: string
+          font_size_body?: number
+          font_size_title?: number
+          footer_text?: string
+          id?: string
+          letterhead_height?: number
+          logo_height?: number
+          logo_width?: number
+          organization_name?: string
+          organization_subtitle?: string
+          primary_color?: string
+          secondary_color?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       minister_children: {
         Row: {
           child_name: string

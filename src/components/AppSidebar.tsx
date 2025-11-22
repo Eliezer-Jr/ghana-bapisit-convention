@@ -14,6 +14,7 @@ import {
   ClipboardCheck,
   UserCog,
   BarChart3,
+  Palette,
 } from "lucide-react";
 import {
   Sidebar,
@@ -66,6 +67,7 @@ export function AppSidebar() {
     { icon: Shield, label: "User Approvals", path: "/super-admin", show: isSuperAdmin },
     { icon: UserCog, label: "User Management", path: "/user-management", show: isSuperAdmin },
     { icon: Activity, label: "Activity Logs", path: "/activity-logs", show: isSuperAdmin },
+    { icon: Palette, label: "Letter Templates", path: "/letter-templates", show: isSuperAdmin },
     { icon: ClipboardCheck, label: "Review Admissions", path: "/admin/admissions", show: isSuperAdmin || isAdmissionReviewer },
     { icon: DollarSign, label: "Finance Portal", path: "/finance", show: isSuperAdmin || isFinanceManager },
   ];
