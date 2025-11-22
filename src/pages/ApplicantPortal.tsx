@@ -269,6 +269,9 @@ export default function ApplicantPortal() {
 
   const CurrentStepComponent = STEPS[currentStep].component;
   const progress = ((currentStep + 1) / STEPS.length) * 100;
+  
+  // Only disable editing for final statuses (approved/rejected)
+  const isFinalStatus = applicationStatus === "approved" || applicationStatus === "rejected";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background">
@@ -326,7 +329,7 @@ export default function ApplicantPortal() {
                         ? "text-foreground hover:bg-accent"
                         : "text-muted-foreground"
                     }`}
-                    disabled={applicationStatus === "submitted" && index !== 4}
+                    disabled={isFinalStatus && index !== 4}
                   >
                     {index < currentStep ? (
                       <CheckCircle2 className="h-5 w-5 shrink-0" />
@@ -350,7 +353,7 @@ export default function ApplicantPortal() {
                 onSave={saveProgress}
                 onSubmit={handleSubmit}
                 applicationId={applicationId}
-                isSubmitted={applicationStatus === "submitted"}
+                isSubmitted={isFinalStatus}
               />
             </Card>
           </div>
