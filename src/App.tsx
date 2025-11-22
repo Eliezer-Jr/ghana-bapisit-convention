@@ -17,7 +17,6 @@ import ActivityLogs from "./pages/ActivityLogs";
 import Admissions from "./pages/Admissions";
 import AdmissionForm from "./pages/AdmissionForm";
 import AdminAdmissions from "./pages/AdminAdmissions";
-import AdmissionReview from "./pages/AdmissionReview";
 import Apply from "./pages/Apply";
 import ApplyAuth from "./pages/ApplyAuth";
 import ApplicantPortal from "./pages/ApplicantPortal";
@@ -183,9 +182,9 @@ const App = () => (
             <Route
               path="/admin/admissions"
               element={
-                <ProtectedRoute>
-                  <AdmissionReview />
-                </ProtectedRoute>
+                <SuperAdminRoute>
+                  <AdminAdmissions />
+                </SuperAdminRoute>
               }
             />
             <Route
