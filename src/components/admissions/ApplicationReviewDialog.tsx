@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import { InfoField } from "@/components/InfoField";
+import logoWatermark from "@/assets/logo-watermark.png";
 
 interface ApplicationReviewDialogProps {
   application: any;
@@ -53,10 +54,53 @@ export function ApplicationReviewDialog({
     setDocuments(data || []);
   };
 
-  const downloadApplicationPDF = () => {
+  const downloadApplicationPDF = async () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
     let yPos = 20;
+
+    // Add watermark
+    try {
+      const watermarkImg = new Image();
+      watermarkImg.src = logoWatermark;
+      await new Promise((resolve) => {
+        watermarkImg.onload = resolve;
+      });
+      doc.addImage(watermarkImg, "PNG", pageWidth / 2 - 40, pageHeight / 2 - 40, 80, 80, "", "NONE", 0.1);
+    } catch (error) {
+      console.error("Failed to add watermark:", error);
+    }
+
+    // Add logo at top
+    try {
+      const logoImg = new Image();
+      logoImg.src = logoWatermark;
+      await new Promise((resolve) => {
+        logoImg.onload = resolve;
+      });
+      doc.addImage(logoImg, "PNG", 20, 10, 30, 30);
+    } catch (error) {
+      console.error("Failed to add logo:", error);
+    }
+
+    // Add applicant photo if available
+    if (application.photo_url) {
+      try {
+        const photoImg = new Image();
+        photoImg.crossOrigin = "anonymous";
+        photoImg.src = application.photo_url;
+        await new Promise((resolve, reject) => {
+          photoImg.onload = resolve;
+          photoImg.onerror = reject;
+        });
+        doc.addImage(photoImg, "JPEG", pageWidth - 50, 10, 30, 30);
+      } catch (error) {
+        console.error("Failed to add applicant photo:", error);
+      }
+    }
+
+    yPos = 50;
 
     // Title
     doc.setFontSize(18);
