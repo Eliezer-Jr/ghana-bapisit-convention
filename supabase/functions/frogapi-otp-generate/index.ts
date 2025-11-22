@@ -40,7 +40,7 @@ serve(async (req) => {
       number: formattedNumber,
       expiry: 5,
       length: 6,
-      messagetemplate: "Your Ghana Baptist Convention verification code is: %OTPCODE%. It will expire after %EXPIRY% mins",
+      messagetemplate: "Your Ghana Baptist Convention Conference verification code is: %OTPCODE%. It will expire after %EXPIRY% mins",
       type: "NUMERIC",
       senderid: senderId
     };
