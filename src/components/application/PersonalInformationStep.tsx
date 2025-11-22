@@ -273,9 +273,13 @@ export default function PersonalInformationStep({
             id="phone"
             value={data.phone}
             onChange={(e) => handleChange("phone", e.target.value)}
-            disabled={isSubmitted}
+            disabled={true}
             placeholder="0XXXXXXXXX"
+            className="bg-muted"
           />
+          <p className="text-xs text-muted-foreground">
+            Phone number is locked (used for authentication)
+          </p>
         </div>
 
         <div className="space-y-2">

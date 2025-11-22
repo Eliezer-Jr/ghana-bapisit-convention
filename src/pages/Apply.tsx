@@ -166,7 +166,7 @@ export default function Apply() {
     }
 
     // Verify OTP
-    const result = await OTPService.verifyOTP(phoneNumber, otp, formData.fullName || "Applicant");
+    const result = await OTPService.verifyOTP(phoneNumber, otp);
     setLoading(false);
 
     if (result.success) {
