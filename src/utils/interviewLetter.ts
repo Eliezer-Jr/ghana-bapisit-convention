@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import logoImg from '@/assets/logo-watermark.png';
+import logoImg from '@/assets/logo-gbcc.png';
 import { supabase } from '@/integrations/supabase/client';
 
 interface InterviewLetterData {
