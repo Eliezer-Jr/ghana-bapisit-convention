@@ -1,5 +1,7 @@
 import jsPDF from 'jspdf';
 import logoImg from '@/assets/logo-watermark.png';
+import signatureSecretary from '@/assets/signature-secretary.png';
+import signatureVP from '@/assets/signature-vp.png';
 
 interface AdmissionLetterData {
   full_name: string;
@@ -151,14 +153,13 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   yPosition += 15;
   
   // Signature section
-  doc.setFont('helvetica', 'bold');
-  doc.text('_____________________________', 20, yPosition);
-  yPosition += 7;
-  doc.text('Convention Secretary', 20, yPosition);
-  
-  doc.text('_____________________________', 120, yPosition - 7);
-  yPosition += 7;
-  doc.text('Vice President', 120, yPosition);
+  try {
+    doc.addImage(signatureSecretary, 'PNG', 20, yPosition, 50, 15);
+    doc.addImage(signatureVP, 'PNG', 120, yPosition, 50, 15);
+  } catch (error) {
+    console.error('Error adding signatures:', error);
+  }
+  yPosition += 20;
   
   // Footer
   doc.setFontSize(9);

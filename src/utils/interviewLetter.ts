@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import logoImg from '@/assets/logo-watermark.png';
+import signatureSecretary from '@/assets/signature-secretary.png';
 
 interface InterviewLetterData {
   full_name: string;
@@ -172,10 +173,12 @@ export const generateInterviewLetter = (data: InterviewLetterData) => {
   yPosition += 15;
   
   // Signature section
-  doc.setFont('helvetica', 'bold');
-  doc.text('_____________________________', 20, yPosition);
-  yPosition += 7;
-  doc.text('Convention Secretary', 20, yPosition);
+  try {
+    doc.addImage(signatureSecretary, 'PNG', 20, yPosition, 50, 15);
+  } catch (error) {
+    console.error('Error adding signature:', error);
+  }
+  yPosition += 20;
   
   // Footer
   doc.setFontSize(9);
