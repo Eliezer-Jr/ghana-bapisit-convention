@@ -1,26 +1,22 @@
 import jsPDF from 'jspdf';
 import logoImg from '@/assets/logo-watermark.png';
 
-interface AdmissionLetterData {
+interface RejectionLetterData {
   full_name: string;
   phone: string;
   email: string;
   admission_level: string;
   church_name: string;
-  association: string;
-  sector: string;
-  fellowship: string;
-  submitted_at?: string;
-  date_of_birth?: string;
+  rejection_reason?: string;
   photo_url?: string;
 }
 
-export const generateAdmissionLetter = (data: AdmissionLetterData) => {
+export const generateRejectionLetter = (data: RejectionLetterData) => {
   const doc = new jsPDF();
   
   // Set up colors
-  const primaryColor: [number, number, number] = [41, 128, 185]; // Blue
-  const secondaryColor: [number, number, number] = [52, 73, 94]; // Dark gray
+  const primaryColor: [number, number, number] = [41, 128, 185];
+  const secondaryColor: [number, number, number] = [52, 73, 94];
   
   // Add letterhead
   doc.setFillColor(...primaryColor);
@@ -67,7 +63,7 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   // Letter title
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('LETTER OF ADMISSION', 105, 70, { align: 'center' });
+  doc.text('APPLICATION STATUS NOTIFICATION', 105, 70, { align: 'center' });
   
   // Horizontal line
   doc.setDrawColor(...primaryColor);
@@ -83,18 +79,16 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   doc.text('Dear ' + data.full_name + ',', 20, yPosition);
   yPosition += 10;
   
-  // Main content
   const admissionLevelText = data.admission_level.charAt(0).toUpperCase() + 
                             data.admission_level.slice(1);
   
   const content = [
-    'We are pleased to inform you that your application for ministerial ' + 
-    admissionLevelText.toLowerCase() + ' has been',
-    'approved by the Gospel Believers Church Convention.',
+    'Thank you for your interest in pursuing ministerial ' + admissionLevelText.toLowerCase() + ' with the',
+    'Gospel Believers Church Convention. We appreciate the time and effort you invested',
+    'in completing your application.',
     '',
-    'This admission is granted based on your demonstrated commitment to ministry, theological',
-    'training, and service to the church. You are hereby recognized to serve in the capacity of',
-    admissionLevelText + ' within the Gospel Believers Church Convention.',
+    'After careful consideration and review of your application, we regret to inform you that',
+    'we are unable to approve your application at this time.',
   ];
   
   content.forEach(line => {
@@ -104,20 +98,31 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   
   yPosition += 5;
   
+  // Reason section if provided
+  if (data.rejection_reason) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('FEEDBACK:', 20, yPosition);
+    yPosition += 8;
+    
+    doc.setFont('helvetica', 'normal');
+    const reasonLines = doc.splitTextToSize(data.rejection_reason, 170);
+    reasonLines.forEach((line: string) => {
+      doc.text(line, 25, yPosition);
+      yPosition += 7;
+    });
+    
+    yPosition += 5;
+  }
+  
   // Applicant Details Section
   doc.setFont('helvetica', 'bold');
-  doc.text('APPLICANT DETAILS:', 20, yPosition);
+  doc.text('APPLICATION DETAILS:', 20, yPosition);
   yPosition += 8;
   
   doc.setFont('helvetica', 'normal');
   const details = [
     ['Full Name:', data.full_name],
-    ['Phone Number:', data.phone],
-    ['Email:', data.email],
     ['Church:', data.church_name],
-    ['Fellowship:', data.fellowship],
-    ['Association:', data.association],
-    ['Sector:', data.sector],
     ['Admission Level:', admissionLevelText],
   ];
   
@@ -133,11 +138,12 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   
   // Closing
   const closing = [
-    'Please ensure that you adhere to the code of conduct and ministerial guidelines as',
-    'outlined by the Gospel Believers Church Convention.',
+    'We encourage you to continue in your ministry and spiritual growth. You may reapply',
+    'in the future as you address the areas highlighted in the feedback.',
     '',
-    'We congratulate you on this achievement and pray for God\'s continued blessing upon',
-    'your ministry.',
+    'If you have any questions regarding this decision, please feel free to contact our office.',
+    '',
+    'May God continue to guide and bless your ministry journey.',
   ];
   
   closing.forEach(line => {
@@ -153,10 +159,6 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   yPosition += 7;
   doc.text('Convention Secretary', 20, yPosition);
   
-  doc.text('_____________________________', 120, yPosition - 7);
-  yPosition += 7;
-  doc.text('Vice President', 120, yPosition);
-  
   // Footer
   doc.setFontSize(9);
   doc.setFont('helvetica', 'italic');
@@ -164,6 +166,6 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   doc.text('This is an official document of the Gospel Believers Church Convention', 105, 280, { align: 'center' });
   
   // Save the PDF
-  const fileName = `Admission_Letter_${data.full_name.replace(/\s+/g, '_')}.pdf`;
+  const fileName = `Application_Status_${data.full_name.replace(/\s+/g, '_')}.pdf`;
   doc.save(fileName);
 };

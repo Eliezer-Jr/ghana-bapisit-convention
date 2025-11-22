@@ -1,26 +1,23 @@
 import jsPDF from 'jspdf';
 import logoImg from '@/assets/logo-watermark.png';
 
-interface AdmissionLetterData {
+interface InterviewLetterData {
   full_name: string;
   phone: string;
   email: string;
   admission_level: string;
   church_name: string;
-  association: string;
-  sector: string;
-  fellowship: string;
-  submitted_at?: string;
-  date_of_birth?: string;
+  interview_date?: string;
+  interview_location?: string;
   photo_url?: string;
 }
 
-export const generateAdmissionLetter = (data: AdmissionLetterData) => {
+export const generateInterviewLetter = (data: InterviewLetterData) => {
   const doc = new jsPDF();
   
   // Set up colors
-  const primaryColor: [number, number, number] = [41, 128, 185]; // Blue
-  const secondaryColor: [number, number, number] = [52, 73, 94]; // Dark gray
+  const primaryColor: [number, number, number] = [41, 128, 185];
+  const secondaryColor: [number, number, number] = [52, 73, 94];
   
   // Add letterhead
   doc.setFillColor(...primaryColor);
@@ -67,7 +64,7 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   // Letter title
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('LETTER OF ADMISSION', 105, 70, { align: 'center' });
+  doc.text('INTERVIEW INVITATION', 105, 70, { align: 'center' });
   
   // Horizontal line
   doc.setDrawColor(...primaryColor);
@@ -83,18 +80,16 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   doc.text('Dear ' + data.full_name + ',', 20, yPosition);
   yPosition += 10;
   
-  // Main content
   const admissionLevelText = data.admission_level.charAt(0).toUpperCase() + 
                             data.admission_level.slice(1);
   
   const content = [
     'We are pleased to inform you that your application for ministerial ' + 
-    admissionLevelText.toLowerCase() + ' has been',
-    'approved by the Gospel Believers Church Convention.',
+    admissionLevelText.toLowerCase() + ' has',
+    'progressed to the interview stage. Your dedication to ministry and theological preparation',
+    'has impressed our review committee.',
     '',
-    'This admission is granted based on your demonstrated commitment to ministry, theological',
-    'training, and service to the church. You are hereby recognized to serve in the capacity of',
-    admissionLevelText + ' within the Gospel Believers Church Convention.',
+    'You are hereby invited to attend an interview session with the ministerial board.',
   ];
   
   content.forEach(line => {
@@ -104,22 +99,29 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   
   yPosition += 5;
   
-  // Applicant Details Section
+  // Interview Details Section
   doc.setFont('helvetica', 'bold');
-  doc.text('APPLICANT DETAILS:', 20, yPosition);
+  doc.text('INTERVIEW DETAILS:', 20, yPosition);
   yPosition += 8;
   
   doc.setFont('helvetica', 'normal');
   const details = [
-    ['Full Name:', data.full_name],
-    ['Phone Number:', data.phone],
-    ['Email:', data.email],
-    ['Church:', data.church_name],
-    ['Fellowship:', data.fellowship],
-    ['Association:', data.association],
-    ['Sector:', data.sector],
+    ['Applicant Name:', data.full_name],
     ['Admission Level:', admissionLevelText],
+    ['Church:', data.church_name],
   ];
+  
+  if (data.interview_date) {
+    details.push(['Interview Date:', new Date(data.interview_date).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    })]);
+  }
+  
+  if (data.interview_location) {
+    details.push(['Location:', data.interview_location]);
+  }
   
   details.forEach(([label, value]) => {
     doc.setFont('helvetica', 'bold');
@@ -131,13 +133,32 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   
   yPosition += 10;
   
+  // Instructions
+  doc.setFont('helvetica', 'bold');
+  doc.text('WHAT TO BRING:', 20, yPosition);
+  yPosition += 8;
+  
+  doc.setFont('helvetica', 'normal');
+  const instructions = [
+    '• Valid identification document',
+    '• Original certificates and testimonials',
+    '• Copy of your application form',
+    '• Any additional supporting documents',
+  ];
+  
+  instructions.forEach(line => {
+    doc.text(line, 25, yPosition);
+    yPosition += 7;
+  });
+  
+  yPosition += 10;
+  
   // Closing
   const closing = [
-    'Please ensure that you adhere to the code of conduct and ministerial guidelines as',
-    'outlined by the Gospel Believers Church Convention.',
+    'Please confirm your attendance by contacting the office at least 48 hours before',
+    'the scheduled date. We look forward to meeting you.',
     '',
-    'We congratulate you on this achievement and pray for God\'s continued blessing upon',
-    'your ministry.',
+    'May God\'s grace be with you as you prepare.',
   ];
   
   closing.forEach(line => {
@@ -153,10 +174,6 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   yPosition += 7;
   doc.text('Convention Secretary', 20, yPosition);
   
-  doc.text('_____________________________', 120, yPosition - 7);
-  yPosition += 7;
-  doc.text('Vice President', 120, yPosition);
-  
   // Footer
   doc.setFontSize(9);
   doc.setFont('helvetica', 'italic');
@@ -164,6 +181,6 @@ export const generateAdmissionLetter = (data: AdmissionLetterData) => {
   doc.text('This is an official document of the Gospel Believers Church Convention', 105, 280, { align: 'center' });
   
   // Save the PDF
-  const fileName = `Admission_Letter_${data.full_name.replace(/\s+/g, '_')}.pdf`;
+  const fileName = `Interview_Letter_${data.full_name.replace(/\s+/g, '_')}.pdf`;
   doc.save(fileName);
 };

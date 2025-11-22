@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Send, CheckCircle2, Download } from "lucide-react";
 import { generateAdmissionLetter } from "@/utils/admissionLetter";
+import { generateInterviewLetter } from "@/utils/interviewLetter";
+import { generateRejectionLetter } from "@/utils/rejectionLetter";
 import { toast } from "sonner";
 
 interface SummaryStepProps {
@@ -19,22 +21,48 @@ export default function SummaryStep({
 }: SummaryStepProps) {
   const handleDownloadLetter = () => {
     try {
-      generateAdmissionLetter({
-        full_name: formData.full_name,
-        phone: formData.phone,
-        email: formData.email,
-        admission_level: formData.admission_level,
-        church_name: formData.church_name,
-        association: formData.association,
-        sector: formData.sector,
-        fellowship: formData.fellowship,
-        submitted_at: formData.submitted_at,
-        date_of_birth: formData.date_of_birth,
-      });
-      toast.success("Admission letter downloaded successfully!");
+      if (formData.status === 'approved') {
+        generateAdmissionLetter({
+          full_name: formData.full_name,
+          phone: formData.phone,
+          email: formData.email,
+          admission_level: formData.admission_level,
+          church_name: formData.church_name,
+          association: formData.association,
+          sector: formData.sector,
+          fellowship: formData.fellowship,
+          submitted_at: formData.submitted_at,
+          date_of_birth: formData.date_of_birth,
+          photo_url: formData.photo_url,
+        });
+        toast.success("Admission letter downloaded successfully!");
+      } else if (formData.status === 'interview_scheduled') {
+        generateInterviewLetter({
+          full_name: formData.full_name,
+          phone: formData.phone,
+          email: formData.email,
+          admission_level: formData.admission_level,
+          church_name: formData.church_name,
+          interview_date: formData.interview_date,
+          interview_location: formData.interview_location,
+          photo_url: formData.photo_url,
+        });
+        toast.success("Interview letter downloaded successfully!");
+      } else if (formData.status === 'rejected') {
+        generateRejectionLetter({
+          full_name: formData.full_name,
+          phone: formData.phone,
+          email: formData.email,
+          admission_level: formData.admission_level,
+          church_name: formData.church_name,
+          rejection_reason: formData.rejection_reason,
+          photo_url: formData.photo_url,
+        });
+        toast.success("Status letter downloaded successfully!");
+      }
     } catch (error) {
-      console.error("Error generating admission letter:", error);
-      toast.error("Failed to generate admission letter");
+      console.error("Error generating letter:", error);
+      toast.error("Failed to generate letter");
     }
   };
 
@@ -87,14 +115,18 @@ export default function SummaryStep({
                 )}
               </div>
               
-              {formData.status === 'approved' && (
+              {(formData.status === 'approved' || formData.status === 'interview_scheduled' || formData.status === 'rejected') && (
                 <Button 
                   onClick={handleDownloadLetter}
                   size="lg"
                   className="mt-4"
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Download Admission Letter
+                  {formData.status === 'approved' 
+                    ? 'Download Admission Letter'
+                    : formData.status === 'interview_scheduled'
+                    ? 'Download Interview Letter'
+                    : 'Download Status Letter'}
                 </Button>
               )}
             </div>
