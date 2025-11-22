@@ -81,6 +81,9 @@ export default function ApplicantPortal() {
       return;
     }
 
+    // Set phone number in formData
+    setFormData(prev => ({ ...prev, phone: phoneNumber }));
+
     // Load existing application if any
     await loadApplication(phoneNumber);
     setLoading(false);
@@ -163,6 +166,7 @@ export default function ApplicantPortal() {
       const payload = {
         ...formData,
         ...data,
+        phone: phoneNumber, // Always use authenticated phone number
         user_id: null, // No user_id for applicants
         status: applicationStatus === "submitted" ? "submitted" : "draft",
       };
