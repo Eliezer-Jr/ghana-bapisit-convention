@@ -217,12 +217,25 @@ export function ApplicationReviewDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-2xl">Application Review</DialogTitle>
-              <Button variant="outline" size="sm" onClick={downloadApplicationPDF}>
-                <Download className="h-4 w-4 mr-2" />
-                Download PDF
-              </Button>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <DialogTitle className="text-2xl">Application Review</DialogTitle>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button variant="outline" size="sm" onClick={downloadApplicationPDF}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download PDF
+                </Button>
+                {application.photo_url && (
+                  <div className="w-20 h-20 rounded-lg overflow-hidden border-2 border-border">
+                    <img 
+                      src={application.photo_url} 
+                      alt={application.full_name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </DialogHeader>
 
