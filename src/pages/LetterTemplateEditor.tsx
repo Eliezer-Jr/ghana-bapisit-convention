@@ -9,6 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Eye } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SignatureManager } from "@/components/SignatureManager";
+import { generateSampleLetter } from "@/utils/letterGenerator";
+import logoImg from "@/assets/logo-watermark.png";
 
 interface LetterTemplate {
   id: string;
@@ -31,6 +34,7 @@ export default function LetterTemplateEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [template, setTemplate] = useState<LetterTemplate | null>(null);
+  const [generatingPreview, setGeneratingPreview] = useState(false);
 
   useEffect(() => {
     fetchTemplate();
@@ -91,6 +95,38 @@ export default function LetterTemplateEditor() {
     setTemplate({ ...template, [field]: value });
   };
 
+  const handlePreview = async () => {
+    if (!template) return;
+
+    setGeneratingPreview(true);
+    try {
+      // Fetch signatures
+      const { data: signatures, error } = await supabase
+        .from("letter_signatures")
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order");
+
+      if (error) throw error;
+
+      // Generate preview PDF
+      const doc = generateSampleLetter(
+        template,
+        signatures || [],
+        logoImg
+      );
+
+      // Save the PDF
+      doc.save(`Letter_Template_Preview_${Date.now()}.pdf`);
+      toast.success("Preview generated successfully");
+    } catch (error) {
+      console.error("Error generating preview:", error);
+      toast.error("Failed to generate preview");
+    } finally {
+      setGeneratingPreview(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -122,9 +158,9 @@ export default function LetterTemplateEditor() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={handlePreview} disabled={generatingPreview}>
               <Eye className="h-4 w-4 mr-2" />
-              Preview
+              {generatingPreview ? "Generating..." : "Preview PDF"}
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               <Save className="h-4 w-4 mr-2" />
@@ -139,6 +175,7 @@ export default function LetterTemplateEditor() {
             <TabsTrigger value="typography">Typography</TabsTrigger>
             <TabsTrigger value="layout">Layout</TabsTrigger>
             <TabsTrigger value="content">Content</TabsTrigger>
+            <TabsTrigger value="signatures">Signatures</TabsTrigger>
           </TabsList>
 
           <TabsContent value="colors" className="space-y-6">
@@ -298,6 +335,10 @@ export default function LetterTemplateEditor() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="signatures" className="space-y-6">
+            <SignatureManager />
           </TabsContent>
         </Tabs>
       </div>
