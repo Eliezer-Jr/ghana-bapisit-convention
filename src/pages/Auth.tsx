@@ -196,8 +196,15 @@ const Auth = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
-      <Card className="w-full max-w-md shadow-xl border-2">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4 relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-[0.03]" style={{
+        backgroundImage: `radial-gradient(circle at 25px 25px, hsl(var(--primary)) 2%, transparent 0%), 
+                         radial-gradient(circle at 75px 75px, hsl(var(--accent)) 2%, transparent 0%)`,
+        backgroundSize: '100px 100px'
+      }} />
+      <div className="relative z-10 w-full max-w-md">
+      <Card className="w-full shadow-xl border-2">
         <CardHeader className="space-y-1 text-center pb-4">
           <div className="flex justify-center mb-4">
             <img src={logoGbcc} alt="GBCC Logo" className="h-20 w-20 object-contain" />
@@ -346,6 +353,7 @@ const Auth = () => {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
