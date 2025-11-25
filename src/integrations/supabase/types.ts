@@ -615,6 +615,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           whatsapp: string | null
+          zone: string | null
         }
         Insert: {
           areas_of_ministry?: string[] | null
@@ -652,6 +653,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           whatsapp?: string | null
+          zone?: string | null
         }
         Update: {
           areas_of_ministry?: string[] | null
@@ -689,6 +691,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           whatsapp?: string | null
+          zone?: string | null
         }
         Relationships: []
       }
