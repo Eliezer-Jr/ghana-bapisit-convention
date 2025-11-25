@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, GraduationCap, HelpCircle, Phone, Mail } from "lucide-react";
+import { Loader2, GraduationCap, HelpCircle, Phone, Mail, Info } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { OTPService } from "@/services/otp";
 import logoGbcc from "@/assets/logo-gbcc.png";
@@ -355,11 +355,23 @@ export default function ApplyAuth() {
 
         {/* Support Section */}
         <div className="px-6 pb-6">
-          <div className="border-t pt-4">
-            <div className="flex items-center justify-center gap-2 mb-3">
+          <div className="border-t pt-4 space-y-3">
+            <div className="flex items-center justify-center gap-2">
               <HelpCircle className="h-4 w-4 text-muted-foreground" />
               <p className="text-sm font-medium text-muted-foreground">Need Help?</p>
             </div>
+            
+            {/* Info Button */}
+            <Button
+              variant="outline"
+              className="w-full h-10"
+              onClick={() => navigate('/applicant-info')}
+            >
+              <Info className="mr-2 h-4 w-4" />
+              View Application Guide & FAQs
+            </Button>
+
+            {/* Contact Buttons */}
             <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 variant="outline"
@@ -378,7 +390,7 @@ export default function ApplyAuth() {
                 WhatsApp
               </Button>
             </div>
-            <p className="text-xs text-center text-muted-foreground mt-3">
+            <p className="text-xs text-center text-muted-foreground">
               For payment verification or technical issues, contact our support team
             </p>
           </div>
