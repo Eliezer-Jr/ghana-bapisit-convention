@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, GraduationCap } from "lucide-react";
+import { Loader2, GraduationCap, HelpCircle, Phone, Mail } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { OTPService } from "@/services/otp";
 import logoGbcc from "@/assets/logo-gbcc.png";
@@ -352,6 +352,37 @@ export default function ApplyAuth() {
             </>
           )}
         </CardContent>
+
+        {/* Support Section */}
+        <div className="px-6 pb-6">
+          <div className="border-t pt-4">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+              <p className="text-sm font-medium text-muted-foreground">Need Help?</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                className="flex-1 h-10"
+                onClick={() => window.open('tel:+233000000000', '_self')}
+              >
+                <Phone className="mr-2 h-4 w-4" />
+                Call Support
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 h-10"
+                onClick={() => window.open('https://wa.me/233000000000?text=Hello,%20I%20need%20help%20with%20my%20application', '_blank')}
+              >
+                <Mail className="mr-2 h-4 w-4" />
+                WhatsApp
+              </Button>
+            </div>
+            <p className="text-xs text-center text-muted-foreground mt-3">
+              For payment verification or technical issues, contact our support team
+            </p>
+          </div>
+        </div>
       </Card>
       </div>
     </div>
