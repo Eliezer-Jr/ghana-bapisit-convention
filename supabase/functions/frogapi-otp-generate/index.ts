@@ -46,8 +46,6 @@ serve(async (req) => {
     };
 
     console.log("Generating OTP for:", phoneNumber);
-    console.log("Formatted number for FrogAPI:", formattedNumber);
-    console.log("OTP generation payload:", JSON.stringify(postData, null, 2));
 
     const response = await fetch('https://frogapi.wigal.com.gh/api/v3/sms/otp/generate', {
       method: 'POST',
