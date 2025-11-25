@@ -37,6 +37,7 @@ const ministerSchema = z.object({
   association: z.string().trim().max(100).optional(),
   sector: z.string().trim().max(100).optional(),
   fellowship: z.string().trim().max(100).optional(),
+  zone: z.string().trim().max(100).optional(),
   ordination_year: z.number().min(1900).max(2100).nullable().optional(),
   recognition_year: z.number().min(1900).max(2100).nullable().optional(),
   licensing_year: z.number().min(1900).max(2100).nullable().optional(),
@@ -78,6 +79,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
     association: "",
     sector: "",
     fellowship: "",
+    zone: "",
     ordination_year: null as number | null,
     recognition_year: null as number | null,
     licensing_year: null as number | null,
@@ -124,6 +126,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           association: minister.association || "",
           sector: minister.sector || "",
           fellowship: minister.fellowship || "",
+          zone: minister.zone || "",
           ordination_year: minister.ordination_year || null,
           recognition_year: minister.recognition_year || null,
           licensing_year: minister.licensing_year || null,
@@ -178,6 +181,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           association: "",
           sector: "",
           fellowship: "",
+          zone: "",
           ordination_year: null,
           recognition_year: null,
           licensing_year: null,
@@ -242,6 +246,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         association: validated.association?.trim() || null,
         sector: validated.sector?.trim() || null,
         fellowship: validated.fellowship?.trim() || null,
+        zone: validated.zone?.trim() || null,
         areas_of_ministry: areasOfMinistry.length > 0 ? areasOfMinistry : null,
       };
 
@@ -760,30 +765,80 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="association">Association</Label>
-                  <Input
-                    id="association"
+                  <Select
                     value={formData.association}
-                    onChange={(e) => setFormData({ ...formData, association: e.target.value })}
+                    onValueChange={(value) => setFormData({ ...formData, association: value })}
                     disabled={loading}
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Association" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Accra">Accra</SelectItem>
+                      <SelectItem value="Kumasi">Kumasi</SelectItem>
+                      <SelectItem value="Takoradi">Takoradi</SelectItem>
+                      <SelectItem value="Cape Coast">Cape Coast</SelectItem>
+                      <SelectItem value="Tamale">Tamale</SelectItem>
+                      <SelectItem value="Tema">Tema</SelectItem>
+                      <SelectItem value="Ho">Ho</SelectItem>
+                      <SelectItem value="Sunyani">Sunyani</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="zone">Zone</Label>
+                  <Select
+                    value={formData.zone}
+                    onValueChange={(value) => setFormData({ ...formData, zone: value })}
+                    disabled={loading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Zone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Zone 1">Zone 1</SelectItem>
+                      <SelectItem value="Zone 2">Zone 2</SelectItem>
+                      <SelectItem value="Zone 3">Zone 3</SelectItem>
+                      <SelectItem value="Zone 4">Zone 4</SelectItem>
+                      <SelectItem value="Zone 5">Zone 5</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="sector">Sector</Label>
-                  <Input
-                    id="sector"
+                  <Select
                     value={formData.sector}
-                    onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
+                    onValueChange={(value) => setFormData({ ...formData, sector: value })}
                     disabled={loading}
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Sector" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Sector A">Sector A</SelectItem>
+                      <SelectItem value="Sector B">Sector B</SelectItem>
+                      <SelectItem value="Sector C">Sector C</SelectItem>
+                      <SelectItem value="Sector D">Sector D</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="fellowship">Fellowship</Label>
-                  <Input
-                    id="fellowship"
+                  <Select
                     value={formData.fellowship}
-                    onChange={(e) => setFormData({ ...formData, fellowship: e.target.value })}
+                    onValueChange={(value) => setFormData({ ...formData, fellowship: value })}
                     disabled={loading}
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Fellowship" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Fellowship 1">Fellowship 1</SelectItem>
+                      <SelectItem value="Fellowship 2">Fellowship 2</SelectItem>
+                      <SelectItem value="Fellowship 3">Fellowship 3</SelectItem>
+                      <SelectItem value="Fellowship 4">Fellowship 4</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="ordination_year">Ordination Year</Label>
@@ -823,7 +878,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                 </div>
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label>Area(s) of Ministry (Five-fold Ministry)</Label>
                 <div className="flex flex-wrap gap-2">
                   {["Apostle", "Prophet", "Evangelist", "Pastor", "Teacher"].map((area) => (
@@ -845,7 +900,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                     </Button>
                   ))}
                 </div>
-              </div>
+              </div> */}
             </TabsContent>
 
             <TabsContent value="history" className="space-y-4 mt-4">
