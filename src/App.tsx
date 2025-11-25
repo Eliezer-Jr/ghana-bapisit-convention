@@ -81,7 +81,6 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/apply" element={<ApplyAuth />} />
-            <Route path="/applicant-portal" element={<ApplicantPortal />} />
             <Route path="/pending" element={<PendingApproval />} />
             <Route
               path="/super-admin"
@@ -107,8 +106,9 @@ const App = () => (
                 </SuperAdminRoute>
               }
             />
+            <Route path="/" element={<ApplicantPortal />} />
             <Route
-              path="/"
+              path="/GBCC"
               element={
                 <ProtectedRoute>
                   <Dashboard />
