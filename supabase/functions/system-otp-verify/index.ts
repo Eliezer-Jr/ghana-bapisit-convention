@@ -79,21 +79,28 @@ serve(async (req) => {
     });
 
     const verifyData = await verifyResponse.json();
-    console.log("FrogAPI verify response:", verifyData.status);
+    console.log("FrogAPI verify full response:", JSON.stringify(verifyData, null, 2));
+    console.log("Verify payload sent:", JSON.stringify(verifyPayload, null, 2));
 
     const status = String(verifyData.status ?? '').toUpperCase();
     
     if (status === 'SYSTEM_ERROR') {
-      throw new Error(verifyData.message || "OTP verification system error");
+      const errorMsg = verifyData.message || "OTP verification system error";
+      console.error("FrogAPI system error:", errorMsg);
+      throw new Error(errorMsg);
     }
 
     if (status === 'FAILED') {
-      throw new Error(verifyData.message || "Invalid or expired OTP");
+      const errorMsg = verifyData.message || "Invalid or expired OTP code. Please request a new OTP.";
+      console.error("FrogAPI verification failed:", errorMsg, "Full response:", verifyData);
+      throw new Error(errorMsg);
     }
 
     const successStatuses = new Set(['VERIFIED', 'SUCCESS', 'OK']);
     if (!successStatuses.has(status)) {
-      throw new Error(verifyData.message || "OTP verification failed");
+      const errorMsg = verifyData.message || `OTP verification failed with status: ${status}`;
+      console.error("Unexpected FrogAPI status:", status, "Full response:", verifyData);
+      throw new Error(errorMsg);
     }
 
     console.log("OTP verified successfully for system user");
