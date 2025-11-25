@@ -9,9 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
-import { Church } from "lucide-react";
 import { z } from "zod";
 import { useActivityLog } from "@/hooks/useActivityLog";
+import logoGbcc from "@/assets/logo-gbcc.png";
 
 const phoneSchema = z.object({
   phoneNumber: z.string().regex(/^0\d{9}$/, "Phone number must be 10 digits starting with 0"),
@@ -200,9 +200,7 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-xl border-2">
         <CardHeader className="space-y-1 text-center pb-4">
           <div className="flex justify-center mb-4">
-            <div className="rounded-full bg-primary/10 p-4">
-              <Church className="h-10 w-10 text-primary" />
-            </div>
+            <img src={logoGbcc} alt="GBCC Logo" className="h-20 w-20 object-contain" />
           </div>
           <CardTitle className="text-2xl font-bold">Ghana Baptist Convention Conference</CardTitle>
           <CardDescription className="text-base">Minister Data Management System</CardDescription>
