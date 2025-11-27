@@ -603,6 +603,7 @@ export type Database = {
           ordination_year: number | null
           phone: string | null
           photo_url: string | null
+          physical_folder_number: string | null
           position_at_church: string | null
           recognition_year: number | null
           role: string
@@ -641,6 +642,7 @@ export type Database = {
           ordination_year?: number | null
           phone?: string | null
           photo_url?: string | null
+          physical_folder_number?: string | null
           position_at_church?: string | null
           recognition_year?: number | null
           role: string
@@ -679,6 +681,7 @@ export type Database = {
           ordination_year?: number | null
           phone?: string | null
           photo_url?: string | null
+          physical_folder_number?: string | null
           position_at_church?: string | null
           recognition_year?: number | null
           role?: string

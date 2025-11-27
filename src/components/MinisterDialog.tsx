@@ -41,6 +41,7 @@ const ministerSchema = z.object({
   ordination_year: z.number().min(1900).max(2100).nullable().optional(),
   recognition_year: z.number().min(1900).max(2100).nullable().optional(),
   licensing_year: z.number().min(1900).max(2100).nullable().optional(),
+  physical_folder_number: z.string().trim().max(50).optional(),
 });
 
 interface MinisterDialogProps {
@@ -83,6 +84,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
     ordination_year: null as number | null,
     recognition_year: null as number | null,
     licensing_year: null as number | null,
+    physical_folder_number: "",
   });
 
   const [qualifications, setQualifications] = useState<Array<{ qualification: string; institution: string; year_obtained: number | null }>>([]);
@@ -130,6 +132,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           ordination_year: minister.ordination_year || null,
           recognition_year: minister.recognition_year || null,
           licensing_year: minister.licensing_year || null,
+          physical_folder_number: minister.physical_folder_number || "",
         });
         setAreasOfMinistry(minister.areas_of_ministry || []);
 
@@ -185,6 +188,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           ordination_year: null,
           recognition_year: null,
           licensing_year: null,
+          physical_folder_number: "",
         });
         setQualifications([]);
         setHistory([]);
@@ -248,6 +252,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         fellowship: validated.fellowship?.trim() || null,
         zone: validated.zone?.trim() || null,
         areas_of_ministry: areasOfMinistry.length > 0 ? areasOfMinistry : null,
+        physical_folder_number: validated.physical_folder_number?.trim() || null,
       };
 
       let ministerId = minister?.id;
@@ -445,6 +450,21 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   <p className="text-xs text-muted-foreground">This ID is automatically assigned and cannot be changed</p>
                 </div>
               )}
+
+              {/* Physical Folder Number - editable for 6 months after creation */}
+              <div className="space-y-2">
+                <Label htmlFor="physical_folder_number">Physical Folder Number</Label>
+                <Input
+                  id="physical_folder_number"
+                  value={formData.physical_folder_number}
+                  onChange={(e) => setFormData({ ...formData, physical_folder_number: e.target.value })}
+                  placeholder="Enter folder number"
+                  disabled={loading || (minister?.created_at && new Date(minister.created_at) < new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000))}
+                />
+                {minister?.created_at && new Date(minister.created_at) < new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000) && (
+                  <p className="text-xs text-muted-foreground">This field is locked after 6 months from record creation</p>
+                )}
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
