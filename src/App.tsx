@@ -80,6 +80,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Navigate to="/apply" replace />} />
+
             <Route path="/auth" element={<Auth />} />
             <Route path="/apply" element={<ApplyAuth />} />
             <Route path="/applicant-info" element={<ApplicantInfo />} />
