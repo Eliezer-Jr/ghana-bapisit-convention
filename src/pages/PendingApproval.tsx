@@ -13,7 +13,7 @@ const PendingApproval = () => {
 
   // Redirect if approved
   if (isApproved) {
-    navigate("/");
+    navigate("/dashboard");
     return null;
   }
 

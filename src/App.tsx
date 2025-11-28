@@ -66,7 +66,7 @@ const SuperAdminRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!isSuperAdmin) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <ResponsiveLayout>{children}</ResponsiveLayout>;
@@ -112,7 +112,7 @@ const App = () => (
               }
             />
             <Route
-              path="/"
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Dashboard />
