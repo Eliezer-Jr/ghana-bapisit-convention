@@ -262,7 +262,7 @@ const Auth = () => {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Enter 9 digits after 0 (e.g., 0241234567)
+                  Enter 9 digits after 0 (e.g., 557083554)
                 </p>
               </div>
 
