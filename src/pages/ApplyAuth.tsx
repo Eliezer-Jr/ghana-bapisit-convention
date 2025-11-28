@@ -376,7 +376,7 @@ export default function ApplyAuth() {
               <Button
                 variant="outline"
                 className="flex-1 h-10"
-                onClick={() => window.open('tel:+233000000000', '_self')}
+                onClick={() => window.open('tel:+233557083554', '_self')}
               >
                 <Phone className="mr-2 h-4 w-4" />
                 Call Support
@@ -384,7 +384,7 @@ export default function ApplyAuth() {
               <Button
                 variant="outline"
                 className="flex-1 h-10"
-                onClick={() => window.open('https://wa.me/233000000000?text=Hello,%20I%20need%20help%20with%20my%20application', '_blank')}
+                onClick={() => window.open('https://wa.me/233557083554?text=Hello,%20I%20need%20help%20with%20my%20application', '_blank')}
               >
                 <Mail className="mr-2 h-4 w-4" />
                 WhatsApp

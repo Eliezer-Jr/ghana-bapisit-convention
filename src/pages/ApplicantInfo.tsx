@@ -291,7 +291,7 @@ export default function ApplicantInfo() {
                   <Phone className="h-5 w-5 text-primary shrink-0 mt-1" />
                   <div>
                     <h4 className="font-semibold mb-1">Call Support</h4>
-                    <p className="text-sm text-muted-foreground">+233 000 000 000</p>
+                    <p className="text-sm text-muted-foreground">+233 55 708 3554</p>
                     <p className="text-xs text-muted-foreground mt-1">Mon-Fri, 9am-5pm</p>
                   </div>
                 </div>
@@ -300,7 +300,7 @@ export default function ApplicantInfo() {
                   <Mail className="h-5 w-5 text-primary shrink-0 mt-1" />
                   <div>
                     <h4 className="font-semibold mb-1">WhatsApp Support</h4>
-                    <p className="text-sm text-muted-foreground">+233 000 000 000</p>
+                    <p className="text-sm text-muted-foreground">+233 55 708 3554</p>
                     <p className="text-xs text-muted-foreground mt-1">Quick responses</p>
                   </div>
                 </div>
