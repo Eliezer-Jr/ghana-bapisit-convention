@@ -43,7 +43,7 @@ const Auth = () => {
 
   // Redirect if already authenticated
   if (user) {
-    navigate("/");
+    navigate("/dashboard");
     return null;
   }
 
@@ -175,7 +175,7 @@ const Auth = () => {
         await supabase.auth.refreshSession();
         
         // Navigate to dashboard
-        setTimeout(() => navigate("/"), 800);
+        setTimeout(() => navigate("/dashboard"), 800);
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to verify OTP");

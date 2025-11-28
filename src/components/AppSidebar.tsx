@@ -56,7 +56,7 @@ export function AppSidebar() {
   const isAdmissionReviewer = userRoles?.some((r) => r.role === "admission_reviewer");
 
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/", show: true },
+    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", show: true },
     { icon: Users, label: "Ministers", path: "/ministers", show: true },
     { icon: BarChart3, label: "Reports", path: "/reports", show: true },
     { icon: MessageSquare, label: "Messages", path: "/messages", show: true },
@@ -78,8 +78,8 @@ export function AppSidebar() {
       : "text-muted-foreground hover:bg-accent/50 hover:text-foreground";
 
   const isActive = (path: string) => {
-    if (path === "/") {
-      return currentPath === "/";
+    if (path === "/dashboard") {
+      return currentPath === "/dashboard";
     }
     return currentPath.startsWith(path);
   };
@@ -101,7 +101,7 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild className="h-11" tooltip={collapsed ? item.label : undefined}>
                       <NavLink 
                         to={item.path} 
-                        end={item.path === "/"} 
+                        end={item.path === "/dashboard"} 
                         className={({ isActive: navActive }) => 
                           `flex items-center gap-3 rounded-xl px-4 smooth-transition ${getNavCls(isActive(item.path))}`
                         }
