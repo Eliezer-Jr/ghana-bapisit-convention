@@ -4,6 +4,13 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
+        # Self-hosted Supabase (Database, Auth, Storage)
+        VITE_SUPABASE_DB_URL: ${VITE_SUPABASE_DB_URL}
+        VITE_SUPABASE_DB_KEY: ${VITE_SUPABASE_DB_KEY}
+        # Lovable Cloud (Edge Functions & Secrets)
+        VITE_SUPABASE_FUNCTIONS_URL: ${VITE_SUPABASE_FUNCTIONS_URL}
+        VITE_SUPABASE_FUNCTIONS_KEY: ${VITE_SUPABASE_FUNCTIONS_KEY}
+        # Legacy support
         VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
         VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
         VITE_SUPABASE_PROJECT_ID: ${VITE_SUPABASE_PROJECT_ID}
