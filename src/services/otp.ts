@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabaseFunctions } from "@/lib/supabase";
 
 export interface OTPResponse {
   success: boolean;
@@ -15,7 +15,7 @@ export class OTPService {
    */
   static async generateOTP(phoneNumber: string): Promise<OTPResponse> {
     try {
-      const { data, error } = await supabase.functions.invoke("frogapi-otp-generate", {
+      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-otp-generate", {
         body: { phoneNumber },
       });
 
@@ -56,7 +56,7 @@ export class OTPService {
     otp: string
   ): Promise<OTPResponse> {
     try {
-      const { data, error } = await supabase.functions.invoke("frogapi-otp-verify", {
+      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-otp-verify", {
         body: {
           phoneNumber,
           otp: String(otp).trim(),
