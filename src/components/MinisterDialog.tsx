@@ -794,14 +794,39 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                       <SelectValue placeholder="Select Association" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Accra">Accra</SelectItem>
-                      <SelectItem value="Kumasi">Kumasi</SelectItem>
-                      <SelectItem value="Takoradi">Takoradi</SelectItem>
-                      <SelectItem value="Cape Coast">Cape Coast</SelectItem>
+                      <SelectItem value="Tahima">Tahima</SelectItem>
                       <SelectItem value="Tamale">Tamale</SelectItem>
-                      <SelectItem value="Tema">Tema</SelectItem>
-                      <SelectItem value="Ho">Ho</SelectItem>
-                      <SelectItem value="Sunyani">Sunyani</SelectItem>
+                      <SelectItem value="Nalerigu">Nalerigu</SelectItem>
+                      <SelectItem value="Liberty">Liberty</SelectItem>
+                      <SelectItem value="Wa">Wa</SelectItem>
+                      <SelectItem value="Nakpanduri">Nakpanduri</SelectItem>
+                      <SelectItem value="Bolgatanga">Bolgatanga</SelectItem>
+                      <SelectItem value="North Eastern">North Eastern</SelectItem>
+                      <SelectItem value="ADANSI">ADANSI</SelectItem>
+                      <SelectItem value="ADOM">ADOM</SelectItem>
+                      <SelectItem value="BETHEL">BETHEL</SelectItem>
+                      <SelectItem value="GOLDEN GATE">GOLDEN GATE</SelectItem>
+                      <SelectItem value="KUMASI NORTH">KUMASI NORTH</SelectItem>
+                      <SelectItem value="KUMASI SOUTH EAST">KUMASI SOUTH EAST</SelectItem>
+                      <SelectItem value="KUMASI SOUTH WEST">KUMASI SOUTH WEST</SelectItem>
+                      <SelectItem value="KUMASI WEST">KUMASI WEST</SelectItem>
+                      <SelectItem value="SUNYANI">SUNYANI</SelectItem>
+                      <SelectItem value="ACCRA NORTH">ACCRA NORTH</SelectItem>
+                      <SelectItem value="ACCRA SOUTH">ACCRA SOUTH</SelectItem>
+                      <SelectItem value="EASTERN">EASTERN</SelectItem>
+                      <SelectItem value="TEMA CENTRAL">TEMA CENTRAL</SelectItem>
+                      <SelectItem value="UNITY PLAIN">UNITY PLAIN</SelectItem>
+                      <SelectItem value="KEKELI">KEKELI</SelectItem>
+                      <SelectItem value="NORTH VOLTA">NORTH VOLTA</SelectItem>
+                      <SelectItem value="DANGME WEST">DANGME WEST</SelectItem>
+                      <SelectItem value="DANGME EAST">DANGME EAST</SelectItem>
+                      <SelectItem value="WINNEBA">WINNEBA</SelectItem>
+                      <SelectItem value="SWEDRU">SWEDRU</SelectItem>
+                      <SelectItem value="SKD/TDI">SKD/TDI</SelectItem>
+                      <SelectItem value="NZEMA">NZEMA</SelectItem>
+                      <SelectItem value="HOPE">HOPE</SelectItem>
+                      <SelectItem value="CAPE COAST">CAPE COAST</SelectItem>
+                      
                     </SelectContent>
                   </Select>
                 </div>
@@ -835,10 +860,10 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                       <SelectValue placeholder="Select Sector" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Sector A">Sector A</SelectItem>
-                      <SelectItem value="Sector B">Sector B</SelectItem>
-                      <SelectItem value="Sector C">Sector C</SelectItem>
-                      <SelectItem value="Sector D">Sector D</SelectItem>
+                      <SelectItem value="NORTHERN GHANA SECTOR">NORTHERN GHANA SECTOR</SelectItem>
+                      <SelectItem value="MID-GHANA SECTOR">MID-GHANA SECTOR</SelectItem>
+                      <SelectItem value="SOUTH-EAST GHANA SECTOR">SOUTH-EAST GHANA SECTOR</SelectItem>
+                      <SelectItem value="SOUTH-WEST GHANA SECTOR">SOUTH-WEST GHANA SECTOR</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
