@@ -15,6 +15,7 @@ import {
   UserCog,
   BarChart3,
   Palette,
+  FilePenLine,
 } from "lucide-react";
 import {
   Sidebar,
@@ -69,6 +70,7 @@ export function AppSidebar() {
     { icon: Activity, label: "Activity Logs", path: "/activity-logs", show: isSuperAdmin },
     { icon: Palette, label: "Letter Templates", path: "/letter-templates", show: isSuperAdmin },
     { icon: ClipboardCheck, label: "Review Admissions", path: "/admin/admissions", show: isSuperAdmin || isAdmissionReviewer },
+    { icon: FilePenLine, label: "Minister Intake", path: "/admin/intake", show: isSuperAdmin },
     { icon: DollarSign, label: "Finance Portal", path: "/finance", show: isSuperAdmin || isFinanceManager },
   ];
 
