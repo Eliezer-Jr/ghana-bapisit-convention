@@ -401,6 +401,143 @@ export type Database = {
           },
         ]
       }
+      intake_invites: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          minister_email: string | null
+          minister_full_name: string | null
+          minister_phone: string | null
+          revoked: boolean
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          minister_email?: string | null
+          minister_full_name?: string | null
+          minister_phone?: string | null
+          revoked?: boolean
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          minister_email?: string | null
+          minister_full_name?: string | null
+          minister_phone?: string | null
+          revoked?: boolean
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_invites_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "intake_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intake_sessions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          ends_at: string
+          id: string
+          manually_closed: boolean
+          starts_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          ends_at: string
+          id?: string
+          manually_closed?: boolean
+          starts_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string
+          id?: string
+          manually_closed?: boolean
+          starts_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      intake_submissions: {
+        Row: {
+          created_at: string
+          id: string
+          invite_id: string
+          payload: Json
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          session_id: string
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invite_id: string
+          payload?: Json
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          session_id: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invite_id?: string
+          payload?: Json
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          session_id?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_submissions_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "intake_invites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_submissions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "intake_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       letter_signatures: {
         Row: {
           created_at: string
