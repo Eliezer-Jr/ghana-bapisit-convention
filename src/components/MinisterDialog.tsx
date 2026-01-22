@@ -399,7 +399,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         <DialogHeader>
           <DialogTitle>{minister ? "Edit Minister" : "Add New Minister"}</DialogTitle>
           <DialogDescription>
-            Fill in the minister's information. Fields marked with * are required.
+            Fill in the Ministers' information. Fields marked with * are required.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">

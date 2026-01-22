@@ -192,7 +192,7 @@ export default function ApplyAuth() {
                   Applicant Portal
                 </CardTitle>
                 <CardDescription className="text-base">
-                  Ghana Baptist Convention Conference
+                  GBC Ministers' Conference
                 </CardDescription>
               </div>
             </div>

@@ -1,5 +1,5 @@
 -- =====================================================================
--- GHANA BAPTIST CONVENTION CONFERENCE - COMPLETE DATABASE SCHEMA
+-- GBC Ministers' Conference - COMPLETE DATABASE SCHEMA
 -- Generated: 2025-11-29
 -- This file contains all database migrations consolidated into one file
 -- =====================================================================

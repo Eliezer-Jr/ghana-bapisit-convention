@@ -40,9 +40,9 @@ export const useLetterTemplate = () => {
           letterhead_height: 45,
           logo_width: 30,
           logo_height: 30,
-          organization_name: "Ghana Baptist Convention Conference",
+          organization_name: "GBC Ministers' Conference",
           organization_subtitle: "MINISTERIAL ADMISSION",
-          footer_text: "This is an official document of the Ghana Baptist Convention Conference",
+          footer_text: "This is an official document of the GBC Ministers' Conference",
         } as Partial<LetterTemplate>;
       }
       

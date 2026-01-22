@@ -49,7 +49,7 @@ export default function ApplicantInfo() {
             <CardHeader>
               <CardTitle className="text-2xl">Welcome to the Application Process</CardTitle>
               <CardDescription>
-                Ghana Baptist Convention Conference - Minister Training Program
+                GBC Ministers' Conference - Minister Training Program
               </CardDescription>
             </CardHeader>
             <CardContent>
