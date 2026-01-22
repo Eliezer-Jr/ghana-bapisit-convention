@@ -210,7 +210,7 @@ const Auth = () => {
             <img src={logoGbcc} alt="GBCC Logo" className="h-20 w-20 object-contain" />
           </div>
           <CardTitle className="text-2xl font-bold">Ghana Baptist Convention Conference</CardTitle>
-          <CardDescription className="text-base">Minister Data Management System</CardDescription>
+          <CardDescription className="text-base">Ministers' Data Management System</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {!otpSent ? (
