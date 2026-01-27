@@ -1,26 +1,35 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { CheckCircle, XCircle, Loader2, FolderOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import * as XLSX from 'xlsx';
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import logoWatermark from "@/assets/logo-watermark.png";
-import { YearFolderCard } from "@/components/admissions/YearFolderCard";
-import { YearApplicationsView } from "@/components/admissions/YearApplicationsView";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { FileText, Search, Calendar, CheckCircle, XCircle, Loader2 } from "lucide-react";
 
 export default function AdminAdmissions() {
   const [applications, setApplications] = useState<any[]>([]);
+  const [filteredApps, setFilteredApps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterLevel, setFilterLevel] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [selectedApp, setSelectedApp] = useState<any>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchApplications();
   }, []);
+
+  useEffect(() => {
+    filterApplications();
+  }, [searchTerm, filterLevel, filterStatus, applications]);
 
   const { data: approvedApplicants, isLoading: loadingApproved } = useQuery({
     queryKey: ["approved-applicants"],
@@ -56,180 +65,32 @@ export default function AdminAdmissions() {
     }
   };
 
-  // Group applications by academic year
-  const getAcademicYear = (date: string) => {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = d.getMonth();
-    // Academic year starts in September (month 8)
-    if (month >= 8) {
-      return `${year}/${year + 1}`;
+  const filterApplications = () => {
+    let filtered = applications;
+
+    if (searchTerm) {
+      filtered = filtered.filter((app) =>
+        app.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.church_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.email.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
-    return `${year - 1}/${year}`;
+
+    if (filterLevel !== "all") {
+      filtered = filtered.filter((app) => app.admission_level === filterLevel);
+    }
+
+    if (filterStatus !== "all") {
+      filtered = filtered.filter((app) => app.status === filterStatus);
+    }
+
+    setFilteredApps(filtered);
   };
-
-  const groupedByYear = applications.reduce((acc, app) => {
-    const year = getAcademicYear(app.submitted_at || app.created_at);
-    if (!acc[year]) {
-      acc[year] = [];
-    }
-    acc[year].push(app);
-    return acc;
-  }, {} as Record<string, any[]>);
-
-  const years = Object.keys(groupedByYear).sort((a, b) => {
-    const yearA = parseInt(a.split('/')[0]);
-    const yearB = parseInt(b.split('/')[0]);
-    return yearB - yearA; // Most recent first
-  });
-
-  const getYearStats = (apps: any[]) => {
-    return {
-      total: apps.length,
-      submitted: apps.filter(a => a.status === "submitted" || a.status === "local_screening").length,
-      approved: apps.filter(a => a.status === "approved").length,
-      rejected: apps.filter(a => a.status === "rejected").length,
-      inReview: apps.filter(a => ["association_approved", "vp_review", "interview_scheduled"].includes(a.status)).length,
-    };
-  };
-
-  const exportToExcel = (apps: any[]) => {
-    try {
-      const exportData = apps.map(app => ({
-        'Full Name': app.full_name,
-        'Email': app.email,
-        'Phone': app.phone,
-        'Church': app.church_name,
-        'Association': app.association,
-        'Sector': app.sector,
-        'Fellowship': app.fellowship,
-        'Admission Level': app.admission_level,
-        'Status': app.status,
-        'Date of Birth': app.date_of_birth,
-        'Marital Status': app.marital_status,
-        'Submitted At': app.submitted_at ? new Date(app.submitted_at).toLocaleDateString() : 'N/A',
-        'Theological Institution': app.theological_institution || 'N/A',
-        'Theological Qualification': app.theological_qualification || 'N/A',
-      }));
-
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Applications');
-      
-      // Auto-size columns
-      const maxWidth = 50;
-      const colWidths = Object.keys(exportData[0] || {}).map(key => ({
-        wch: Math.min(maxWidth, Math.max(key.length, ...exportData.map(row => String(row[key as keyof typeof row] || '').length)))
-      }));
-      ws['!cols'] = colWidths;
-
-      XLSX.writeFile(wb, `applications_${new Date().toISOString().split('T')[0]}.xlsx`);
-      toast.success("Applications exported successfully!");
-    } catch (error) {
-      console.error("Export error:", error);
-      toast.error("Failed to export applications");
-    }
-  };
-
-  const exportToPDF = async (apps: any[]) => {
-    if (apps.length === 0) {
-      toast.error("No applications to export");
-      return;
-    }
-
-    try {
-      const doc = new jsPDF('landscape');
-      
-      // Load and convert image to base64
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      
-      await new Promise((resolve, reject) => {
-        img.onload = () => {
-          // Add watermark (centered, semi-transparent)
-          const pageWidth = doc.internal.pageSize.getWidth();
-          const pageHeight = doc.internal.pageSize.getHeight();
-          const imgWidth = 100;
-          const imgHeight = 100;
-          const x = (pageWidth - imgWidth) / 2;
-          const y = (pageHeight - imgHeight) / 2;
-          
-          // Add watermark with reduced opacity
-          doc.saveGraphicsState();
-          (doc as any).setGState(new (doc as any).GState({ opacity: 0.1 }));
-          doc.addImage(img, 'PNG', x, y, imgWidth, imgHeight);
-          doc.restoreGraphicsState();
-          
-          // Add logo at top left
-          doc.addImage(img, 'PNG', 14, 8, 25, 25);
-          
-          resolve(true);
-        };
-        img.onerror = reject;
-        img.src = logoWatermark;
-      });
-      
-      // Add title next to logo
-      doc.setFontSize(18);
-      doc.text('Admission Applications Report', 45, 15);
-      
-      // Add date and stats
-      doc.setFontSize(10);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 45, 22);
-      doc.text(`Total Applications: ${apps.length}`, 45, 28);
-      
-      // Prepare table data
-      const tableData = apps.map((app) => [
-        app.full_name,
-        app.admission_level.charAt(0).toUpperCase() + app.admission_level.slice(1),
-        app.church_name,
-        app.association,
-        app.sector,
-        app.phone,
-        app.status.replace('_', ' ').toUpperCase(),
-        app.submitted_at ? new Date(app.submitted_at).toLocaleDateString() : 'N/A'
-      ]);
-
-      // Add table
-      autoTable(doc, {
-        head: [['Name', 'Level', 'Church', 'Association', 'Sector', 'Phone', 'Status', 'Submitted']],
-        body: tableData,
-        startY: 38,
-        styles: { fontSize: 7, cellPadding: 1.5 },
-        headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [245, 247, 250] },
-        columnStyles: {
-          0: { cellWidth: 35 },
-          1: { cellWidth: 25 },
-          2: { cellWidth: 35 },
-          3: { cellWidth: 30 },
-          4: { cellWidth: 25 },
-          5: { cellWidth: 30 },
-          6: { cellWidth: 30 },
-          7: { cellWidth: 25 }
-        }
-      });
-
-      doc.save(`applications_report_${new Date().toISOString().split('T')[0]}.pdf`);
-      toast.success("PDF exported successfully!");
-    } catch (error) {
-      console.error("Export error:", error);
-      toast.error("Failed to export PDF");
-    }
-  };
-
 
   const updateApplicationStatus = async (appId: string, status: string, notes?: string) => {
     try {
       const updates: any = { status };
       if (notes) updates.admin_notes = notes;
-
-      // Get application details for SMS notification
-      const { data: appData } = await supabase
-        .from("applications")
-        .select("phone, full_name")
-        .eq("id", appId)
-        .single();
 
       const { error } = await supabase
         .from("applications")
@@ -237,21 +98,9 @@ export default function AdminAdmissions() {
         .eq("id", appId);
 
       if (error) throw error;
-
-      // Send SMS notification
-      if (appData) {
-        await supabase.functions.invoke('notify-status-change', {
-          body: {
-            applicationId: appId,
-            status: status,
-            recipientPhone: appData.phone,
-            recipientName: appData.full_name
-          }
-        });
-      }
-
       toast.success("Application updated successfully");
       fetchApplications();
+      setDialogOpen(false);
     } catch (error: any) {
       toast.error("Failed to update application");
       console.error(error);
@@ -272,149 +121,357 @@ export default function AdminAdmissions() {
       if (error) throw error;
       toast.success("Interview scheduled successfully");
       fetchApplications();
+      setDialogOpen(false);
     } catch (error: any) {
       toast.error("Failed to schedule interview");
       console.error(error);
     }
   };
 
-  // If a year is selected, show that year's applications
-  if (selectedYear) {
-    const yearApps = groupedByYear[selectedYear] || [];
-    return (
-      <YearApplicationsView
-        year={selectedYear}
-        applications={yearApps}
-        onBack={() => setSelectedYear(null)}
-        onUpdateStatus={updateApplicationStatus}
-        onScheduleInterview={scheduleInterview}
-        onExportExcel={() => exportToExcel(yearApps)}
-        onExportPDF={() => exportToPDF(yearApps)}
-      />
-    );
-  }
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, any> = {
+      draft: "secondary",
+      submitted: "default",
+      under_review: "default",
+      approved: "default",
+      rejected: "destructive",
+    };
+    return <Badge variant={variants[status] || "outline"}>{status.replace("_", " ").toUpperCase()}</Badge>;
+  };
 
-  // Main folder view
+  const stats = {
+    total: applications.length,
+    submitted: applications.filter(a => a.status === "submitted").length,
+    underReview: applications.filter(a => a.status === "under_review").length,
+    approved: applications.filter(a => a.status === "approved").length,
+    rejected: applications.filter(a => a.status === "rejected").length,
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <FolderOpen className="h-8 w-8 text-primary" />
-            Admission Applications
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Browse applications organized by academic year
-          </p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold">Admission Applications Management</h1>
+        <p className="text-muted-foreground mt-1">Review and manage ministerial admission applications</p>
       </div>
 
-      {/* Approved Applicants */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Approved Phone Numbers</CardTitle>
-          <CardDescription>
-            List of phone numbers approved to apply (managed by Finance)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loadingApproved ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin" />
+        {/* Statistics */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.total}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Submitted</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">{stats.submitted}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Under Review</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{stats.underReview}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Approved</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Rejected</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Approved Applicants */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Approved Phone Numbers</CardTitle>
+            <CardDescription>
+              List of phone numbers approved to apply (managed by Finance)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingApproved ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : approvedApplicants && approvedApplicants.length > 0 ? (
+              <div className="max-h-[300px] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Phone Number</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Applicant Name</TableHead>
+                      <TableHead>App Status</TableHead>
+                      <TableHead>Date Approved</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {approvedApplicants.map((applicant) => (
+                      <TableRow key={applicant.id}>
+                        <TableCell className="font-mono text-sm">
+                          {applicant.phone_number}
+                        </TableCell>
+                        <TableCell>
+                          {applicant.used ? (
+                            <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                              <CheckCircle className="h-3 w-3" />
+                              Applied
+                            </Badge>
+                          ) : (
+                            <Badge variant="default" className="flex items-center gap-1 w-fit">
+                              <XCircle className="h-3 w-3" />
+                              Pending
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {applicant.applications?.full_name || "-"}
+                        </TableCell>
+                        <TableCell>
+                          {applicant.applications ? (
+                            <Badge variant="outline" className="text-xs">
+                              {applicant.applications.status}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(applicant.created_at).toLocaleDateString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                No approved applicants yet
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Filters */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-span-2">
+                <Label htmlFor="search">Search</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="search"
+                    placeholder="Search by name, church, or email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="level">Level</Label>
+                <Select value={filterLevel} onValueChange={setFilterLevel}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Levels</SelectItem>
+                    <SelectItem value="licensing">Licensing</SelectItem>
+                    <SelectItem value="recognition">Recognition</SelectItem>
+                    <SelectItem value="ordination">Ordination</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="submitted">Submitted</SelectItem>
+                    <SelectItem value="under_review">Under Review</SelectItem>
+                    <SelectItem value="screening_scheduled">Screening Scheduled</SelectItem>
+                    <SelectItem value="interview_scheduled">Interview Scheduled</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          ) : approvedApplicants && approvedApplicants.length > 0 ? (
-            <div className="max-h-[300px] overflow-y-auto">
+          </CardContent>
+        </Card>
+
+        {/* Applications Table */}
+        <Card>
+          <CardContent className="pt-6">
+            {loading ? (
+              <div className="text-center py-8">Loading applications...</div>
+            ) : filteredApps.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No applications found</p>
+              </div>
+            ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Phone Number</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Level</TableHead>
+                    <TableHead>Church</TableHead>
+                    <TableHead>Sector</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Applicant Name</TableHead>
-                    <TableHead>App Status</TableHead>
-                    <TableHead>Date Approved</TableHead>
+                    <TableHead>Submitted</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {approvedApplicants.map((applicant) => (
-                    <TableRow key={applicant.id}>
-                      <TableCell className="font-mono text-sm">
-                        {applicant.phone_number}
+                  {filteredApps.map((app) => (
+                    <TableRow key={app.id}>
+                      <TableCell className="font-medium">{app.full_name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{app.admission_level.toUpperCase()}</Badge>
+                      </TableCell>
+                      <TableCell>{app.church_name}</TableCell>
+                      <TableCell>{app.sector}</TableCell>
+                      <TableCell>{getStatusBadge(app.status)}</TableCell>
+                      <TableCell>
+                        {app.submitted_at ? new Date(app.submitted_at).toLocaleDateString() : "Not submitted"}
                       </TableCell>
                       <TableCell>
-                        {applicant.used ? (
-                          <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                            <CheckCircle className="h-3 w-3" />
-                            Applied
-                          </Badge>
-                        ) : (
-                          <Badge variant="default" className="flex items-center gap-1 w-fit">
-                            <XCircle className="h-3 w-3" />
-                            Pending
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {applicant.applications?.full_name || "-"}
-                      </TableCell>
-                      <TableCell>
-                        {applicant.applications ? (
-                          <Badge variant="outline" className="text-xs">
-                            {applicant.applications.status}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(applicant.created_at).toLocaleDateString()}
+                        <Dialog open={dialogOpen && selectedApp?.id === app.id} onOpenChange={(open) => {
+                          setDialogOpen(open);
+                          if (open) setSelectedApp(app);
+                        }}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">Review</Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Application Review - {app.full_name}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              {/* Application Details */}
+                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <p className="font-medium">Email</p>
+                                  <p className="text-muted-foreground">{app.email}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Phone</p>
+                                  <p className="text-muted-foreground">{app.phone}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Date of Birth</p>
+                                  <p className="text-muted-foreground">{new Date(app.date_of_birth).toLocaleDateString()}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Marital Status</p>
+                                  <p className="text-muted-foreground">{app.marital_status || "N/A"}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Association</p>
+                                  <p className="text-muted-foreground">{app.association}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Fellowship</p>
+                                  <p className="text-muted-foreground">{app.fellowship}</p>
+                                </div>
+                              </div>
+
+                              {/* Documents */}
+                              <div>
+                                <p className="font-medium mb-2">Uploaded Documents ({app.application_documents?.length || 0})</p>
+                                <div className="space-y-1 text-sm">
+                                  {app.application_documents?.map((doc: any) => (
+                                    <div key={doc.id} className="flex justify-between items-center p-2 bg-muted rounded">
+                                      <span>{doc.document_type}</span>
+                                      <a href={doc.document_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                        View
+                                      </a>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Status Update */}
+                              <div>
+                                <Label>Update Status</Label>
+                                <div className="flex gap-2 mt-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => updateApplicationStatus(app.id, "under_review")}
+                                  >
+                                    Under Review
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => updateApplicationStatus(app.id, "screening_scheduled")}
+                                  >
+                                    Schedule Screening
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => updateApplicationStatus(app.id, "approved")}
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => updateApplicationStatus(app.id, "rejected")}
+                                  >
+                                    <XCircle className="h-4 w-4 mr-1" />
+                                    Reject
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Admin Notes */}
+                              <div>
+                                <Label htmlFor="admin_notes">Admin Notes</Label>
+                                <Textarea
+                                  id="admin_notes"
+                                  defaultValue={app.admin_notes || ""}
+                                  rows={3}
+                                  placeholder="Add notes about this application..."
+                                />
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          ) : (
-            <p className="text-center text-muted-foreground py-8">
-              No approved applicants yet
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Year Folders */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Applications by Academic Year</h2>
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        ) : years.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {years.map((year) => {
-              const stats = getYearStats(groupedByYear[year]);
-              return (
-                <YearFolderCard
-                  key={year}
-                  year={year}
-                  totalApps={stats.total}
-                  submitted={stats.submitted}
-                  approved={stats.approved}
-                  rejected={stats.rejected}
-                  inReview={stats.inReview}
-                  onClick={() => setSelectedYear(year)}
-                />
-              );
-            })}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">No applications found</p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
+            )}
+          </CardContent>
+        </Card>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabaseFunctions } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 interface HistoryFilters {
@@ -31,7 +31,7 @@ export const useMessageHistory = () => {
         return;
       }
 
-      const { data, error } = await supabaseFunctions.functions.invoke('frogapi-history', {
+      const { data, error } = await supabase.functions.invoke('frogapi-history', {
         body: {
           service: "SMS",
           servicetype: "TEXT",

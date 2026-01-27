@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase, supabaseFunctions } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { addDays } from "date-fns";
 import { MESSAGING_CONFIG } from "@/config/messaging";
@@ -26,7 +26,6 @@ export const useEventMessages = () => {
 
   const fetchUpcomingEvents = async () => {
     try {
-      // Use supabase (DB client) for database queries
       const { data: ministers, error } = await supabase
         .from('ministers')
         .select('id, full_name, phone, whatsapp, date_of_birth, date_joined');
@@ -101,8 +100,7 @@ export const useEventMessages = () => {
         return;
       }
 
-      // Use supabaseFunctions for edge function calls
-      const { data, error } = await supabaseFunctions.functions.invoke('frogapi-send-personalized', {
+      const { data, error } = await supabase.functions.invoke('frogapi-send-personalized', {
         body: {
           senderid: MESSAGING_CONFIG.SENDER_ID,
           destinations: destinations.map(d => ({

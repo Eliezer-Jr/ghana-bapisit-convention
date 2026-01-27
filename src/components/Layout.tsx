@@ -43,7 +43,7 @@ const Layout = ({
   const navItems = [{
     icon: LayoutDashboard,
     label: "Dashboard",
-    path: "/dashboard"
+    path: "/"
   }, {
     icon: Users,
     label: "Ministers",

@@ -1,12 +1,10 @@
-import { supabaseFunctions } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 export interface OTPResponse {
   success: boolean;
   data?: any;
   error?: string;
   message?: string;
-  session?: any;
-  user?: any;
 }
 
 export class OTPService {
@@ -15,7 +13,7 @@ export class OTPService {
    */
   static async generateOTP(phoneNumber: string): Promise<OTPResponse> {
     try {
-      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-otp-generate", {
+      const { data, error } = await supabase.functions.invoke("frogapi-otp-generate", {
         body: { phoneNumber },
       });
 
@@ -49,17 +47,21 @@ export class OTPService {
   }
 
   /**
-   * Verify OTP - no auth user creation
+   * Verify OTP and authenticate user
    */
   static async verifyOTP(
     phoneNumber: string,
-    otp: string
+    otp: string,
+    fullName?: string,
+    isSignup?: boolean
   ): Promise<OTPResponse> {
     try {
-      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-otp-verify", {
+      const { data, error } = await supabase.functions.invoke("frogapi-otp-verify", {
         body: {
           phoneNumber,
           otp: String(otp).trim(),
+          fullName,
+          isSignup,
         },
       });
 
@@ -80,6 +82,7 @@ export class OTPService {
 
       return {
         success: true,
+        data: data,
         message: data.message || "Verification successful",
       };
     } catch (error: any) {

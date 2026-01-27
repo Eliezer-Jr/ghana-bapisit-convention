@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { phoneNumber, otp } = await req.json();
+    const { phoneNumber, otp, fullName, isSignup } = await req.json();
     
     if (!phoneNumber || !otp) {
       throw new Error("Phone number and OTP are required");
@@ -88,25 +88,109 @@ serve(async (req) => {
       throw new Error(verifyData.message || `OTP verification failed. Please request a new OTP and try again.`);
     }
 
-    console.log("OTP verified successfully - no auth user created");
+    console.log("OTP verified successfully");
 
-    // Return success without creating auth user
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: "OTP verified successfully"
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    // Initialize Supabase client with service role
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  } catch (error) {
-    console.error('Error in OTP verification:', error);
+    // Create or authenticate user
+    const email = `${phoneNumber}@otp.gbc.local`;
+    const password = `otp_${phoneNumber}_${Date.now()}`;
+
+    if (isSignup) {
+      // Create new user
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          phone_number: phoneNumber,
+          full_name: fullName
+        }
+      });
+
+      if (authError) throw authError;
+
+      // Update profile with phone number
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ 
+          phone_number: phoneNumber,
+          full_name: fullName 
+        })
+        .eq('id', authData.user.id);
+
+      if (profileError) console.error('Profile update error:', profileError);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          user: authData.user,
+          message: "Account created successfully"
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } else {
+      // Login existing user by phone: set a fresh password and sign in with the user's actual email
+      // Find profile linked to this phone number
+      const { data: profile, error: profileErr } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('phone_number', phoneNumber)
+        .single();
+
+      if (profileErr || !profile) {
+        console.error('Profile not found for phone:', phoneNumber, 'error:', profileErr);
+        throw new Error("User not found. Please sign up first.");
+      }
+
+      // Fetch the auth user to get the real email
+      const { data: userData, error: getUserErr } = await supabase.auth.admin.getUserById(profile.id);
+      if (getUserErr || !userData?.user) {
+        console.error('Unable to fetch auth user by id:', profile.id, getUserErr);
+        throw new Error("Account lookup failed. Please try signing up again.");
+      }
+
+      // Update password to a new one-time value
+      const newPassword = `otp_${phoneNumber}_${Date.now()}`;
+      const { error: updateError } = await supabase.auth.admin.updateUserById(
+        profile.id,
+        { password: newPassword }
+      );
+
+      if (updateError) {
+        console.error('Password update error:', updateError);
+        throw new Error("Could not refresh login credentials. Please request a new OTP and try again.");
+      }
+
+      // Sign in using the user's actual email
+      const userEmail = userData.user.email!;
+      const { data: retryAuth, error: retryError } = await supabase.auth.signInWithPassword({
+        email: userEmail,
+        password: newPassword
+      });
+
+      if (retryError) {
+        console.error('Sign-in retry failed:', retryError);
+        throw new Error("Login failed after verification. Please request a new OTP and try again.");
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          session: retryAuth.session,
+          message: "Login successful"
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+  } catch (error: any) {
+    console.error('Error verifying OTP:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: (error as Error).message || 'An unexpected error occurred' 
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      JSON.stringify({ success: false, error: error.message }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

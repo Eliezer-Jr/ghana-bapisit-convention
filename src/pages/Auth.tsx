@@ -9,9 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
+import { Church } from "lucide-react";
 import { z } from "zod";
 import { useActivityLog } from "@/hooks/useActivityLog";
-import logoGbcc from "@/assets/logo-gbcc.png";
 
 const phoneSchema = z.object({
   phoneNumber: z.string().regex(/^0\d{9}$/, "Phone number must be 10 digits starting with 0"),
@@ -43,7 +43,7 @@ const Auth = () => {
 
   // Redirect if already authenticated
   if (user) {
-    navigate("/dashboard");
+    navigate("/");
     return null;
   }
 
@@ -119,64 +119,36 @@ const Auth = () => {
         throw new Error("Please enter the complete 6-digit OTP");
       }
 
-      // Verify OTP for system login
-      const { data, error } = await supabase.functions.invoke('system-otp-verify', {
+      // Verify OTP
+      const { data, error } = await supabase.functions.invoke('frogapi-otp-verify', {
         body: { 
           phoneNumber, 
           otp,
           fullName: isSignup ? fullName : undefined,
-          isSignup
+          isSignup 
         }
       });
 
       if (error) throw error;
-      if (!data.success) throw new Error(data.error || "OTP verification failed");
+      if (!data.success) throw new Error(data.error || "Invalid OTP");
 
-      // For login, use the email and password returned to sign in
-      if (!isSignup && data.email && data.password) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: data.email,
-          password: data.password
-        });
-        
-        if (signInError) {
-          console.error("Sign in error:", signInError);
-          throw new Error("Failed to establish session. Please try again.");
-        }
-      }
-
-      toast.success(isSignup ? "Account created successfully!" : "Login successful!");
+      toast.success(data.message || "Verification successful!");
       
-      // Clear timer
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-
-      // Log activity
-      await logActivity({
-        action: isSignup ? 'user_signup' : 'user_login',
-        details: { 
-          phoneNumber,
-          method: 'OTP'
-        }
-      });
-
-      // For signup, redirect to login
-      if (isSignup) {
-        setTimeout(() => {
-          toast.info("Please login with your phone number");
-          setOtpSent(false);
-          setIsSignup(false);
-          setOtp("");
-        }, 1500);
-      } else {
-        // Force session refresh for login
-        await supabase.auth.refreshSession();
+      // Set the session if returned (for login)
+      if (data.session) {
+        await supabase.auth.setSession(data.session);
         
-        // Navigate to dashboard
-        setTimeout(() => navigate("/dashboard"), 800);
+        // Log the activity
+        await logActivity({
+          action: isSignup ? 'user_signup' : 'user_login',
+          details: { phone_number: phoneNumber, method: 'otp' }
+        });
       }
+      
+      // Small delay to ensure auth state updates
+      setTimeout(() => {
+        navigate("/");
+      }, 100);
     } catch (error: any) {
       toast.error(error.message || "Failed to verify OTP");
     } finally {
@@ -196,21 +168,16 @@ const Auth = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4 relative overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-[0.03]" style={{
-        backgroundImage: `radial-gradient(circle at 25px 25px, hsl(var(--primary)) 2%, transparent 0%), 
-                         radial-gradient(circle at 75px 75px, hsl(var(--accent)) 2%, transparent 0%)`,
-        backgroundSize: '100px 100px'
-      }} />
-      <div className="relative z-10 w-full max-w-md">
-      <Card className="w-full shadow-xl border-2">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
+      <Card className="w-full max-w-md shadow-xl border-2">
         <CardHeader className="space-y-1 text-center pb-4">
           <div className="flex justify-center mb-4">
-            <img src={logoGbcc} alt="GBCC Logo" className="h-20 w-20 object-contain" />
+            <div className="rounded-full bg-primary/10 p-4">
+              <Church className="h-10 w-10 text-primary" />
+            </div>
           </div>
-          <CardTitle className="text-2xl font-bold">GBC Ministers' Conference</CardTitle>
-          <CardDescription className="text-base">Ministers'  Database</CardDescription>
+          <CardTitle className="text-2xl font-bold">Ghana Baptist Convention</CardTitle>
+          <CardDescription className="text-base">Minister Data Management System</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {!otpSent ? (
@@ -241,29 +208,16 @@ const Auth = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="phoneNumber" className="text-sm font-medium">Phone Number</Label>
-                <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none text-sm">
-                    +233
-                  </div>
-                  <Input
-                    id="phoneNumber"
-                    type="tel"
-                    placeholder="241234567"
-                    value={phoneNumber.startsWith('0') ? phoneNumber.substring(1) : phoneNumber}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-                      if (value.length <= 9) {
-                        setPhoneNumber('0' + value);
-                      }
-                    }}
-                    disabled={loading}
-                    maxLength={9}
-                    className="h-11 pl-16"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Enter 9 digits after 0 (e.g., 557083554)
-                </p>
+                <Input
+                  id="phoneNumber"
+                  type="tel"
+                  placeholder="0241234567"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  disabled={loading}
+                  maxLength={10}
+                  className="h-11"
+                />
               </div>
 
               <Button
@@ -353,7 +307,6 @@ const Auth = () => {
           )}
         </CardContent>
       </Card>
-      </div>
     </div>
   );
 };

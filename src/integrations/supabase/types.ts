@@ -89,9 +89,6 @@ export type Database = {
           admin_notes: string | null
           admission_level: Database["public"]["Enums"]["admission_level"]
           association: string
-          association_notes: string | null
-          association_reviewed_at: string | null
-          association_reviewed_by: string | null
           church_name: string
           created_at: string
           date_of_birth: string
@@ -104,9 +101,6 @@ export type Database = {
           interview_date: string | null
           interview_location: string | null
           interview_result: string | null
-          local_notes: string | null
-          local_reviewed_at: string | null
-          local_reviewed_by: string | null
           marital_status: string | null
           mentor_contact: string | null
           mentor_name: string | null
@@ -115,8 +109,6 @@ export type Database = {
           payment_date: string | null
           payment_receipt_number: string | null
           phone: string
-          photo_url: string | null
-          rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           screening_date: string | null
@@ -130,17 +122,11 @@ export type Database = {
           updated_at: string
           user_id: string | null
           vision_statement: string | null
-          vp_notes: string | null
-          vp_reviewed_at: string | null
-          vp_reviewed_by: string | null
         }
         Insert: {
           admin_notes?: string | null
           admission_level: Database["public"]["Enums"]["admission_level"]
           association: string
-          association_notes?: string | null
-          association_reviewed_at?: string | null
-          association_reviewed_by?: string | null
           church_name: string
           created_at?: string
           date_of_birth: string
@@ -153,9 +139,6 @@ export type Database = {
           interview_date?: string | null
           interview_location?: string | null
           interview_result?: string | null
-          local_notes?: string | null
-          local_reviewed_at?: string | null
-          local_reviewed_by?: string | null
           marital_status?: string | null
           mentor_contact?: string | null
           mentor_name?: string | null
@@ -164,8 +147,6 @@ export type Database = {
           payment_date?: string | null
           payment_receipt_number?: string | null
           phone: string
-          photo_url?: string | null
-          rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           screening_date?: string | null
@@ -179,17 +160,11 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           vision_statement?: string | null
-          vp_notes?: string | null
-          vp_reviewed_at?: string | null
-          vp_reviewed_by?: string | null
         }
         Update: {
           admin_notes?: string | null
           admission_level?: Database["public"]["Enums"]["admission_level"]
           association?: string
-          association_notes?: string | null
-          association_reviewed_at?: string | null
-          association_reviewed_by?: string | null
           church_name?: string
           created_at?: string
           date_of_birth?: string
@@ -202,9 +177,6 @@ export type Database = {
           interview_date?: string | null
           interview_location?: string | null
           interview_result?: string | null
-          local_notes?: string | null
-          local_reviewed_at?: string | null
-          local_reviewed_by?: string | null
           marital_status?: string | null
           mentor_contact?: string | null
           mentor_name?: string | null
@@ -213,8 +185,6 @@ export type Database = {
           payment_date?: string | null
           payment_receipt_number?: string | null
           phone?: string
-          photo_url?: string | null
-          rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           screening_date?: string | null
@@ -228,9 +198,6 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           vision_statement?: string | null
-          vp_notes?: string | null
-          vp_reviewed_at?: string | null
-          vp_reviewed_by?: string | null
         }
         Relationships: []
       }
@@ -305,13 +272,6 @@ export type Database = {
             foreignKeyName: "convention_positions_minister_id_fkey"
             columns: ["minister_id"]
             isOneToOne: false
-            referencedRelation: "minister_audit_info"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "convention_positions_minister_id_fkey"
-            columns: ["minister_id"]
-            isOneToOne: false
             referencedRelation: "ministers"
             referencedColumns: ["id"]
           },
@@ -343,13 +303,6 @@ export type Database = {
           year_obtained?: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "educational_qualifications_minister_id_fkey"
-            columns: ["minister_id"]
-            isOneToOne: false
-            referencedRelation: "minister_audit_info"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "educational_qualifications_minister_id_fkey"
             columns: ["minister_id"]
@@ -389,241 +342,10 @@ export type Database = {
             foreignKeyName: "emergency_contacts_minister_id_fkey"
             columns: ["minister_id"]
             isOneToOne: false
-            referencedRelation: "minister_audit_info"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "emergency_contacts_minister_id_fkey"
-            columns: ["minister_id"]
-            isOneToOne: false
             referencedRelation: "ministers"
             referencedColumns: ["id"]
           },
         ]
-      }
-      intake_invites: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          expires_at: string | null
-          id: string
-          minister_email: string | null
-          minister_full_name: string | null
-          minister_phone: string | null
-          revoked: boolean
-          session_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string
-          minister_email?: string | null
-          minister_full_name?: string | null
-          minister_phone?: string | null
-          revoked?: boolean
-          session_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string
-          minister_email?: string | null
-          minister_full_name?: string | null
-          minister_phone?: string | null
-          revoked?: boolean
-          session_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "intake_invites_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "intake_sessions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      intake_sessions: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          ends_at: string
-          id: string
-          manually_closed: boolean
-          starts_at: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          ends_at: string
-          id?: string
-          manually_closed?: boolean
-          starts_at?: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          ends_at?: string
-          id?: string
-          manually_closed?: boolean
-          starts_at?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      intake_submissions: {
-        Row: {
-          created_at: string
-          id: string
-          invite_id: string
-          payload: Json
-          rejection_reason: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          session_id: string
-          status: string
-          submitted_at: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          invite_id: string
-          payload?: Json
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          session_id: string
-          status?: string
-          submitted_at?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          invite_id?: string
-          payload?: Json
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          session_id?: string
-          status?: string
-          submitted_at?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "intake_submissions_invite_id_fkey"
-            columns: ["invite_id"]
-            isOneToOne: false
-            referencedRelation: "intake_invites"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "intake_submissions_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "intake_sessions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      letter_signatures: {
-        Row: {
-          created_at: string
-          display_order: number
-          id: string
-          image_url: string
-          is_active: boolean
-          name: string
-          role: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          display_order?: number
-          id?: string
-          image_url: string
-          is_active?: boolean
-          name: string
-          role: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          display_order?: number
-          id?: string
-          image_url?: string
-          is_active?: boolean
-          name?: string
-          role?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      letter_templates: {
-        Row: {
-          created_at: string
-          font_family: string
-          font_size_body: number
-          font_size_title: number
-          footer_text: string
-          id: string
-          letterhead_height: number
-          logo_height: number
-          logo_width: number
-          organization_name: string
-          organization_subtitle: string
-          primary_color: string
-          secondary_color: string
-          template_type: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          font_family?: string
-          font_size_body?: number
-          font_size_title?: number
-          footer_text?: string
-          id?: string
-          letterhead_height?: number
-          logo_height?: number
-          logo_width?: number
-          organization_name?: string
-          organization_subtitle?: string
-          primary_color?: string
-          secondary_color?: string
-          template_type?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          font_family?: string
-          font_size_body?: number
-          font_size_title?: number
-          footer_text?: string
-          id?: string
-          letterhead_height?: number
-          logo_height?: number
-          logo_width?: number
-          organization_name?: string
-          organization_subtitle?: string
-          primary_color?: string
-          secondary_color?: string
-          template_type?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       minister_children: {
         Row: {
@@ -648,13 +370,6 @@ export type Database = {
           minister_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "minister_children_minister_id_fkey"
-            columns: ["minister_id"]
-            isOneToOne: false
-            referencedRelation: "minister_audit_info"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "minister_children_minister_id_fkey"
             columns: ["minister_id"]
@@ -703,13 +418,6 @@ export type Database = {
             foreignKeyName: "ministerial_history_minister_id_fkey"
             columns: ["minister_id"]
             isOneToOne: false
-            referencedRelation: "minister_audit_info"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ministerial_history_minister_id_fkey"
-            columns: ["minister_id"]
-            isOneToOne: false
             referencedRelation: "ministers"
             referencedColumns: ["id"]
           },
@@ -721,7 +429,6 @@ export type Database = {
           association: string | null
           church_address: string | null
           created_at: string
-          created_by: string | null
           current_church_name: string | null
           date_joined: string
           date_of_birth: string | null
@@ -734,13 +441,11 @@ export type Database = {
           location: string | null
           marital_status: string | null
           marriage_type: string | null
-          minister_id: string | null
           notes: string | null
           number_of_children: number | null
           ordination_year: number | null
           phone: string | null
           photo_url: string | null
-          physical_folder_number: string | null
           position_at_church: string | null
           recognition_year: number | null
           role: string
@@ -751,16 +456,13 @@ export type Database = {
           status: string
           titles: string | null
           updated_at: string
-          updated_by: string | null
           whatsapp: string | null
-          zone: string | null
         }
         Insert: {
           areas_of_ministry?: string[] | null
           association?: string | null
           church_address?: string | null
           created_at?: string
-          created_by?: string | null
           current_church_name?: string | null
           date_joined?: string
           date_of_birth?: string | null
@@ -773,13 +475,11 @@ export type Database = {
           location?: string | null
           marital_status?: string | null
           marriage_type?: string | null
-          minister_id?: string | null
           notes?: string | null
           number_of_children?: number | null
           ordination_year?: number | null
           phone?: string | null
           photo_url?: string | null
-          physical_folder_number?: string | null
           position_at_church?: string | null
           recognition_year?: number | null
           role: string
@@ -790,16 +490,13 @@ export type Database = {
           status?: string
           titles?: string | null
           updated_at?: string
-          updated_by?: string | null
           whatsapp?: string | null
-          zone?: string | null
         }
         Update: {
           areas_of_ministry?: string[] | null
           association?: string | null
           church_address?: string | null
           created_at?: string
-          created_by?: string | null
           current_church_name?: string | null
           date_joined?: string
           date_of_birth?: string | null
@@ -812,13 +509,11 @@ export type Database = {
           location?: string | null
           marital_status?: string | null
           marriage_type?: string | null
-          minister_id?: string | null
           notes?: string | null
           number_of_children?: number | null
           ordination_year?: number | null
           phone?: string | null
           photo_url?: string | null
-          physical_folder_number?: string | null
           position_at_church?: string | null
           recognition_year?: number | null
           role?: string
@@ -829,9 +524,7 @@ export type Database = {
           status?: string
           titles?: string | null
           updated_at?: string
-          updated_by?: string | null
           whatsapp?: string | null
-          zone?: string | null
         }
         Relationships: []
       }
@@ -864,13 +557,6 @@ export type Database = {
           period_start?: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "non_church_work_minister_id_fkey"
-            columns: ["minister_id"]
-            isOneToOne: false
-            referencedRelation: "minister_audit_info"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "non_church_work_minister_id_fkey"
             columns: ["minister_id"]
@@ -974,25 +660,9 @@ export type Database = {
       }
     }
     Views: {
-      minister_audit_info: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          created_by_email: string | null
-          created_by_name: string | null
-          full_name: string | null
-          id: string | null
-          minister_id: string | null
-          updated_at: string | null
-          updated_by: string | null
-          updated_by_email: string | null
-          updated_by_name: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
-      generate_minister_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1009,15 +679,12 @@ export type Database = {
         | "user"
         | "finance_manager"
         | "admission_reviewer"
-        | "local_officer"
-        | "association_head"
-        | "vp_office"
       application_status:
         | "draft"
         | "submitted"
-        | "local_screening"
-        | "association_approved"
-        | "vp_review"
+        | "under_review"
+        | "screening_scheduled"
+        | "screening_passed"
         | "interview_scheduled"
         | "approved"
         | "rejected"
@@ -1155,16 +822,13 @@ export const Constants = {
         "user",
         "finance_manager",
         "admission_reviewer",
-        "local_officer",
-        "association_head",
-        "vp_office",
       ],
       application_status: [
         "draft",
         "submitted",
-        "local_screening",
-        "association_approved",
-        "vp_review",
+        "under_review",
+        "screening_scheduled",
+        "screening_passed",
         "interview_scheduled",
         "approved",
         "rejected",

@@ -30,7 +30,7 @@ export default function ActivityLogs() {
 
   useEffect(() => {
     if (!authLoading && !isSuperAdmin) {
-      navigate("/dashboard");
+      navigate("/");
       toast.error("Access denied. Super admin only.");
     }
   }, [isSuperAdmin, authLoading, navigate]);

@@ -1,7 +1,3 @@
-import { supabaseDB, supabaseFunctions } from "./supabase-clients";
+import { supabase } from "@/integrations/supabase/client";
 
-// Default export for database operations (backward compatibility)
-export const supabase = supabaseDB;
-
-// Export functions client for edge function calls
-export { supabaseFunctions };
+export { supabase };

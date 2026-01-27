@@ -18,15 +18,8 @@ import Admissions from "./pages/Admissions";
 import AdmissionForm from "./pages/AdmissionForm";
 import AdminAdmissions from "./pages/AdminAdmissions";
 import Apply from "./pages/Apply";
-import ApplyAuth from "./pages/ApplyAuth";
-import ApplicantPortal from "./pages/ApplicantPortal";
-import ApplicantInfo from "./pages/ApplicantInfo";
 import FinancePortal from "./pages/FinancePortal";
-import Reports from "./pages/Reports";
-import LetterTemplateEditor from "./pages/LetterTemplateEditor";
 import ResponsiveLayout from "./components/ResponsiveLayout";
-import MinisterIntake from "./pages/MinisterIntake";
-import AdminIntake from "./pages/AdminIntake";
 
 const queryClient = new QueryClient();
 
@@ -68,7 +61,7 @@ const SuperAdminRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!isSuperAdmin) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <ResponsiveLayout>{children}</ResponsiveLayout>;
@@ -82,13 +75,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Navigate to="/apply" replace />} />
-
             <Route path="/auth" element={<Auth />} />
-            <Route path="/apply" element={<ApplyAuth />} />
-            <Route path="/minister-intake/:inviteId" element={<MinisterIntake />} />
-            <Route path="/applicant-info" element={<ApplicantInfo />} />
-            <Route path="/applicant-portal" element={<ApplicantPortal />} />
+            <Route path="/apply" element={<Apply />} />
             <Route path="/pending" element={<PendingApproval />} />
             <Route
               path="/super-admin"
@@ -107,15 +95,7 @@ const App = () => (
               }
             />
             <Route
-              path="/letter-templates"
-              element={
-                <SuperAdminRoute>
-                  <LetterTemplateEditor />
-                </SuperAdminRoute>
-              }
-            />
-            <Route
-              path="/dashboard"
+              path="/"
               element={
                 <ProtectedRoute>
                   <Dashboard />
@@ -135,14 +115,6 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Messages />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/reports"
-              element={
-                <ProtectedRoute>
-                  <Reports />
                 </ProtectedRoute>
               }
             />
@@ -191,14 +163,6 @@ const App = () => (
               element={
                 <SuperAdminRoute>
                   <AdminAdmissions />
-                </SuperAdminRoute>
-              }
-            />
-            <Route
-              path="/admin/intake"
-              element={
-                <SuperAdminRoute>
-                  <AdminIntake />
                 </SuperAdminRoute>
               }
             />

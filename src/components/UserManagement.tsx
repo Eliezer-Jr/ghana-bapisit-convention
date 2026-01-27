@@ -222,7 +222,7 @@ export function UserManagement() {
                 <Input
                   id="phoneNumber"
                   type="tel"
-                  placeholder="557083554"
+                  placeholder="0241234567"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   maxLength={10}
