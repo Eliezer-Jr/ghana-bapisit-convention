@@ -109,13 +109,31 @@ serve(async (req) => {
 
     // Generate a deterministic email for phone-based auth
     const email = `${phoneNumber}@system.local`;
-    const tempPassword = `${phoneNumber}_verified_${Date.now()}`;
     
-    if (isSignup) {
+    // First, check if user already exists with this phone number
+    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (listError) {
+      console.error("List users error:", listError);
+      throw new Error("Failed to check existing users");
+    }
+
+    // Try multiple matching strategies to find existing user
+    const existingUser = users.find(u => {
+      return u.phone === phoneNumber || 
+        u.phone === formattedNumber ||
+        u.email === email ||
+        u.user_metadata?.phone_number === phoneNumber ||
+        (u.phone && u.phone.endsWith(phoneNumber.substring(1))) ||
+        (u.email && u.email.startsWith(phoneNumber + '@'));
+    });
+
+    if (isSignup && !existingUser) {
       console.log("Creating user with phone:", formattedNumber, "email:", email);
       
       // Create new user account with password (use E.164 formatted phone)
       const displayName = fullName || "Minister (pending)";
+      const tempPassword = `${phoneNumber}_verified_${Date.now()}`;
       const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
         email,
         phone: formattedNumber, // Must be E.164: +233XXXXXXXXX
@@ -135,76 +153,22 @@ serve(async (req) => {
 
       console.log("User created successfully:", signUpData.user?.id);
       
-      // Generate session for new user
-      const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'magiclink',
-        email: email,
-      });
-
-      if (sessionError) {
-        console.error("Session error:", sessionError);
-      }
+      // Generate login credentials for the new user
+      const loginPassword = `${phoneNumber}_login_${Date.now()}`;
+      await supabaseAdmin.auth.admin.updateUserById(signUpData.user!.id, { password: loginPassword });
       
       return new Response(
         JSON.stringify({
           success: true,
-          message: "Account created successfully. Please use the login option to access your account.",
-          userId: signUpData.user?.id
+          message: "Account created successfully.",
+          userId: signUpData.user?.id,
+          email: email,
+          password: loginPassword
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-    } else {
-      // Login - check if user exists
-      const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-      
-      if (listError) {
-        console.error("List users error:", listError);
-        throw new Error("Failed to verify user");
-      }
-
-      console.log(`Searching for user with phone: ${phoneNumber}, email: ${email}`);
-      console.log(`Total users in system: ${users.length}`);
-
-      // Try multiple matching strategies
-      const existingUser = users.find(u => {
-        const matches = 
-          u.phone === phoneNumber || 
-          u.email === email ||
-          u.user_metadata?.phone_number === phoneNumber ||
-          (u.phone && u.phone.endsWith(phoneNumber.substring(1))) || // Handle 233 prefix
-          (u.email && u.email.startsWith(phoneNumber + '@'));
-        
-        if (matches) {
-          console.log(`Found matching user:`, {
-            id: u.id,
-            email: u.email,
-            phone: u.phone,
-            metadata: u.user_metadata
-          });
-        }
-        return matches;
-      });
-
-      if (!existingUser) {
-        console.error("No matching user found. Available users:", users.map(u => ({
-          email: u.email,
-          phone: u.phone,
-          metadata: u.user_metadata
-        })));
-        
-        // Check if this might be an applicant-only account
-        const isApplicantAccount = users.some(u => 
-          u.email?.includes('@otp.gbc.local') && 
-          u.user_metadata?.phone_number === phoneNumber
-        );
-        
-        if (isApplicantAccount) {
-          throw new Error("This phone number is registered for applications only. Please use the 'Apply' page to access your application, or contact an administrator to get system access.");
-        }
-        
-        throw new Error(`No system account found with phone number ${phoneNumber}. Please contact an administrator to create your account, or use 'Sign Up' if you're creating a new account.`);
-      }
-
+    } else if (existingUser) {
+      // User exists - proceed with login flow regardless of isSignup flag
       console.log("User found, generating session:", existingUser.id);
 
       // Update user password to enable sign in
@@ -224,11 +188,26 @@ serve(async (req) => {
           success: true,
           message: "Login successful. You will be redirected shortly.",
           userId: existingUser.id,
-          email: existingUser.email, // Use the actual user email, not the generated one
+          email: existingUser.email,
           password: loginPassword
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    } else {
+      // No user found and not a signup request
+      console.error("No matching user found for login request");
+      
+      // Check if this might be an applicant-only account
+      const isApplicantAccount = users.some(u => 
+        u.email?.includes('@otp.gbc.local') && 
+        u.user_metadata?.phone_number === phoneNumber
+      );
+      
+      if (isApplicantAccount) {
+        throw new Error("This phone number is registered for applications only. Please use the 'Apply' page to access your application, or contact an administrator to get system access.");
+      }
+      
+      throw new Error(`No system account found with phone number ${phoneNumber}. Please contact an administrator to create your account, or use 'Sign Up' if you're creating a new account.`);
     }
 
   } catch (error) {
