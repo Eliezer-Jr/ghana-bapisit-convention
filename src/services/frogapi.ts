@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabaseFunctions } from "@/lib/supabase";
 import { MESSAGING_CONFIG } from "@/config/messaging";
 
 export interface FrogAPIResponse {
@@ -13,7 +13,7 @@ export class FrogAPIService {
    */
   static async getBalance(): Promise<FrogAPIResponse> {
     try {
-      const { data, error } = await supabase.functions.invoke("frogapi-balance");
+      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-balance");
 
       if (error) {
         console.error("Balance fetch error:", error);
@@ -44,7 +44,7 @@ export class FrogAPIService {
     message: string
   ): Promise<FrogAPIResponse> {
     try {
-      const { data, error } = await supabase.functions.invoke("frogapi-send-general", {
+      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-send-general", {
         body: {
           sender: MESSAGING_CONFIG.SENDER_ID,
           recipients,
@@ -80,7 +80,7 @@ export class FrogAPIService {
     messages: Array<{ recipient: string; message: string }>
   ): Promise<FrogAPIResponse> {
     try {
-      const { data, error } = await supabase.functions.invoke(
+      const { data, error } = await supabaseFunctions.functions.invoke(
         "frogapi-send-personalized",
         {
           body: {
@@ -119,7 +119,7 @@ export class FrogAPIService {
     endDate?: string
   ): Promise<FrogAPIResponse> {
     try {
-      const { data, error } = await supabase.functions.invoke("frogapi-history", {
+      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-history", {
         body: {
           start_date: startDate,
           end_date: endDate,

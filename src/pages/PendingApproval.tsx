@@ -13,7 +13,7 @@ const PendingApproval = () => {
 
   // Redirect if approved
   if (isApproved) {
-    navigate("/");
+    navigate("/dashboard");
     return null;
   }
 
@@ -35,7 +35,7 @@ const PendingApproval = () => {
           <div className="hidden md:block relative">
             <img 
               src={approvalHero} 
-              alt="Ghana Baptist Convention" 
+              alt="Ghana Baptist Convention Conference" 
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/20" />
@@ -89,7 +89,7 @@ const PendingApproval = () => {
                     <Globe className="h-5 w-5 text-primary mt-0.5" />
                     <div>
                       <p className="font-medium text-foreground">Website</p>
-                      <p className="text-sm text-muted-foreground">info@lordeconsult.com</p>
+                      <p className="text-sm text-muted-foreground">lordeconsult.com</p>
                     </div>
                   </div>
                 </div>
@@ -101,7 +101,7 @@ const PendingApproval = () => {
                 </p>
                 <ul className="space-y-1 ml-4 list-disc">
                   <li>A super administrator will review your account</li>
-                  <li>You'll receive an email notification once approved</li>
+                  <li>You'll receive an SMS notification once approved</li>
                   <li>After approval, you can access the full system</li>
                 </ul>
               </div>

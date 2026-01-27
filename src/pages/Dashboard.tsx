@@ -86,7 +86,7 @@ const Dashboard = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Ghana Baptist Convention</h1>
+            <h1 className="text-3xl font-bold text-foreground">GBC Ministers' Conference</h1>
             <p className="text-muted-foreground mt-1">
               Minister Management Dashboard
             </p>
@@ -234,7 +234,7 @@ const Dashboard = () => {
         {/* Welcome Info Card */}
         <Card className="shadow-sm border-primary/10">
           <CardHeader>
-            <CardTitle className="text-xl">Welcome to Ghana Baptist Convention System</CardTitle>
+            <CardTitle className="text-xl">Welcome to GBC Ministers' Conference System</CardTitle>
             <CardDescription>
               Manage and track minister data efficiently
             </CardDescription>

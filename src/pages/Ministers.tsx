@@ -26,10 +26,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Plus, Search, Pencil, Trash2, Eye, Download, Upload } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Eye, Download, Upload, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import logoWatermark from "@/assets/logo-watermark.png";
 
 const Ministers = () => {
   const [ministers, setMinisters] = useState<any[]>([]);
@@ -147,9 +150,9 @@ const Ministers = () => {
         status: "active",
         date_joined: "2024-01-01",
         date_of_birth: "1980-01-01",
-        marital_status: "Married",
+        marital_status: "married",
         spouse_name: "Jane Doe",
-        marriage_type: "Traditional",
+        marriage_type: "ordinance",
         number_of_children: "2",
         titles: "Rev.",
         gps_address: "GA-123-4567",
@@ -163,7 +166,13 @@ const Ministers = () => {
         ordination_year: "2010",
         recognition_year: "2008",
         licensing_year: "2006",
-        notes: "Additional notes here"
+        emergency_contact_1_name: "Jane Doe",
+        emergency_contact_1_relationship: "Spouse",
+        emergency_contact_1_phone: "+233987654321",
+        emergency_contact_2_name: "John Doe Jr",
+        emergency_contact_2_relationship: "Child",
+        emergency_contact_2_phone: "+233456789123",
+        notes: "Additional notes here (marital_status MUST be: married/single/divorced/widowed, marriage_type MUST be: ordinance/customary)"
       }
     ];
 
@@ -174,45 +183,139 @@ const Ministers = () => {
     toast.success("Template downloaded successfully");
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (filteredMinisters.length === 0) {
       toast.error("No ministers to export");
       return;
     }
 
-    const exportData = filteredMinisters.map((minister) => ({
-      full_name: minister.full_name,
-      email: minister.email || "",
-      phone: minister.phone || "",
-      role: minister.role,
-      location: minister.location || "",
-      status: minister.status,
-      date_joined: minister.date_joined,
-      date_of_birth: minister.date_of_birth || "",
-      marital_status: minister.marital_status || "",
-      spouse_name: minister.spouse_name || "",
-      marriage_type: minister.marriage_type || "",
-      number_of_children: minister.number_of_children || 0,
-      titles: minister.titles || "",
-      gps_address: minister.gps_address || "",
-      whatsapp: minister.whatsapp || "",
-      current_church_name: minister.current_church_name || "",
-      position_at_church: minister.position_at_church || "",
-      church_address: minister.church_address || "",
-      association: minister.association || "",
-      sector: minister.sector || "",
-      fellowship: minister.fellowship || "",
-      ordination_year: minister.ordination_year || "",
-      recognition_year: minister.recognition_year || "",
-      licensing_year: minister.licensing_year || "",
-      notes: minister.notes || ""
-    }));
+    // Fetch emergency contacts for all ministers
+    const ministerIds = filteredMinisters.map(m => m.id);
+    const { data: emergencyContacts } = await supabase
+      .from("emergency_contacts")
+      .select("*")
+      .in("minister_id", ministerIds);
+
+    const exportData = filteredMinisters.map((minister) => {
+      const contacts = emergencyContacts?.filter(c => c.minister_id === minister.id) || [];
+      return {
+        minister_id: minister.minister_id || "",
+        full_name: minister.full_name,
+        email: minister.email || "",
+        phone: minister.phone || "",
+        role: minister.role,
+        location: minister.location || "",
+        status: minister.status,
+        date_joined: minister.date_joined,
+        date_of_birth: minister.date_of_birth || "",
+        marital_status: minister.marital_status || "",
+        spouse_name: minister.spouse_name || "",
+        marriage_type: minister.marriage_type || "",
+        number_of_children: minister.number_of_children || 0,
+        titles: minister.titles || "",
+        gps_address: minister.gps_address || "",
+        whatsapp: minister.whatsapp || "",
+        current_church_name: minister.current_church_name || "",
+        position_at_church: minister.position_at_church || "",
+        church_address: minister.church_address || "",
+        association: minister.association || "",
+        sector: minister.sector || "",
+        fellowship: minister.fellowship || "",
+        ordination_year: minister.ordination_year || "",
+        recognition_year: minister.recognition_year || "",
+        licensing_year: minister.licensing_year || "",
+        emergency_contact_1_name: contacts[0]?.contact_name || "",
+        emergency_contact_1_relationship: contacts[0]?.relationship || "",
+        emergency_contact_1_phone: contacts[0]?.phone_number || "",
+        emergency_contact_2_name: contacts[1]?.contact_name || "",
+        emergency_contact_2_relationship: contacts[1]?.relationship || "",
+        emergency_contact_2_phone: contacts[1]?.phone_number || "",
+        notes: minister.notes || ""
+      };
+    });
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Ministers");
     XLSX.writeFile(wb, `ministers_export_${new Date().toISOString().split('T')[0]}.xlsx`);
     toast.success("Ministers exported successfully");
+  };
+
+  const handleExportPDF = async () => {
+    if (filteredMinisters.length === 0) {
+      toast.error("No ministers to export");
+      return;
+    }
+
+    try {
+      const doc = new jsPDF('landscape');
+      
+      // Load and convert image to base64
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      await new Promise((resolve, reject) => {
+        img.onload = () => {
+          // Add watermark (centered, semi-transparent)
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const pageHeight = doc.internal.pageSize.getHeight();
+          const imgWidth = 100;
+          const imgHeight = 100;
+          const x = (pageWidth - imgWidth) / 2;
+          const y = (pageHeight - imgHeight) / 2;
+          
+          // Add watermark with reduced opacity
+          doc.saveGraphicsState();
+          (doc as any).setGState(new (doc as any).GState({ opacity: 0.1 }));
+          doc.addImage(img, 'PNG', x, y, imgWidth, imgHeight);
+          doc.restoreGraphicsState();
+          
+          // Add logo at top left
+          doc.addImage(img, 'PNG', 14, 8, 25, 25);
+          
+          resolve(true);
+        };
+        img.onerror = reject;
+        img.src = logoWatermark;
+      });
+      
+      // Add title next to logo
+      doc.setFontSize(18);
+      doc.text('Ministers Directory', 45, 15);
+      
+      // Add date
+      doc.setFontSize(10);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 45, 22);
+      doc.text(`Total Ministers: ${filteredMinisters.length}`, 45, 28);
+      
+      // Prepare table data
+      const tableData = filteredMinisters.map((minister) => [
+        minister.minister_id || "-",
+        minister.full_name,
+        minister.role,
+        minister.location || "-",
+        minister.email || "-",
+        minister.phone || "-",
+        new Date(minister.date_joined).toLocaleDateString(),
+        minister.status.charAt(0).toUpperCase() + minister.status.slice(1)
+      ]);
+
+      // Add table
+      autoTable(doc, {
+        head: [['Minister ID', 'Name', 'Role', 'Location', 'Email', 'Phone', 'Date Joined', 'Status']],
+        body: tableData,
+        startY: 38,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+      });
+
+      doc.save(`ministers_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success("PDF exported successfully");
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.error("Failed to export PDF");
+    }
   };
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -237,34 +340,55 @@ const Ministers = () => {
         }
 
         // Show preview instead of importing directly
-        const ministersPreview = jsonData.map((row: any, index: number) => ({
-          _rowId: index,
-          full_name: row.full_name || "",
-          email: row.email || "",
-          phone: row.phone || "",
-          role: row.role || "",
-          location: row.location || "",
-          status: row.status || "active",
-          date_joined: row.date_joined || new Date().toISOString().split('T')[0],
-          date_of_birth: row.date_of_birth || "",
-          marital_status: row.marital_status || "",
-          spouse_name: row.spouse_name || "",
-          marriage_type: row.marriage_type || "",
-          number_of_children: row.number_of_children || 0,
-          titles: row.titles || "",
-          gps_address: row.gps_address || "",
-          whatsapp: row.whatsapp || "",
-          current_church_name: row.current_church_name || "",
-          position_at_church: row.position_at_church || "",
-          church_address: row.church_address || "",
-          association: row.association || "",
-          sector: row.sector || "",
-          fellowship: row.fellowship || "",
-          ordination_year: row.ordination_year || "",
-          recognition_year: row.recognition_year || "",
-          licensing_year: row.licensing_year || "",
-          notes: row.notes || ""
-        }));
+        // Normalize values to match database constraints
+        const ministersPreview = jsonData.map((row: any, index: number) => {
+          // Normalize marital_status to lowercase and validate
+          let maritalStatus = row.marital_status ? String(row.marital_status).toLowerCase().trim() : "";
+          if (maritalStatus && !['married', 'single', 'divorced', 'widowed'].includes(maritalStatus)) {
+            maritalStatus = ""; // Clear invalid values
+          }
+          
+          // Normalize marriage_type to lowercase and validate
+          let marriageType = row.marriage_type ? String(row.marriage_type).toLowerCase().trim() : "";
+          if (marriageType && !['ordinance', 'customary'].includes(marriageType)) {
+            marriageType = ""; // Clear invalid values
+          }
+
+          return {
+            _rowId: index,
+            full_name: row.full_name || "",
+            email: row.email || "",
+            phone: row.phone || "",
+            role: row.role || "",
+            location: row.location || "",
+            status: row.status || "active",
+            date_joined: row.date_joined || new Date().toISOString().split('T')[0],
+            date_of_birth: row.date_of_birth || "",
+            marital_status: maritalStatus,
+            spouse_name: row.spouse_name || "",
+            marriage_type: marriageType,
+            number_of_children: row.number_of_children || 0,
+            titles: row.titles || "",
+            gps_address: row.gps_address || "",
+            whatsapp: row.whatsapp || "",
+            current_church_name: row.current_church_name || "",
+            position_at_church: row.position_at_church || "",
+            church_address: row.church_address || "",
+            association: row.association || "",
+            sector: row.sector || "",
+            fellowship: row.fellowship || "",
+            ordination_year: row.ordination_year || "",
+            recognition_year: row.recognition_year || "",
+            licensing_year: row.licensing_year || "",
+            emergency_contact_1_name: row.emergency_contact_1_name || "",
+            emergency_contact_1_relationship: row.emergency_contact_1_relationship || "",
+            emergency_contact_1_phone: row.emergency_contact_1_phone || "",
+            emergency_contact_2_name: row.emergency_contact_2_name || "",
+            emergency_contact_2_relationship: row.emergency_contact_2_relationship || "",
+            emergency_contact_2_phone: row.emergency_contact_2_phone || "",
+            notes: row.notes || ""
+          };
+        });
 
         setImportPreview(ministersPreview);
         setShowImportPreview(true);
@@ -279,17 +403,96 @@ const Ministers = () => {
     event.target.value = ""; // Reset input
   };
 
+  const validateRow = (row: any) => {
+    const errors: string[] = [];
+    if (!row.full_name?.trim()) errors.push("Full Name is required");
+    if (!row.role?.trim()) errors.push("Role is required");
+    if (row.marital_status && !['married', 'single', 'divorced', 'widowed'].includes(row.marital_status)) {
+      errors.push("Marital Status must be: married, single, divorced, or widowed");
+    }
+    if (row.marriage_type && !['ordinance', 'customary'].includes(row.marriage_type)) {
+      errors.push("Marriage Type must be: ordinance or customary");
+    }
+    return errors;
+  };
+
   const confirmImport = async () => {
     try {
-      const ministersToInsert = importPreview.map(({ _rowId, ...minister }) => minister);
+      // Validate all rows first
+      const validationErrors: Record<number, string[]> = {};
+      importPreview.forEach(row => {
+        const errors = validateRow(row);
+        if (errors.length > 0) {
+          validationErrors[row._rowId] = errors;
+        }
+      });
 
-      const { error } = await supabase
+      if (Object.keys(validationErrors).length > 0) {
+        const errorCount = Object.keys(validationErrors).length;
+        toast.error(`${errorCount} row(s) have validation errors. Please fix them before importing.`);
+        return;
+      }
+
+      const ministersToInsert = importPreview.map(({ 
+        _rowId, 
+        emergency_contact_1_name,
+        emergency_contact_1_relationship,
+        emergency_contact_1_phone,
+        emergency_contact_2_name,
+        emergency_contact_2_relationship,
+        emergency_contact_2_phone,
+        ...minister 
+      }) => ({
+        ...minister,
+        // Convert empty strings to null for constrained fields
+        marital_status: minister.marital_status?.trim() || null,
+        marriage_type: minister.marriage_type?.trim() || null,
+        date_of_birth: minister.date_of_birth?.trim() || null,
+        spouse_name: minister.spouse_name?.trim() || null,
+        number_of_children: minister.number_of_children || 0,
+      }));
+
+      const { data: insertedMinisters, error } = await supabase
         .from("ministers")
-        .insert(ministersToInsert);
+        .insert(ministersToInsert)
+        .select();
 
       if (error) throw error;
 
-      toast.success(`Successfully imported ${ministersToInsert.length} ministers`);
+      // Now insert emergency contacts
+      const emergencyContactsToInsert = [];
+      for (let i = 0; i < importPreview.length; i++) {
+        const preview = importPreview[i];
+        const minister = insertedMinisters![i];
+        
+        if (preview.emergency_contact_1_name && preview.emergency_contact_1_phone) {
+          emergencyContactsToInsert.push({
+            minister_id: minister.id,
+            contact_name: preview.emergency_contact_1_name,
+            relationship: preview.emergency_contact_1_relationship || "",
+            phone_number: preview.emergency_contact_1_phone
+          });
+        }
+        
+        if (preview.emergency_contact_2_name && preview.emergency_contact_2_phone) {
+          emergencyContactsToInsert.push({
+            minister_id: minister.id,
+            contact_name: preview.emergency_contact_2_name,
+            relationship: preview.emergency_contact_2_relationship || "",
+            phone_number: preview.emergency_contact_2_phone
+          });
+        }
+      }
+
+      if (emergencyContactsToInsert.length > 0) {
+        const { error: contactsError } = await supabase
+          .from("emergency_contacts")
+          .insert(emergencyContactsToInsert);
+        
+        if (contactsError) throw contactsError;
+      }
+
+      toast.success(`Successfully imported ${ministersToInsert.length} ministers with emergency contacts`);
       setShowImportPreview(false);
       setImportPreview([]);
       fetchMinisters();
@@ -337,7 +540,11 @@ const Ministers = () => {
             </Button>
             <Button onClick={handleExport} variant="outline" className="gap-2">
               <Download className="h-4 w-4" />
-              Export
+              Export Excel
+            </Button>
+            <Button onClick={handleExportPDF} variant="outline" className="gap-2">
+              <FileText className="h-4 w-4" />
+              Export PDF
             </Button>
             <Button variant="outline" className="gap-2 relative">
               <Upload className="h-4 w-4" />
@@ -392,6 +599,7 @@ const Ministers = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Minister ID</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Location</TableHead>
@@ -404,20 +612,23 @@ const Ministers = () => {
                 </TableHeader>
                 <TableBody>
                   {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                     <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         Loading...
                       </TableCell>
                     </TableRow>
                   ) : filteredMinisters.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         No ministers found
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredMinisters.map((minister) => (
                   <TableRow key={minister.id}>
+                        <TableCell className="font-mono text-sm">
+                          {minister.minister_id || "-"}
+                        </TableCell>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
@@ -525,6 +736,15 @@ const Ministers = () => {
                 </AlertDialogHeader>
 
                 <div className="space-y-6">
+                  {/* Minister ID & Basic Info */}
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-primary border-b pb-2">Identification</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <InfoField label="Minister ID" value={ministerToView.minister_id || "-"} />
+                      <InfoField label="Titles" value={ministerToView.titles || "-"} />
+                    </div>
+                  </div>
+
                   {/* Personal Information */}
                   <div className="space-y-3">
                     <h3 className="text-lg font-semibold text-primary border-b pb-2">Personal Information</h3>
@@ -613,73 +833,131 @@ const Ministers = () => {
           <AlertDialogHeader className="p-6 pb-4">
             <AlertDialogTitle>Import Preview - {importPreview.length} Ministers</AlertDialogTitle>
             <AlertDialogDescription>
-              Review and edit the data before importing. Click on any cell to edit.
+              Review ALL fields before importing. Red borders indicate validation errors. Required fields: Full Name, Role.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="overflow-auto max-h-[60vh] px-6">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[150px]">Full Name</TableHead>
+                  <TableHead className="sticky left-0 bg-background z-10 min-w-[50px]">✓</TableHead>
+                  <TableHead className="sticky left-[50px] bg-background z-10 min-w-[150px]">Full Name *</TableHead>
                   <TableHead className="min-w-[150px]">Email</TableHead>
                   <TableHead className="min-w-[120px]">Phone</TableHead>
-                  <TableHead className="min-w-[120px]">Role</TableHead>
+                  <TableHead className="min-w-[120px]">Role *</TableHead>
                   <TableHead className="min-w-[120px]">Location</TableHead>
-                  <TableHead className="min-w-[100px]">Status</TableHead>
+                  <TableHead className="min-w-[100px]">Minister Status</TableHead>
+                  <TableHead className="min-w-[120px]">Date of Birth</TableHead>
+                  <TableHead className="min-w-[120px]">Marital Status</TableHead>
+                  <TableHead className="min-w-[120px]">Spouse Name</TableHead>
+                  <TableHead className="min-w-[120px]">Marriage Type</TableHead>
+                  <TableHead className="min-w-[80px]">Children</TableHead>
+                  <TableHead className="min-w-[100px]">Titles</TableHead>
+                  <TableHead className="min-w-[120px]">WhatsApp</TableHead>
+                  <TableHead className="min-w-[150px]">Church Name</TableHead>
+                  <TableHead className="min-w-[120px]">Position</TableHead>
+                  <TableHead className="min-w-[120px]">Association</TableHead>
+                  <TableHead className="min-w-[120px]">Sector</TableHead>
+                  <TableHead className="min-w-[120px]">Fellowship</TableHead>
+                  <TableHead className="min-w-[100px]">EC 1 Name</TableHead>
+                  <TableHead className="min-w-[100px]">EC 1 Relation</TableHead>
+                  <TableHead className="min-w-[120px]">EC 1 Phone</TableHead>
+                  <TableHead className="min-w-[200px]">Notes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {importPreview.map((row) => (
-                  <TableRow key={row._rowId}>
-                    <TableCell>
-                      <Input
-                        value={row.full_name}
-                        onChange={(e) => updatePreviewCell(row._rowId, 'full_name', e.target.value)}
-                        className="min-w-[140px]"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.email}
-                        onChange={(e) => updatePreviewCell(row._rowId, 'email', e.target.value)}
-                        className="min-w-[140px]"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.phone}
-                        onChange={(e) => updatePreviewCell(row._rowId, 'phone', e.target.value)}
-                        className="min-w-[110px]"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.role}
-                        onChange={(e) => updatePreviewCell(row._rowId, 'role', e.target.value)}
-                        className="min-w-[110px]"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.location}
-                        onChange={(e) => updatePreviewCell(row._rowId, 'location', e.target.value)}
-                        className="min-w-[110px]"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Select value={row.status} onValueChange={(value) => updatePreviewCell(row._rowId, 'status', value)}>
-                        <SelectTrigger className="min-w-[90px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                          <SelectItem value="retired">Retired</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {importPreview.map((row) => {
+                  const errors = validateRow(row);
+                  const hasErrors = errors.length > 0;
+                  return (
+                    <TableRow key={row._rowId} className={hasErrors ? "bg-destructive/5" : ""}>
+                      <TableCell className="sticky left-0 bg-background z-10">
+                        {hasErrors ? (
+                          <div className="flex items-center gap-2" title={errors.join(", ")}>
+                            <div className="w-3 h-3 rounded-full bg-destructive animate-pulse" />
+                            <span className="text-xs text-destructive font-semibold">{errors.length}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-green-500" />
+                            <span className="text-xs text-green-600 font-semibold">✓</span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="sticky left-[50px] bg-background z-10">
+                        <Input 
+                          value={row.full_name} 
+                          onChange={(e) => updatePreviewCell(row._rowId, 'full_name', e.target.value)} 
+                          className={`min-w-[140px] ${!row.full_name?.trim() ? 'border-destructive' : ''}`}
+                        />
+                      </TableCell>
+                      <TableCell><Input value={row.email} onChange={(e) => updatePreviewCell(row._rowId, 'email', e.target.value)} /></TableCell>
+                      <TableCell><Input value={row.phone} onChange={(e) => updatePreviewCell(row._rowId, 'phone', e.target.value)} /></TableCell>
+                      <TableCell>
+                        <Input 
+                          value={row.role} 
+                          onChange={(e) => updatePreviewCell(row._rowId, 'role', e.target.value)}
+                          className={!row.role?.trim() ? 'border-destructive' : ''}
+                        />
+                      </TableCell>
+                    <TableCell><Input value={row.location} onChange={(e) => updatePreviewCell(row._rowId, 'location', e.target.value)} /></TableCell>
+                      <TableCell>
+                        <Select value={row.status} onValueChange={(value) => updatePreviewCell(row._rowId, 'status', value)}>
+                          <SelectTrigger className="min-w-[90px]"><SelectValue /></SelectTrigger>
+                          <SelectContent className="bg-background z-50">
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                            <SelectItem value="retired">Retired</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    <TableCell><Input type="date" value={row.date_of_birth} onChange={(e) => updatePreviewCell(row._rowId, 'date_of_birth', e.target.value)} /></TableCell>
+                      <TableCell>
+                        <Select 
+                          value={row.marital_status || undefined} 
+                          onValueChange={(value) => updatePreviewCell(row._rowId, 'marital_status', value)}
+                        >
+                          <SelectTrigger className={row.marital_status && !['married', 'single', 'divorced', 'widowed'].includes(row.marital_status) ? 'border-destructive' : ''}>
+                            <SelectValue placeholder="None / Select..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background z-50">
+                            <SelectItem value="married">Married</SelectItem>
+                            <SelectItem value="single">Single</SelectItem>
+                            <SelectItem value="divorced">Divorced</SelectItem>
+                            <SelectItem value="widowed">Widowed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell><Input value={row.spouse_name} onChange={(e) => updatePreviewCell(row._rowId, 'spouse_name', e.target.value)} /></TableCell>
+                      <TableCell>
+                        <Select 
+                          value={row.marriage_type || undefined} 
+                          onValueChange={(value) => updatePreviewCell(row._rowId, 'marriage_type', value)}
+                        >
+                          <SelectTrigger className={row.marriage_type && !['ordinance', 'customary'].includes(row.marriage_type) ? 'border-destructive' : ''}>
+                            <SelectValue placeholder="None / Select..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background z-50">
+                            <SelectItem value="ordinance">Ordinance</SelectItem>
+                            <SelectItem value="customary">Customary</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    <TableCell><Input type="number" value={row.number_of_children} onChange={(e) => updatePreviewCell(row._rowId, 'number_of_children', e.target.value)} className="w-20" /></TableCell>
+                    <TableCell><Input value={row.titles} onChange={(e) => updatePreviewCell(row._rowId, 'titles', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.whatsapp} onChange={(e) => updatePreviewCell(row._rowId, 'whatsapp', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.current_church_name} onChange={(e) => updatePreviewCell(row._rowId, 'current_church_name', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.position_at_church} onChange={(e) => updatePreviewCell(row._rowId, 'position_at_church', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.association} onChange={(e) => updatePreviewCell(row._rowId, 'association', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.sector} onChange={(e) => updatePreviewCell(row._rowId, 'sector', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.fellowship} onChange={(e) => updatePreviewCell(row._rowId, 'fellowship', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.emergency_contact_1_name} onChange={(e) => updatePreviewCell(row._rowId, 'emergency_contact_1_name', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.emergency_contact_1_relationship} onChange={(e) => updatePreviewCell(row._rowId, 'emergency_contact_1_relationship', e.target.value)} /></TableCell>
+                    <TableCell><Input value={row.emergency_contact_1_phone} onChange={(e) => updatePreviewCell(row._rowId, 'emergency_contact_1_phone', e.target.value)} /></TableCell>
+                      <TableCell><Input value={row.notes} onChange={(e) => updatePreviewCell(row._rowId, 'notes', e.target.value)} className="min-w-[180px]" /></TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

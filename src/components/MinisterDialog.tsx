@@ -19,7 +19,7 @@ const ministerSchema = z.object({
   whatsapp: z.string().trim().max(20).optional(),
   role: z.string().trim().min(1, "Role is required").max(100),
   location: z.string().trim().max(100).optional(),
-  date_joined: z.string().min(1, "Date is required"),
+  date_joined: z.string().min(1, "Date is required"), // System-managed field
   status: z.enum(["active", "inactive", "retired"]),
   notes: z.string().max(1000).optional(),
   titles: z.string().trim().max(200).optional(),
@@ -37,9 +37,11 @@ const ministerSchema = z.object({
   association: z.string().trim().max(100).optional(),
   sector: z.string().trim().max(100).optional(),
   fellowship: z.string().trim().max(100).optional(),
+  zone: z.string().trim().max(100).optional(),
   ordination_year: z.number().min(1900).max(2100).nullable().optional(),
   recognition_year: z.number().min(1900).max(2100).nullable().optional(),
   licensing_year: z.number().min(1900).max(2100).nullable().optional(),
+  physical_folder_number: z.string().trim().max(50).optional(),
 });
 
 interface MinisterDialogProps {
@@ -78,9 +80,11 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
     association: "",
     sector: "",
     fellowship: "",
+    zone: "",
     ordination_year: null as number | null,
     recognition_year: null as number | null,
     licensing_year: null as number | null,
+    physical_folder_number: "",
   });
 
   const [qualifications, setQualifications] = useState<Array<{ qualification: string; institution: string; year_obtained: number | null }>>([]);
@@ -124,9 +128,11 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           association: minister.association || "",
           sector: minister.sector || "",
           fellowship: minister.fellowship || "",
+          zone: minister.zone || "",
           ordination_year: minister.ordination_year || null,
           recognition_year: minister.recognition_year || null,
           licensing_year: minister.licensing_year || null,
+          physical_folder_number: minister.physical_folder_number || "",
         });
         setAreasOfMinistry(minister.areas_of_ministry || []);
 
@@ -178,9 +184,11 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           association: "",
           sector: "",
           fellowship: "",
+          zone: "",
           ordination_year: null,
           recognition_year: null,
           licensing_year: null,
+          physical_folder_number: "",
         });
         setQualifications([]);
         setHistory([]);
@@ -242,7 +250,9 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         association: validated.association?.trim() || null,
         sector: validated.sector?.trim() || null,
         fellowship: validated.fellowship?.trim() || null,
+        zone: validated.zone?.trim() || null,
         areas_of_ministry: areasOfMinistry.length > 0 ? areasOfMinistry : null,
+        physical_folder_number: validated.physical_folder_number?.trim() || null,
       };
 
       let ministerId = minister?.id;
@@ -389,7 +399,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         <DialogHeader>
           <DialogTitle>{minister ? "Edit Minister" : "Add New Minister"}</DialogTitle>
           <DialogDescription>
-            Fill in the minister's information. Fields marked with * are required.
+            Fill in the Ministers' information. Fields marked with * are required.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -428,6 +438,32 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   />
                   <p className="text-xs text-muted-foreground">Recommended: Square image, max 5MB</p>
                 </div>
+              </div>
+
+              {/* Minister ID - Auto-generated and read-only */}
+              {minister?.minister_id && (
+                <div className="space-y-2 p-4 bg-muted/30 rounded-lg border border-border">
+                  <Label className="text-sm font-medium">Minister ID (Auto-generated)</Label>
+                  <div className="font-mono text-lg font-bold text-primary">
+                    {minister.minister_id}
+                  </div>
+                  <p className="text-xs text-muted-foreground">This ID is automatically assigned and cannot be changed</p>
+                </div>
+              )}
+
+              {/* Physical Folder Number - editable for 6 months after creation */}
+              <div className="space-y-2">
+                <Label htmlFor="physical_folder_number">Physical Folder Number</Label>
+                <Input
+                  id="physical_folder_number"
+                  value={formData.physical_folder_number}
+                  onChange={(e) => setFormData({ ...formData, physical_folder_number: e.target.value })}
+                  placeholder="Enter folder number"
+                  disabled={loading || (minister?.created_at && new Date(minister.created_at) < new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000))}
+                />
+                {minister?.created_at && new Date(minister.created_at) < new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000) && (
+                  <p className="text-xs text-muted-foreground">This field is locked after 6 months from record creation</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -701,17 +737,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                     disabled={loading}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="date_joined">Date Joined *</Label>
-                  <Input
-                    id="date_joined"
-                    type="date"
-                    value={formData.date_joined}
-                    required
-                    disabled
-                    className="bg-muted"
-                  />
-                </div>
+                {/* Date Joined - Hidden system field, automatically set on creation */}
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
                   <Select
@@ -759,30 +785,105 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="association">Association</Label>
-                  <Input
-                    id="association"
+                  <Select
                     value={formData.association}
-                    onChange={(e) => setFormData({ ...formData, association: e.target.value })}
+                    onValueChange={(value) => setFormData({ ...formData, association: value })}
                     disabled={loading}
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Association" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Tahima">Tahima</SelectItem>
+                      <SelectItem value="Tamale">Tamale</SelectItem>
+                      <SelectItem value="Nalerigu">Nalerigu</SelectItem>
+                      <SelectItem value="Liberty">Liberty</SelectItem>
+                      <SelectItem value="Wa">Wa</SelectItem>
+                      <SelectItem value="Nakpanduri">Nakpanduri</SelectItem>
+                      <SelectItem value="Bolgatanga">Bolgatanga</SelectItem>
+                      <SelectItem value="North Eastern">North Eastern</SelectItem>
+                      <SelectItem value="ADANSI">ADANSI</SelectItem>
+                      <SelectItem value="ADOM">ADOM</SelectItem>
+                      <SelectItem value="BETHEL">BETHEL</SelectItem>
+                      <SelectItem value="GOLDEN GATE">GOLDEN GATE</SelectItem>
+                      <SelectItem value="KUMASI NORTH">KUMASI NORTH</SelectItem>
+                      <SelectItem value="KUMASI SOUTH EAST">KUMASI SOUTH EAST</SelectItem>
+                      <SelectItem value="KUMASI SOUTH WEST">KUMASI SOUTH WEST</SelectItem>
+                      <SelectItem value="KUMASI WEST">KUMASI WEST</SelectItem>
+                      <SelectItem value="SUNYANI">SUNYANI</SelectItem>
+                      <SelectItem value="ACCRA NORTH">ACCRA NORTH</SelectItem>
+                      <SelectItem value="ACCRA SOUTH">ACCRA SOUTH</SelectItem>
+                      <SelectItem value="EASTERN">EASTERN</SelectItem>
+                      <SelectItem value="TEMA CENTRAL">TEMA CENTRAL</SelectItem>
+                      <SelectItem value="UNITY PLAIN">UNITY PLAIN</SelectItem>
+                      <SelectItem value="KEKELI">KEKELI</SelectItem>
+                      <SelectItem value="NORTH VOLTA">NORTH VOLTA</SelectItem>
+                      <SelectItem value="DANGME WEST">DANGME WEST</SelectItem>
+                      <SelectItem value="DANGME EAST">DANGME EAST</SelectItem>
+                      <SelectItem value="WINNEBA">WINNEBA</SelectItem>
+                      <SelectItem value="SWEDRU">SWEDRU</SelectItem>
+                      <SelectItem value="SKD/TDI">SKD/TDI</SelectItem>
+                      <SelectItem value="NZEMA">NZEMA</SelectItem>
+                      <SelectItem value="HOPE">HOPE</SelectItem>
+                      <SelectItem value="CAPE COAST">CAPE COAST</SelectItem>
+                      
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="zone">Zone</Label>
+                  <Select
+                    value={formData.zone}
+                    onValueChange={(value) => setFormData({ ...formData, zone: value })}
+                    disabled={loading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Zone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Zone 1">Zone 1</SelectItem>
+                      <SelectItem value="Zone 2">Zone 2</SelectItem>
+                      <SelectItem value="Zone 3">Zone 3</SelectItem>
+                      <SelectItem value="Zone 4">Zone 4</SelectItem>
+                      <SelectItem value="Zone 5">Zone 5</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="sector">Sector</Label>
-                  <Input
-                    id="sector"
+                  <Select
                     value={formData.sector}
-                    onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
+                    onValueChange={(value) => setFormData({ ...formData, sector: value })}
                     disabled={loading}
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Sector" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NORTHERN GHANA SECTOR">NORTHERN GHANA SECTOR</SelectItem>
+                      <SelectItem value="MID-GHANA SECTOR">MID-GHANA SECTOR</SelectItem>
+                      <SelectItem value="SOUTH-EAST GHANA SECTOR">SOUTH-EAST GHANA SECTOR</SelectItem>
+                      <SelectItem value="SOUTH-WEST GHANA SECTOR">SOUTH-WEST GHANA SECTOR</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="fellowship">Fellowship</Label>
-                  <Input
-                    id="fellowship"
+                  <Select
                     value={formData.fellowship}
-                    onChange={(e) => setFormData({ ...formData, fellowship: e.target.value })}
+                    onValueChange={(value) => setFormData({ ...formData, fellowship: value })}
                     disabled={loading}
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Fellowship" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Fellowship 1">Fellowship 1</SelectItem>
+                      <SelectItem value="Fellowship 2">Fellowship 2</SelectItem>
+                      <SelectItem value="Fellowship 3">Fellowship 3</SelectItem>
+                      <SelectItem value="Fellowship 4">Fellowship 4</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="ordination_year">Ordination Year</Label>
@@ -822,7 +923,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                 </div>
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label>Area(s) of Ministry (Five-fold Ministry)</Label>
                 <div className="flex flex-wrap gap-2">
                   {["Apostle", "Prophet", "Evangelist", "Pastor", "Teacher"].map((area) => (
@@ -844,7 +945,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                     </Button>
                   ))}
                 </div>
-              </div>
+              </div> */}
             </TabsContent>
 
             <TabsContent value="history" className="space-y-4 mt-4">

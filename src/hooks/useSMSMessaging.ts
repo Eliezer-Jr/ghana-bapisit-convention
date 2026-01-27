@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseFunctions } from "@/lib/supabase";
 import { toast } from "sonner";
 import { MESSAGING_CONFIG } from "@/config/messaging";
 
@@ -20,6 +20,7 @@ export const useSMSMessaging = () => {
 
   const fetchAllMinisters = async () => {
     try {
+      // Use supabase (DB client) for database queries
       const { data, error } = await supabase
         .from('ministers')
         .select('phone, whatsapp, full_name');
@@ -82,8 +83,9 @@ export const useSMSMessaging = () => {
         return;
       }
 
+      // Use supabaseFunctions for edge function calls
       if (excelContacts.length > 0 && (message.includes('[[name]]') || message.includes('[[phone_number]]'))) {
-        const { data, error } = await supabase.functions.invoke('frogapi-send-personalized', {
+        const { data, error } = await supabaseFunctions.functions.invoke('frogapi-send-personalized', {
           body: {
             senderid: MESSAGING_CONFIG.SENDER_ID,
             destinations: finalDestinations.map(d => ({
@@ -97,7 +99,7 @@ export const useSMSMessaging = () => {
         if (error) throw error;
         toast.success("Personalized SMS sent successfully");
       } else {
-        const { data, error } = await supabase.functions.invoke('frogapi-send-general', {
+        const { data, error } = await supabaseFunctions.functions.invoke('frogapi-send-general', {
           body: {
             senderid: MESSAGING_CONFIG.SENDER_ID,
             destinations: finalDestinations,
@@ -132,7 +134,8 @@ export const useSMSMessaging = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('frogapi-send-personalized', {
+      // Use supabaseFunctions for edge function calls
+      const { data, error } = await supabaseFunctions.functions.invoke('frogapi-send-personalized', {
         body: {
           senderid: MESSAGING_CONFIG.SENDER_ID,
           destinations: validDestinations.map(d => ({
