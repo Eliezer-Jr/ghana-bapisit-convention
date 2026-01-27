@@ -1,142 +1,103 @@
 
 
-# Fix: VPS "Bad Gateway" - Broken nginx.conf Syntax
-
-## Problem Identified
-
-Your `nginx.conf` file has **invalid NGINX syntax** that prevents NGINX from starting:
-
-```nginx
-server {
-    listen 80;
-    ...
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-}
-
-  location / {           <-- ORPHAN BLOCK (not inside any server block!)
-        proxy_pass http://web:80;
-        ...
-    }
-
-
-server {
-    listen 443 ssl;
-    ...
-}
-```
-
-**Lines 30-36** contain a `location` block that exists **outside** of any `server` block. This is invalid NGINX syntax and will cause NGINX to fail configuration validation, preventing the container from starting properly.
-
----
+# Fix: Bad Gateway - Dokploy Port Mismatch
 
 ## Root Cause
 
-It appears that a reverse-proxy configuration was accidentally added to this file, but:
-1. This file is for the **Docker container's internal NGINX** (serving static files)
-2. The reverse proxy configuration (`proxy_pass http://web:80`) belongs in **Dokploy's reverse proxy** or a separate host NGINX config
-3. The orphan `location` block breaks NGINX entirely
+Your container is running and healthy, but Dokploy is forwarding traffic to the wrong port.
+
+```text
++----------------+       +------------------+       +-------------------+
+|   Internet     | ----> |    Dokploy       | ----> |   Container       |
+|                |       | (reverse proxy)  |       |   Port ???        |
++----------------+       +------------------+       +-------------------+
+                              Forwards to                  |
+                              wrong port!                  v
+                                                    NGINX listening
+                                                    on port 80
+```
+
+The container's NGINX listens on **port 80**, but Dokploy is configured to send traffic to a different port (likely 3000 or 5173 from development defaults).
 
 ---
 
-## Solution
+## Solution: Update Dokploy Configuration
 
-Remove the orphan blocks and keep only the valid SPA configuration for the Docker container:
+### Step 1: Open Dokploy Dashboard
 
-### Corrected `nginx.conf`:
+1. Go to your Dokploy dashboard
+2. Navigate to your application/project
 
-```nginx
-server {
-    listen 80;
-    server_name ghanabaptistministers.com;
-    root /usr/share/nginx/html;
-    index index.html;
+### Step 2: Update the Internal Port
 
-    # Gzip compression
-    gzip on;
-    gzip_vary on;
-    gzip_min_length 1024;
-    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript;
+1. Find the **Domains** or **Network** settings for your app
+2. Look for **"Internal Port"**, **"Container Port"**, or **"Target Port"**
+3. Change it from the current value to: **80**
 
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
+Depending on your Dokploy version, this setting may be in:
+- **General tab** > Application Port
+- **Domains tab** > Port field
+- **Advanced tab** > Container Port
 
-    # Cache static assets
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
+### Step 3: Save and Redeploy
 
-    # SPA routing - redirect all requests to index.html
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-}
+1. Save the changes
+2. Click **Redeploy** or **Restart** the application
+3. Wait for the container to become healthy again
+
+---
+
+## Visual Guide for Dokploy
+
+```text
+Dokploy Settings
++--------------------------------------------------+
+| Application: ghanabaptistministers               |
++--------------------------------------------------+
+| General                                          |
+|   Application Port: [ 80 ]  <-- Change this!    |
+|                                                  |
+| Domains                                          |
+|   Domain: ghanabaptistministers.com             |
+|   HTTPS: Enabled                                 |
+|   Internal Port: [ 80 ]  <-- Or this one!       |
++--------------------------------------------------+
 ```
 
 ---
 
-## What to Remove
+## Why This Happens
 
-Delete these lines (29-52 in the current file):
-
-```nginx
-  location / {
-        proxy_pass http://web:80;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-
-server {
-    listen 443 ssl;
-    server_name ghanabaptistministers.com;
-        ssl_certificate /etc/letsencrypt/live/ghanabaptistministers.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/ghanabaptistministers.com/privkey.pem;
-
-    location / {
-        proxy_pass http://web:80;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
+- Development servers (Vite) run on ports like 3000 or 5173
+- Dokploy may have defaulted to a development port
+- The production Docker image uses NGINX on port 80
+- The port must match between Dokploy and the container
 
 ---
 
-## Why This Configuration Was Wrong
+## Verification
 
-| What's in the file | Where it belongs |
-|---|---|
-| `try_files $uri $uri/ /index.html;` | Docker container NGINX (correct) |
-| `proxy_pass http://web:80;` | Dokploy/Host reverse proxy (wrong file) |
-| SSL certificate paths | Host-level NGINX or Dokploy config (wrong file) |
+After making the change:
 
-The Docker container doesn't have access to `/etc/letsencrypt/` certificates - SSL termination is handled by Dokploy.
+1. Wait 30-60 seconds for the container to be ready
+2. Visit your domain: `https://ghanabaptistministers.com`
+3. You should see the login/apply page
 
----
-
-## After the Fix
-
-1. **Rebuild and redeploy** via Dokploy after this change
-2. Dokploy handles SSL termination and proxying to your container
-3. The container NGINX only needs to serve static files and handle SPA routing
+If it still doesn't work, check:
+- Container logs in Dokploy for any errors
+- That HTTPS/SSL is properly configured in Dokploy
 
 ---
 
-## Technical Summary
+## No Code Changes Required
 
-| File | Purpose |
-|---|---|
-| `nginx.conf` | Inside Docker container - serves built React app, handles SPA routing |
-| Dokploy config | On host - handles SSL, proxies to container port 80 |
+The Docker files in the repository are correct:
 
-The fix simply removes the misplaced reverse-proxy configuration that was breaking NGINX syntax.
+| File | Status |
+|------|--------|
+| `nginx.conf` | Correct - listens on port 80 |
+| `Dockerfile` | Correct - exposes port 80 |
+| `docker-compose.yml` | Correct - maps port 80 |
+
+The only change needed is in **Dokploy's configuration** to set the internal port to **80**.
 
