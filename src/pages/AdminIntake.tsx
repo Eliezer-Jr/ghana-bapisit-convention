@@ -7,7 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { Eye } from "lucide-react";
+import { SubmissionReviewDialog } from "@/components/intake/SubmissionReviewDialog";
 
 type IntakeSession = {
   id: string;
@@ -57,6 +60,10 @@ export default function AdminIntake() {
   const [invitePhone, setInvitePhone] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteExpiresAt, setInviteExpiresAt] = useState("");
+
+  // Review dialog state
+  const [reviewSubmission, setReviewSubmission] = useState<IntakeSubmission | null>(null);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
 
   const { data: sessions, isLoading: sessionsLoading } = useQuery({
     queryKey: ["intake-sessions"],
@@ -186,40 +193,12 @@ export default function AdminIntake() {
     qc.invalidateQueries({ queryKey: ["intake-invites", effectiveSessionId] });
   };
 
-  const approveAndPublish = async (sub: IntakeSubmission) => {
-    // MVP: mark approved; publishing to official ministers table can be added next.
-    const { data: auth } = await supabase.auth.getUser();
-    const { error } = await supabase
-      .from("intake_submissions")
-      .update({ status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: auth.user?.id })
-      .eq("id", sub.id);
-    if (error) {
-      console.error(error);
-      toast.error("Failed to approve submission");
-      return;
-    }
-    toast.success("Approved");
-    qc.invalidateQueries({ queryKey: ["intake-submissions", effectiveSessionId] });
+  const openReviewDialog = (sub: IntakeSubmission) => {
+    setReviewSubmission(sub);
+    setReviewDialogOpen(true);
   };
 
-  const reject = async (sub: IntakeSubmission) => {
-    const reason = window.prompt("Rejection reason (optional):") || null;
-    const { data: auth } = await supabase.auth.getUser();
-    const { error } = await supabase
-      .from("intake_submissions")
-      .update({
-        status: "rejected",
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: auth.user?.id,
-        rejection_reason: reason,
-      })
-      .eq("id", sub.id);
-    if (error) {
-      console.error(error);
-      toast.error("Failed to reject submission");
-      return;
-    }
-    toast.success("Rejected");
+  const handleReviewComplete = () => {
     qc.invalidateQueries({ queryKey: ["intake-submissions", effectiveSessionId] });
   };
 
@@ -414,27 +393,24 @@ export default function AdminIntake() {
                   <TableBody>
                     {(submissions || []).map((s) => (
                       <TableRow key={s.id}>
-                        <TableCell className="text-sm">{s.status}</TableCell>
+                        <TableCell>
+                          <Badge variant={s.status === "approved" ? "default" : s.status === "rejected" ? "destructive" : "secondary"}>
+                            {s.status}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="font-medium">{s.payload?.full_name || "—"}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{s.payload?.phone || "—"}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {s.submitted_at ? new Date(s.submitted_at).toLocaleString() : "—"}
                         </TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <Button
-                            size="sm"
-                            onClick={() => approveAndPublish(s)}
-                            disabled={s.status !== "submitted"}
-                          >
-                            Approve
-                          </Button>
+                        <TableCell className="text-right">
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => reject(s)}
-                            disabled={s.status !== "submitted"}
+                            onClick={() => openReviewDialog(s)}
                           >
-                            Reject
+                            <Eye className="h-4 w-4 mr-1" />
+                            Review
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -446,6 +422,14 @@ export default function AdminIntake() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <SubmissionReviewDialog
+        submission={reviewSubmission}
+        open={reviewDialogOpen}
+        onOpenChange={setReviewDialogOpen}
+        onApproved={handleReviewComplete}
+        onRejected={handleReviewComplete}
+      />
     </div>
   );
 }
