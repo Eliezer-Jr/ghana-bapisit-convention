@@ -27,6 +27,7 @@ import LetterTemplateEditor from "./pages/LetterTemplateEditor";
 import ResponsiveLayout from "./components/ResponsiveLayout";
 import MinisterIntake from "./pages/MinisterIntake";
 import AdminIntake from "./pages/AdminIntake";
+import ErrorLogs from "./pages/ErrorLogs";
 
 const queryClient = new QueryClient();
 
@@ -159,6 +160,14 @@ const App = () => (
               element={
                 <SuperAdminRoute>
                   <ActivityLogs />
+                </SuperAdminRoute>
+              }
+            />
+            <Route
+              path="/error-logs"
+              element={
+                <SuperAdminRoute>
+                  <ErrorLogs />
                 </SuperAdminRoute>
               }
             />

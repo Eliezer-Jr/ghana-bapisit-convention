@@ -401,6 +401,48 @@ export type Database = {
           },
         ]
       }
+      error_logs: {
+        Row: {
+          created_at: string
+          error_message: string
+          function_name: string | null
+          id: string
+          metadata: Json | null
+          severity: string
+          source: string
+          stack_trace: string | null
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message: string
+          function_name?: string | null
+          id?: string
+          metadata?: Json | null
+          severity?: string
+          source: string
+          stack_trace?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string
+          function_name?: string | null
+          id?: string
+          metadata?: Json | null
+          severity?: string
+          source?: string
+          stack_trace?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       intake_invites: {
         Row: {
           created_at: string
