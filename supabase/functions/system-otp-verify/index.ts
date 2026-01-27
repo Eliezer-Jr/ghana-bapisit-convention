@@ -13,13 +13,14 @@ serve(async (req) => {
   }
 
   try {
-    const { phoneNumber, otp, fullName, isSignup } = await req.json();
+    const { phoneNumber, otp, fullName, isSignup, skipNameRequirement } = await req.json();
     
     if (!phoneNumber || !otp) {
       throw new Error("Phone number and OTP are required");
     }
 
-    if (isSignup && !fullName) {
+    // Allow skipping fullName requirement for flows like minister intake where name is collected later
+    if (isSignup && !fullName && !skipNameRequirement) {
       throw new Error("Full name is required for signup");
     }
 
@@ -114,6 +115,7 @@ serve(async (req) => {
       console.log("Creating user with phone:", formattedNumber, "email:", email);
       
       // Create new user account with password (use E.164 formatted phone)
+      const displayName = fullName || "Minister (pending)";
       const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
         email,
         phone: formattedNumber, // Must be E.164: +233XXXXXXXXX
@@ -121,7 +123,7 @@ serve(async (req) => {
         email_confirm: true,
         phone_confirm: true,
         user_metadata: {
-          full_name: fullName,
+          full_name: displayName,
           phone_number: phoneNumber // Keep original format in metadata for display
         }
       });
