@@ -228,6 +228,7 @@ export default function MinisterIntake() {
         otp,
         fullName: fullName || invite?.minister_full_name || undefined,
         isSignup: true,
+        skipNameRequirement: true, // Minister intake collects name in the form after auth
       },
     });
     if (error || !data?.success) {
