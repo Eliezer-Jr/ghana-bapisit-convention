@@ -11,6 +11,7 @@ import { Plus, Trash2, Upload, User, Camera, ClipboardCheck } from "lucide-react
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import IntakeReviewSummary from "./IntakeReviewSummary";
+import { ASSOCIATIONS, ZONES, SECTORS, FELLOWSHIPS } from "@/config/ministerOptions";
 
 interface IntakeFormTabsProps {
   payload: Record<string, any>;
@@ -18,25 +19,6 @@ interface IntakeFormTabsProps {
   disabled?: boolean;
   submissionId?: string;
 }
-
-const ASSOCIATIONS = [
-  "Ashanti",
-  "Brong Ahafo",
-  "Central",
-  "Eastern",
-  "Greater Accra",
-  "Northern",
-  "Upper East",
-  "Upper West",
-  "Volta",
-  "Western",
-  "Western North",
-  "Oti",
-  "Ahafo",
-  "Bono East",
-  "North East",
-  "Savannah",
-];
 
 export default function IntakeFormTabs({ payload, onChange, disabled, submissionId }: IntakeFormTabsProps) {
   const [uploading, setUploading] = useState(false);
@@ -494,30 +476,54 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
             </div>
             <div className="space-y-2">
               <Label>Zone</Label>
-              <Input
+              <Select
                 value={payload.zone || ""}
-                onChange={(e) => updateField("zone", e.target.value)}
+                onValueChange={(value) => updateField("zone", value)}
                 disabled={disabled}
-                placeholder="Zone name"
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select zone" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ZONES.map((z) => (
+                    <SelectItem key={z} value={z}>{z}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Sector</Label>
-              <Input
+              <Select
                 value={payload.sector || ""}
-                onChange={(e) => updateField("sector", e.target.value)}
+                onValueChange={(value) => updateField("sector", value)}
                 disabled={disabled}
-                placeholder="Sector name"
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select sector" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SECTORS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Fellowship</Label>
-              <Input
+              <Select
                 value={payload.fellowship || ""}
-                onChange={(e) => updateField("fellowship", e.target.value)}
+                onValueChange={(value) => updateField("fellowship", value)}
                 disabled={disabled}
-                placeholder="Fellowship name"
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select fellowship" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FELLOWSHIPS.map((f) => (
+                    <SelectItem key={f} value={f}>{f}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>

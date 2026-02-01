@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, Clock, FileText, Loader2, Lock, Save, Send, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock, FileText, Loader2, Lock, LogOut, Save, Send, ShieldCheck } from "lucide-react";
 import logoGbcc from "@/assets/logo-gbcc.png";
 import IntakeFormTabs from "@/components/intake/IntakeFormTabs";
+import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 
 type IntakeInvite = {
   id: string;
@@ -64,6 +65,9 @@ export default function MinisterIntake() {
   const [payload, setPayload] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Enable inactivity logout only when on the form step (authenticated)
+  const { handleLogout } = useInactivityLogout(authStep === "form");
 
   const loadInviteSessionAndMaybeSubmission = async () => {
     if (!inviteId) {
@@ -314,6 +318,17 @@ export default function MinisterIntake() {
               <Clock className="h-3 w-3" />
               {formatDate(session.ends_at)}
             </Badge>
+          )}
+          {authStep === "form" && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleLogout}
+              className="gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </Button>
           )}
         </div>
       </header>
