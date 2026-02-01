@@ -150,76 +150,84 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
           <h3 className="font-semibold text-lg border-b pb-2">Personal Information</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Full Name *</Label>
+              <Label>Full Name <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.full_name || ""}
                 onChange={(e) => updateField("full_name", e.target.value)}
                 disabled={disabled}
                 placeholder="Enter full name"
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label>Title(s)</Label>
+              <Label>Title(s) <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.titles || ""}
                 onChange={(e) => updateField("titles", e.target.value)}
                 disabled={disabled}
                 placeholder="e.g., Rev., Dr., Pastor"
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label>Date of Birth</Label>
+              <Label>Date of Birth <span className="text-destructive">*</span></Label>
               <Input
                 type="date"
                 value={payload.date_of_birth || ""}
                 onChange={(e) => updateField("date_of_birth", e.target.value)}
                 disabled={disabled}
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label>Phone Number *</Label>
+              <Label>Phone Number <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.phone || ""}
                 onChange={(e) => updateField("phone", e.target.value)}
                 disabled={disabled}
                 placeholder="+233..."
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label>WhatsApp Number</Label>
+              <Label>WhatsApp Number <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.whatsapp || ""}
                 onChange={(e) => updateField("whatsapp", e.target.value)}
                 disabled={disabled}
                 placeholder="+233..."
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label>Email Address</Label>
+              <Label>Email Address <span className="text-destructive">*</span></Label>
               <Input
                 type="email"
                 value={payload.email || ""}
                 onChange={(e) => updateField("email", e.target.value)}
                 disabled={disabled}
                 placeholder="email@example.com"
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label>GPS Address</Label>
+              <Label>GPS Address <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.gps_address || ""}
                 onChange={(e) => updateField("gps_address", e.target.value)}
                 disabled={disabled}
                 placeholder="e.g., GA-123-4567"
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label>Location/Area</Label>
+              <Label>Location/Area <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.location || ""}
                 onChange={(e) => updateField("location", e.target.value)}
                 disabled={disabled}
                 placeholder="City or town"
+                required
               />
             </div>
           </div>
@@ -230,11 +238,12 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
           <h3 className="font-semibold text-lg border-b pb-2">Marital Information</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Marital Status</Label>
+              <Label>Marital Status <span className="text-destructive">*</span></Label>
               <Select
                 value={payload.marital_status || ""}
                 onValueChange={(value) => updateField("marital_status", value)}
                 disabled={disabled}
+                required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
@@ -248,11 +257,12 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Marriage Type</Label>
+              <Label>Marriage Type <span className="text-destructive">*</span></Label>
               <Select
                 value={payload.marriage_type || ""}
                 onValueChange={(value) => updateField("marriage_type", value)}
                 disabled={disabled}
+                required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select type" />
@@ -260,44 +270,49 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
                 <SelectContent>
                   <SelectItem value="ordinance">Ordinance</SelectItem>
                   <SelectItem value="customary">Customary</SelectItem>
+                  <SelectItem value="n/a">N/A</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Spouse Name</Label>
+              <Label>Spouse Name <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.spouse_name || ""}
                 onChange={(e) => updateField("spouse_name", e.target.value)}
                 disabled={disabled}
-                placeholder="Enter spouse name"
+                placeholder="Enter spouse name (or N/A)"
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label>Spouse Phone Number</Label>
+              <Label>Spouse Phone Number <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.spouse_phone_number || ""}
                 onChange={(e) => updateField("spouse_phone_number", e.target.value)}
                 disabled={disabled}
-                placeholder="+233..."
+                placeholder="+233... (or N/A)"
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label>Spouse Occupation</Label>
+              <Label>Spouse Occupation <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.spouse_occupation || ""}
                 onChange={(e) => updateField("spouse_occupation", e.target.value)}
                 disabled={disabled}
-                placeholder="Enter occupation"
+                placeholder="Enter occupation (or N/A)"
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label>Number of Children</Label>
+              <Label>Number of Children <span className="text-destructive">*</span></Label>
               <Input
                 type="number"
                 min="0"
-                value={payload.number_of_children || ""}
+                value={payload.number_of_children ?? ""}
                 onChange={(e) => updateField("number_of_children", parseInt(e.target.value) || 0)}
                 disabled={disabled}
+                required
               />
             </div>
           </div>
@@ -415,39 +430,43 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
           <h3 className="font-semibold text-lg border-b pb-2">Current Ministry</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Role/Position *</Label>
+              <Label>Role/Position <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.role || ""}
                 onChange={(e) => updateField("role", e.target.value)}
                 disabled={disabled}
                 placeholder="e.g., Pastor, Evangelist"
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label>Current Church Name</Label>
+              <Label>Current Church Name <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.current_church_name || ""}
                 onChange={(e) => updateField("current_church_name", e.target.value)}
                 disabled={disabled}
                 placeholder="Church name"
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label>Position at Church</Label>
+              <Label>Position at Church <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.position_at_church || ""}
                 onChange={(e) => updateField("position_at_church", e.target.value)}
                 disabled={disabled}
                 placeholder="e.g., Senior Pastor"
+                required
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label>Church Address</Label>
+              <Label>Church Address <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.church_address || ""}
                 onChange={(e) => updateField("church_address", e.target.value)}
                 disabled={disabled}
                 placeholder="Full address"
+                required
               />
             </div>
           </div>
@@ -458,11 +477,12 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
           <h3 className="font-semibold text-lg border-b pb-2">Convention Structure</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Association</Label>
+              <Label>Association <span className="text-destructive">*</span></Label>
               <Select
                 value={payload.association || ""}
                 onValueChange={(value) => updateField("association", value)}
                 disabled={disabled}
+                required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select association" />
@@ -475,11 +495,12 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Zone</Label>
+              <Label>Zone <span className="text-destructive">*</span></Label>
               <Select
                 value={payload.zone || ""}
                 onValueChange={(value) => updateField("zone", value)}
                 disabled={disabled}
+                required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select zone" />
@@ -492,11 +513,12 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Sector</Label>
+              <Label>Sector <span className="text-destructive">*</span></Label>
               <Select
                 value={payload.sector || ""}
                 onValueChange={(value) => updateField("sector", value)}
                 disabled={disabled}
+                required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select sector" />
@@ -509,11 +531,12 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Fellowship</Label>
+              <Label>Fellowship <span className="text-destructive">*</span></Label>
               <Select
                 value={payload.fellowship || ""}
                 onValueChange={(value) => updateField("fellowship", value)}
                 disabled={disabled}
+                required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select fellowship" />
@@ -767,7 +790,7 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
           <h3 className="font-semibold text-lg border-b pb-2">Emergency Contact</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Contact Name</Label>
+              <Label>Contact Name <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.emergency_contact?.contact_name || ""}
                 onChange={(e) => updateField("emergency_contact", { 
@@ -776,10 +799,11 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
                 })}
                 disabled={disabled}
                 placeholder="Full name"
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label>Relationship</Label>
+              <Label>Relationship <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.emergency_contact?.relationship || ""}
                 onChange={(e) => updateField("emergency_contact", { 
@@ -788,10 +812,11 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
                 })}
                 disabled={disabled}
                 placeholder="e.g., Spouse, Sibling"
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label>Phone Number</Label>
+              <Label>Phone Number <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.emergency_contact?.phone_number || ""}
                 onChange={(e) => updateField("emergency_contact", { 
@@ -800,6 +825,7 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
                 })}
                 disabled={disabled}
                 placeholder="+233..."
+                required
               />
             </div>
           </div>

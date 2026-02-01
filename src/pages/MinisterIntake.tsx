@@ -269,13 +269,61 @@ export default function MinisterIntake() {
   const submit = async () => {
     if (!submission) return;
     
-    // Basic validation
-    if (!payload.full_name?.trim()) {
-      toast.error("Full name is required");
-      return;
+    // Comprehensive validation for all required fields
+    const requiredFields = [
+      { key: "full_name", label: "Full Name" },
+      { key: "titles", label: "Title(s)" },
+      { key: "date_of_birth", label: "Date of Birth" },
+      { key: "phone", label: "Phone Number" },
+      { key: "whatsapp", label: "WhatsApp Number" },
+      { key: "email", label: "Email Address" },
+      { key: "gps_address", label: "GPS Address" },
+      { key: "location", label: "Location/Area" },
+      { key: "marital_status", label: "Marital Status" },
+      { key: "marriage_type", label: "Marriage Type" },
+      { key: "spouse_name", label: "Spouse Name" },
+      { key: "spouse_phone_number", label: "Spouse Phone Number" },
+      { key: "spouse_occupation", label: "Spouse Occupation" },
+      { key: "role", label: "Role/Position" },
+      { key: "current_church_name", label: "Current Church Name" },
+      { key: "position_at_church", label: "Position at Church" },
+      { key: "church_address", label: "Church Address" },
+      { key: "association", label: "Association" },
+      { key: "zone", label: "Zone" },
+      { key: "sector", label: "Sector" },
+      { key: "fellowship", label: "Fellowship" },
+    ];
+
+    const missingFields: string[] = [];
+    for (const field of requiredFields) {
+      const value = payload[field.key];
+      if (value === undefined || value === null || (typeof value === "string" && !value.trim())) {
+        missingFields.push(field.label);
+      }
     }
-    if (!payload.role?.trim()) {
-      toast.error("Role/Position is required");
+
+    // Validate number of children is set (including 0)
+    if (payload.number_of_children === undefined || payload.number_of_children === null || payload.number_of_children === "") {
+      missingFields.push("Number of Children");
+    }
+
+    // Validate emergency contact
+    if (!payload.emergency_contact?.contact_name?.trim()) {
+      missingFields.push("Emergency Contact Name");
+    }
+    if (!payload.emergency_contact?.relationship?.trim()) {
+      missingFields.push("Emergency Contact Relationship");
+    }
+    if (!payload.emergency_contact?.phone_number?.trim()) {
+      missingFields.push("Emergency Contact Phone Number");
+    }
+
+    if (missingFields.length > 0) {
+      if (missingFields.length <= 3) {
+        toast.error(`Please fill in: ${missingFields.join(", ")}`);
+      } else {
+        toast.error(`Please fill in all required fields. Missing ${missingFields.length} fields.`);
+      }
       return;
     }
 
