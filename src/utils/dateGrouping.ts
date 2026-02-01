@@ -1,4 +1,4 @@
-import { startOfWeek, format, parseISO, isValid } from "date-fns";
+import { startOfWeek, format, parseISO, isValid, getWeek, getYear } from "date-fns";
 
 export type GroupedByWeekAndDate<T> = {
   weekLabel: string;
@@ -46,7 +46,9 @@ export function groupByWeekAndDate<T>(
 
   for (const [weekKey, dateMap] of sortedWeeks) {
     const weekStart = new Date(weekKey);
-    const weekLabel = `Week of ${format(weekStart, "MMM d, yyyy")}`;
+    const weekNumber = getWeek(weekStart, { weekStartsOn: 1 });
+    const year = getYear(weekStart);
+    const weekLabel = `Week ${weekNumber}, ${year}`;
 
     const sortedDates = Array.from(dateMap.entries()).sort(
       ([a], [b]) => new Date(b).getTime() - new Date(a).getTime()
