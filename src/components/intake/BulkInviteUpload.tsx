@@ -18,7 +18,13 @@ interface Props {
   onInvitesCreated: () => void;
 }
 
-const PRODUCTION_DOMAIN = "https://ghanabaptistministers.com";
+// Use localhost for local testing
+const getBaseDomain = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return "https://ghanabaptistministers.com";
+};
 
 export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
   const [contacts, setContacts] = useState<MinisterContact[]>([]);
@@ -129,7 +135,7 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
           id: data.id,
           full_name: contact.full_name,
           phone: contact.phone,
-          link: `${PRODUCTION_DOMAIN}/minister-intake/${data.id}`,
+          link: `${getBaseDomain()}/minister-intake/${data.id}`,
         };
       });
 
