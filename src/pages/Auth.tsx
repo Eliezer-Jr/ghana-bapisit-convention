@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase, supabaseFunctions } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,7 +63,7 @@ const Auth = () => {
       }
 
       // Send OTP
-      const { data, error } = await supabaseFunctions.functions.invoke('frogapi-otp-generate', {
+      const { data, error } = await supabase.functions.invoke('frogapi-otp-generate', {
         body: { phoneNumber: validated.phoneNumber }
       });
 
@@ -120,7 +120,7 @@ const Auth = () => {
       }
 
       // Verify OTP for system login
-      const { data, error } = await supabaseFunctions.functions.invoke('system-otp-verify', {
+      const { data, error } = await supabase.functions.invoke('system-otp-verify', {
         body: { 
           phoneNumber, 
           otp,
@@ -132,15 +132,15 @@ const Auth = () => {
       if (error) throw error;
       if (!data.success) throw new Error(data.error || "OTP verification failed");
 
-      // The edge function now returns a full session - set it directly
-      if (data.session) {
-        const { error: setSessionError } = await supabase.auth.setSession({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token
+      // For login, use the email and password returned to sign in
+      if (!isSignup && data.email && data.password) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password
         });
         
-        if (setSessionError) {
-          console.error("Set session error:", setSessionError);
+        if (signInError) {
+          console.error("Sign in error:", signInError);
           throw new Error("Failed to establish session. Please try again.");
         }
       }
@@ -171,6 +171,9 @@ const Auth = () => {
           setOtp("");
         }, 1500);
       } else {
+        // Force session refresh for login
+        await supabase.auth.refreshSession();
+        
         // Navigate to dashboard
         setTimeout(() => navigate("/dashboard"), 800);
       }

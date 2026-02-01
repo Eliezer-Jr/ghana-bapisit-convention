@@ -11,19 +11,11 @@ export const supabaseDB = createClient<Database>(dbUrl, dbKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    storageKey: 'supabase-db-auth',
   },
 });
 
-// Lovable Cloud - Edge Functions & Secrets (no auth needed, just functions)
+// Lovable Cloud - Edge Functions & Secrets
 const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || import.meta.env.VITE_SUPABASE_URL;
 const functionsKey = import.meta.env.VITE_SUPABASE_FUNCTIONS_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-export const supabaseFunctions = createClient<Database>(functionsUrl, functionsKey, {
-  auth: {
-    storage: typeof window !== "undefined" ? window.localStorage : undefined,
-    autoRefreshToken: false,
-    persistSession: false,
-    storageKey: 'supabase-functions-auth',
-  },
-});
+export const supabaseFunctions = createClient<Database>(functionsUrl, functionsKey);

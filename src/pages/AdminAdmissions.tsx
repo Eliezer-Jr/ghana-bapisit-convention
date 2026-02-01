@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase, supabaseFunctions } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -240,7 +240,7 @@ export default function AdminAdmissions() {
 
       // Send SMS notification
       if (appData) {
-        await supabaseFunctions.functions.invoke('notify-status-change', {
+        await supabase.functions.invoke('notify-status-change', {
           body: {
             applicationId: appId,
             status: status,

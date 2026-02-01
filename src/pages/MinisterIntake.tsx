@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { supabase, supabaseFunctions } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -191,7 +191,7 @@ export default function MinisterIntake() {
       return;
     }
     setOtpSending(true);
-    const { data, error } = await supabaseFunctions.functions.invoke("frogapi-otp-generate", {
+    const { data, error } = await supabase.functions.invoke("frogapi-otp-generate", {
       body: { phoneNumber: formatted.startsWith("+233") ? `0${formatted.slice(4)}` : formatted },
     });
     setOtpSending(false);
@@ -211,7 +211,7 @@ export default function MinisterIntake() {
       return;
     }
     setOtpVerifying(true);
-    const { data, error } = await supabaseFunctions.functions.invoke("system-otp-verify", {
+    const { data, error } = await supabase.functions.invoke("system-otp-verify", {
       body: {
         phoneNumber: phone,
         otp,

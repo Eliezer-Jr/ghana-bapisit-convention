@@ -5,7 +5,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase, supabaseFunctions } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -31,7 +31,7 @@ export const EditPhoneDialog = ({
     mutationFn: async () => {
       if (!applicant || !newPhone) return;
 
-      const { data, error } = await supabaseFunctions.functions.invoke("approve-applicant", {
+      const { data, error } = await supabase.functions.invoke("approve-applicant", {
         body: {
           updateId: applicant.id,
           newPhoneNumber: newPhone,
