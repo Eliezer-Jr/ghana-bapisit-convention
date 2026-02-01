@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, Upload, User, Camera } from "lucide-react";
+import { Plus, Trash2, Upload, User, Camera, ClipboardCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import IntakeReviewSummary from "./IntakeReviewSummary";
 
 interface IntakeFormTabsProps {
   payload: Record<string, any>;
@@ -110,12 +111,16 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
 
   return (
     <Tabs defaultValue="bio" className="w-full">
-      <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+      <TabsList className="grid w-full grid-cols-6 h-auto p-1">
         <TabsTrigger value="bio" className="text-xs sm:text-sm py-2">Bio Data</TabsTrigger>
         <TabsTrigger value="education" className="text-xs sm:text-sm py-2">Education</TabsTrigger>
         <TabsTrigger value="ministerial" className="text-xs sm:text-sm py-2">Ministerial</TabsTrigger>
         <TabsTrigger value="history" className="text-xs sm:text-sm py-2">History</TabsTrigger>
         <TabsTrigger value="other" className="text-xs sm:text-sm py-2">Other</TabsTrigger>
+        <TabsTrigger value="review" className="text-xs sm:text-sm py-2 flex items-center gap-1">
+          <ClipboardCheck className="h-3 w-3 hidden sm:inline" />
+          Review
+        </TabsTrigger>
       </TabsList>
 
       {/* Bio Data Tab */}
@@ -808,6 +813,11 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
             />
           </div>
         </div>
+      </TabsContent>
+
+      {/* Review Tab */}
+      <TabsContent value="review" className="mt-6">
+        <IntakeReviewSummary payload={payload} />
       </TabsContent>
     </Tabs>
   );

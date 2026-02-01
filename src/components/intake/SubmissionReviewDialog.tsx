@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseFunctions } from "@/lib/supabase";
 import {
   Dialog,
   DialogContent,
@@ -16,8 +16,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Check, X, AlertCircle, ArrowRight } from "lucide-react";
+import { Check, X, AlertCircle, ArrowRight, Eye } from "lucide-react";
+import { MESSAGING_CONFIG } from "@/config/messaging";
+import IntakeReviewSummary from "./IntakeReviewSummary";
 
 type IntakeSubmission = {
   id: string;
@@ -194,6 +197,8 @@ export function SubmissionReviewDialog({
         notes: payload.notes || null,
         marital_status: payload.marital_status || null,
         spouse_name: payload.spouse_name || null,
+        spouse_phone_number: payload.spouse_phone_number || null,
+        spouse_occupation: payload.spouse_occupation || null,
         number_of_children: payload.number_of_children ? parseInt(payload.number_of_children) : null,
         whatsapp: payload.whatsapp || null,
         gps_address: payload.gps_address || null,
@@ -206,9 +211,11 @@ export function SubmissionReviewDialog({
         licensing_year: payload.licensing_year ? parseInt(payload.licensing_year) : null,
         titles: payload.titles || null,
         zone: payload.zone || null,
+        photo_url: payload.photo_url || null,
       };
 
       let ministerId: string;
+      let ministerIdNumber: string | null = null;
 
       if (targetMinister) {
         // Update existing minister
@@ -219,27 +226,105 @@ export function SubmissionReviewDialog({
 
         if (updateError) throw updateError;
         ministerId = targetMinister.id;
+        
+        // Get the minister ID number
+        const { data: updatedMinister } = await supabase
+          .from("ministers")
+          .select("minister_id")
+          .eq("id", ministerId)
+          .single();
+        ministerIdNumber = updatedMinister?.minister_id || null;
       } else {
         // Create new minister
         const { data: newMinister, error: insertError } = await supabase
           .from("ministers")
           .insert(ministerData)
-          .select("id")
+          .select("id, minister_id")
           .single();
 
         if (insertError) throw insertError;
         ministerId = newMinister.id;
+        ministerIdNumber = newMinister.minister_id;
       }
 
       // Handle emergency contacts if present in payload
-      if (payload.emergency_contacts && Array.isArray(payload.emergency_contacts)) {
-        for (const contact of payload.emergency_contacts) {
-          if (contact.contact_name && contact.phone_number) {
-            await supabase.from("emergency_contacts").insert({
+      if (payload.emergency_contact?.contact_name && payload.emergency_contact?.phone_number) {
+        await supabase.from("emergency_contacts").insert({
+          minister_id: ministerId,
+          contact_name: payload.emergency_contact.contact_name,
+          relationship: payload.emergency_contact.relationship || "Other",
+          phone_number: payload.emergency_contact.phone_number,
+        });
+      }
+
+      // Handle qualifications if present
+      if (payload.qualifications && Array.isArray(payload.qualifications)) {
+        for (const qual of payload.qualifications) {
+          if (qual.qualification) {
+            await supabase.from("educational_qualifications").insert({
               minister_id: ministerId,
-              contact_name: contact.contact_name,
-              relationship: contact.relationship || "Other",
-              phone_number: contact.phone_number,
+              qualification: qual.qualification,
+              institution: qual.institution || null,
+              year_obtained: qual.year_obtained || null,
+            });
+          }
+        }
+      }
+
+      // Handle children if present
+      if (payload.children && Array.isArray(payload.children)) {
+        for (const child of payload.children) {
+          if (child.child_name) {
+            await supabase.from("minister_children").insert({
+              minister_id: ministerId,
+              child_name: child.child_name,
+              date_of_birth: child.date_of_birth || null,
+            });
+          }
+        }
+      }
+
+      // Handle ministerial history if present
+      if (payload.ministerial_history && Array.isArray(payload.ministerial_history)) {
+        for (const hist of payload.ministerial_history) {
+          if (hist.church_name && hist.position) {
+            await supabase.from("ministerial_history").insert({
+              minister_id: ministerId,
+              church_name: hist.church_name,
+              position: hist.position,
+              association: hist.association || null,
+              sector: hist.sector || null,
+              period_start: hist.period_start || null,
+              period_end: hist.period_end || null,
+            });
+          }
+        }
+      }
+
+      // Handle convention positions if present
+      if (payload.convention_positions && Array.isArray(payload.convention_positions)) {
+        for (const pos of payload.convention_positions) {
+          if (pos.position) {
+            await supabase.from("convention_positions").insert({
+              minister_id: ministerId,
+              position: pos.position,
+              period_start: pos.period_start || null,
+              period_end: pos.period_end || null,
+            });
+          }
+        }
+      }
+
+      // Handle non-church work if present
+      if (payload.non_church_work && Array.isArray(payload.non_church_work)) {
+        for (const work of payload.non_church_work) {
+          if (work.organization && work.job_title) {
+            await supabase.from("non_church_work").insert({
+              minister_id: ministerId,
+              organization: work.organization,
+              job_title: work.job_title,
+              period_start: work.period_start || null,
+              period_end: work.period_end || null,
             });
           }
         }
@@ -256,6 +341,27 @@ export function SubmissionReviewDialog({
         .eq("id", submission.id);
 
       if (submissionError) throw submissionError;
+
+      // Send SMS with Minister ID if phone number exists
+      if (payload.phone && ministerIdNumber) {
+        try {
+          const smsMessage = `Ghana Baptist Convention: Your minister information has been approved. Your Minister ID is: ${ministerIdNumber}. Keep this for your records.`;
+          
+          await supabaseFunctions.functions.invoke("frogapi-send-general", {
+            body: {
+              senderid: MESSAGING_CONFIG.SENDER_ID,
+              destinations: [{ destination: payload.phone }],
+              message: smsMessage,
+              smstype: MESSAGING_CONFIG.SMS_TYPE,
+            },
+          });
+          
+          toast.success(`Approval SMS sent to ${payload.phone}`);
+        } catch (smsError) {
+          console.error("SMS sending failed:", smsError);
+          toast.warning("Record saved but SMS notification failed to send");
+        }
+      }
 
       toast.success(targetMinister ? "Minister record updated" : "New minister created");
       onApproved();
@@ -316,7 +422,7 @@ export function SubmissionReviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Review Submission
@@ -325,86 +431,107 @@ export function SubmissionReviewDialog({
             </Badge>
           </DialogTitle>
           <DialogDescription>
-            Compare submitted data with existing records before publishing.
+            Review all submitted data before approving or rejecting.
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="h-[50vh] pr-4">
-          {/* Match Status */}
-          <div className="mb-4 p-3 rounded-lg border">
-            {ministerLoading ? (
-              <p className="text-sm text-muted-foreground">Searching for existing minister...</p>
-            ) : existingMinister ? (
-              <div className="flex items-center gap-2 text-amber-600">
-                <AlertCircle className="h-4 w-4" />
-                <span className="text-sm font-medium">
-                  Found existing minister: {existingMinister.full_name} ({existingMinister.phone})
-                </span>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-green-600">
-                  <Check className="h-4 w-4" />
-                  <span className="text-sm font-medium">No existing minister found — will create new record</span>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Or link to existing minister:</Label>
-                  <Input
-                    placeholder="Search by name or phone..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="h-8"
-                  />
-                  {searchResults && searchResults.length > 0 && (
-                    <div className="border rounded-md divide-y">
-                      {searchResults.map((m) => (
-                        <button
-                          key={m.id}
-                          onClick={() => setSelectedMinisterId(m.id)}
-                          className={`w-full text-left px-3 py-2 text-sm hover:bg-muted ${selectedMinisterId === m.id ? "bg-primary/10" : ""}`}
-                        >
-                          {m.full_name} — {m.phone || m.email || "No contact"}
-                        </button>
-                      ))}
+        <Tabs defaultValue="preview" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="preview" className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              Full Preview
+            </TabsTrigger>
+            <TabsTrigger value="diff" className="flex items-center gap-2">
+              <ArrowRight className="h-4 w-4" />
+              Compare Changes
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="preview">
+            <ScrollArea className="h-[50vh] pr-4 mt-4">
+              <IntakeReviewSummary payload={payload} />
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="diff">
+            <ScrollArea className="h-[50vh] pr-4 mt-4">
+              {/* Match Status */}
+              <div className="mb-4 p-3 rounded-lg border">
+                {ministerLoading ? (
+                  <p className="text-sm text-muted-foreground">Searching for existing minister...</p>
+                ) : existingMinister ? (
+                  <div className="flex items-center gap-2 text-amber-600">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      Found existing minister: {existingMinister.full_name} ({existingMinister.phone})
+                    </span>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-green-600">
+                      <Check className="h-4 w-4" />
+                      <span className="text-sm font-medium">No existing minister found — will create new record</span>
                     </div>
-                  )}
-                </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Or link to existing minister:</Label>
+                      <Input
+                        placeholder="Search by name or phone..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="h-8"
+                      />
+                      {searchResults && searchResults.length > 0 && (
+                        <div className="border rounded-md divide-y">
+                          {searchResults.map((m) => (
+                            <button
+                              key={m.id}
+                              onClick={() => setSelectedMinisterId(m.id)}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-muted ${selectedMinisterId === m.id ? "bg-primary/10" : ""}`}
+                            >
+                              {m.full_name} — {m.phone || m.email || "No contact"}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+
+              <Separator className="my-4" />
+
+              {/* Diff View */}
+              <div className="space-y-1">
+                <div className="grid grid-cols-3 gap-4 py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  <div>Field</div>
+                  <div>Current Value</div>
+                  <div>Submitted Value</div>
+                </div>
+                {diffFields.map((field) => (
+                  <DiffRow
+                    key={field}
+                    field={field}
+                    oldValue={targetMinister ? (targetMinister as any)[field] : undefined}
+                    newValue={payload[field]}
+                  />
+                ))}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
+
+        {/* Rejection Input */}
+        {showRejectionInput && (
+          <div className="space-y-2">
+            <Label>Rejection Reason (optional)</Label>
+            <Textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Explain why this submission is being rejected..."
+              rows={3}
+            />
           </div>
-
-          <Separator className="my-4" />
-
-          {/* Diff View */}
-          <div className="space-y-1">
-            <div className="grid grid-cols-3 gap-4 py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              <div>Field</div>
-              <div>Current Value</div>
-              <div>Submitted Value</div>
-            </div>
-            {diffFields.map((field) => (
-              <DiffRow
-                key={field}
-                field={field}
-                oldValue={targetMinister ? (targetMinister as any)[field] : undefined}
-                newValue={payload[field]}
-              />
-            ))}
-          </div>
-
-          {/* Rejection Input */}
-          {showRejectionInput && (
-            <div className="mt-4 space-y-2">
-              <Label>Rejection Reason (optional)</Label>
-              <Textarea
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Explain why this submission is being rejected..."
-                rows={3}
-              />
-            </div>
-          )}
-        </ScrollArea>
+        )}
 
         <DialogFooter className="gap-2">
           {showRejectionInput ? (
