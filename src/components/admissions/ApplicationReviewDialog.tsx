@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar, Download, Eye, FileText, User, Church, GraduationCap, MessageSquare, Send } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseFunctions } from "@/lib/supabase";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import { InfoField } from "@/components/InfoField";
@@ -214,7 +214,7 @@ export function ApplicationReviewDialog({
   const handleResendSMS = async () => {
     setSendingSMS(true);
     try {
-      const { error } = await supabase.functions.invoke('notify-status-change', {
+      const { error } = await supabaseFunctions.functions.invoke('notify-status-change', {
         body: {
           applicationId: application.id,
           status: application.status,
