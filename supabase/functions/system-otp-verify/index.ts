@@ -26,14 +26,21 @@ serve(async (req) => {
 
     const apiKey = Deno.env.get('FROGAPI_KEY');
     const username = Deno.env.get('FROGAPI_USERNAME');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // Use self-hosted Supabase for auth operations
+    const supabaseUrl = Deno.env.get('SELF_HOSTED_DB_URL')!;
+    const supabaseServiceKey = Deno.env.get('SELF_HOSTED_SERVICE_ROLE_KEY')!;
 
     if (!apiKey || !username) {
       throw new Error("FrogAPI credentials not configured");
     }
 
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Self-hosted Supabase credentials not configured");
+    }
+
     console.log("Verifying OTP for system login:", phoneNumber);
+    console.log("Using self-hosted Supabase URL:", supabaseUrl);
 
     const otpCode = String(otp).trim();
     
@@ -99,7 +106,7 @@ serve(async (req) => {
 
     console.log("OTP verified successfully for system user");
 
-    // Initialize Supabase admin client
+    // Initialize Supabase admin client pointing to self-hosted instance
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
@@ -109,6 +116,7 @@ serve(async (req) => {
 
     // Generate a deterministic email for phone-based auth
     const email = `${phoneNumber}@system.local`;
+    const loginPassword = `${phoneNumber}_secure_${Date.now()}`;
     
     // First, check if user already exists with this phone number
     const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
@@ -128,16 +136,17 @@ serve(async (req) => {
         (u.email && u.email.startsWith(phoneNumber + '@'));
     });
 
+    let userId: string;
+
     if (isSignup && !existingUser) {
       console.log("Creating user with phone:", formattedNumber, "email:", email);
       
       // Create new user account with password (use E.164 formatted phone)
       const displayName = fullName || "Minister (pending)";
-      const tempPassword = `${phoneNumber}_verified_${Date.now()}`;
       const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
         email,
         phone: formattedNumber, // Must be E.164: +233XXXXXXXXX
-        password: tempPassword,
+        password: loginPassword,
         email_confirm: true,
         phone_confirm: true,
         user_metadata: {
@@ -152,27 +161,13 @@ serve(async (req) => {
       }
 
       console.log("User created successfully:", signUpData.user?.id);
-      
-      // Generate login credentials for the new user
-      const loginPassword = `${phoneNumber}_login_${Date.now()}`;
-      await supabaseAdmin.auth.admin.updateUserById(signUpData.user!.id, { password: loginPassword });
-      
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: "Account created successfully.",
-          userId: signUpData.user?.id,
-          email: email,
-          password: loginPassword
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      userId = signUpData.user!.id;
     } else if (existingUser) {
       // User exists - proceed with login flow regardless of isSignup flag
-      console.log("User found, generating session:", existingUser.id);
+      console.log("User found, updating password for login:", existingUser.id);
+      userId = existingUser.id;
 
       // Update user password to enable sign in
-      const loginPassword = `${phoneNumber}_login_${Date.now()}`;
       const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
         existingUser.id,
         { password: loginPassword }
@@ -182,17 +177,6 @@ serve(async (req) => {
         console.error("Failed to update password:", updateError);
         throw new Error("Failed to generate login session");
       }
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: "Login successful. You will be redirected shortly.",
-          userId: existingUser.id,
-          email: existingUser.email,
-          password: loginPassword
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     } else {
       // No user found and not a signup request
       console.error("No matching user found for login request");
@@ -209,6 +193,50 @@ serve(async (req) => {
       
       throw new Error(`No system account found with phone number ${phoneNumber}. Please contact an administrator to create your account, or use 'Sign Up' if you're creating a new account.`);
     }
+
+    // Now sign in the user and get a real session
+    console.log("Signing in user to get session...");
+    
+    // Use a regular client for sign-in (not admin) to get proper session
+    const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+
+    const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password: loginPassword
+    });
+
+    if (signInError) {
+      console.error("Sign in error:", signInError);
+      throw new Error("Failed to create session: " + signInError.message);
+    }
+
+    if (!signInData.session) {
+      throw new Error("No session returned from sign in");
+    }
+
+    console.log("Session created successfully for user:", userId);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: isSignup ? "Account created successfully." : "Login successful. You will be redirected shortly.",
+        userId: userId,
+        session: {
+          access_token: signInData.session.access_token,
+          refresh_token: signInData.session.refresh_token,
+          expires_in: signInData.session.expires_in,
+          expires_at: signInData.session.expires_at,
+          token_type: signInData.session.token_type,
+          user: signInData.session.user
+        }
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
   } catch (error) {
     console.error('Error in system OTP verification:', error);

@@ -132,15 +132,15 @@ const Auth = () => {
       if (error) throw error;
       if (!data.success) throw new Error(data.error || "OTP verification failed");
 
-      // For login, use the email and password returned to sign in
-      if (!isSignup && data.email && data.password) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: data.email,
-          password: data.password
+      // The edge function now returns a full session - set it directly
+      if (data.session) {
+        const { error: setSessionError } = await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token
         });
         
-        if (signInError) {
-          console.error("Sign in error:", signInError);
+        if (setSessionError) {
+          console.error("Set session error:", setSessionError);
           throw new Error("Failed to establish session. Please try again.");
         }
       }
@@ -171,9 +171,6 @@ const Auth = () => {
           setOtp("");
         }, 1500);
       } else {
-        // Force session refresh for login
-        await supabase.auth.refreshSession();
-        
         // Navigate to dashboard
         setTimeout(() => navigate("/dashboard"), 800);
       }
