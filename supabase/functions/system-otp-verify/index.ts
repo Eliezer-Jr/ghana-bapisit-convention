@@ -7,6 +7,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    // base64url -> base64
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    const json = atob(padded);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -38,8 +52,20 @@ serve(async (req) => {
       throw new Error("Self-hosted Supabase credentials not configured");
     }
 
+    // Preflight: ensure the provided key is actually a service_role JWT for the *self-hosted* instance.
+    // If this is the anon key or a key from a different instance, GoTrue returns `403 not_admin`.
+    const keyPayload = decodeJwtPayload(supabaseServiceKey);
+    const keyRole = typeof keyPayload?.role === 'string' ? (keyPayload.role as string) : undefined;
+    if (keyRole && keyRole !== 'service_role') {
+      throw new Error(
+        `SELF_HOSTED_SERVICE_ROLE_KEY must be a service_role JWT (got role=${keyRole}). ` +
+          `Make sure you pasted the self-hosted SERVICE ROLE key, not the anon/publishable key.`
+      );
+    }
+
     console.log("Verifying OTP for system login:", phoneNumber);
     console.log("Using self-hosted Supabase URL:", supabaseUrl);
+    console.log("Self-hosted key role claim:", keyRole ?? 'unknown');
 
     const otpCode = String(otp).trim();
     
