@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet, X, Send, Loader2 } from "lucide-react";
+import { Upload, FileSpreadsheet, X, Send, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { supabase, supabaseFunctions } from "@/lib/supabase";
 import { MESSAGING_CONFIG } from "@/config/messaging";
@@ -11,7 +11,40 @@ import { MESSAGING_CONFIG } from "@/config/messaging";
 interface MinisterContact {
   full_name: string;
   phone: string;
+  isValid: boolean;
+  validationError?: string;
 }
+
+const validatePhoneNumber = (phone: string): { isValid: boolean; error?: string } => {
+  const cleaned = phone.replace(/\s+/g, "");
+  
+  if (cleaned.startsWith("0")) {
+    if (cleaned.length !== 10) {
+      return { isValid: false, error: `Must be 10 digits (got ${cleaned.length})` };
+    }
+    if (!/^0\d{9}$/.test(cleaned)) {
+      return { isValid: false, error: "Invalid format for local number" };
+    }
+    return { isValid: true };
+  }
+  
+  if (cleaned.startsWith("+233")) {
+    if (cleaned.length !== 13) {
+      return { isValid: false, error: `Must be 13 chars with +233 (got ${cleaned.length})` };
+    }
+    if (!/^\+233\d{9}$/.test(cleaned)) {
+      return { isValid: false, error: "Invalid format for +233 number" };
+    }
+    return { isValid: true };
+  }
+  
+  // Assume it's a local number without prefix
+  if (/^\d{9}$/.test(cleaned)) {
+    return { isValid: true };
+  }
+  
+  return { isValid: false, error: "Must start with 0 (10 digits) or +233 (13 chars)" };
+};
 
 interface Props {
   sessionId: string;
@@ -53,6 +86,8 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
             const fullName = String(row[0] || "").trim();
             const phone = String(row[1] || "").trim();
             if (fullName && phone) {
+              const validation = validatePhoneNumber(phone);
+              
               // Normalize phone number
               let normalizedPhone = phone.replace(/\s+/g, "");
               if (normalizedPhone.startsWith("0")) {
@@ -60,7 +95,13 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
               } else if (!normalizedPhone.startsWith("+")) {
                 normalizedPhone = "+233" + normalizedPhone;
               }
-              parsedContacts.push({ full_name: fullName, phone: normalizedPhone });
+              
+              parsedContacts.push({ 
+                full_name: fullName, 
+                phone: normalizedPhone,
+                isValid: validation.isValid,
+                validationError: validation.error
+              });
             }
           }
         }
@@ -70,8 +111,15 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
           return;
         }
 
+        const validCount = parsedContacts.filter(c => c.isValid).length;
+        const invalidCount = parsedContacts.length - validCount;
+        
         setContacts(parsedContacts);
-        toast.success(`Loaded ${parsedContacts.length} contacts`);
+        if (invalidCount > 0) {
+          toast.warning(`Loaded ${parsedContacts.length} contacts (${invalidCount} invalid)`);
+        } else {
+          toast.success(`Loaded ${parsedContacts.length} contacts`);
+        }
       } catch (error) {
         console.error("Error parsing file:", error);
         toast.error("Failed to parse file. Use Excel format with Full Name, Phone columns.");
@@ -108,8 +156,10 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
   };
 
   const createInvitesAndSendSMS = async () => {
-    if (contacts.length === 0) {
-      toast.error("No contacts to process");
+    const validContacts = contacts.filter(c => c.isValid);
+    
+    if (validContacts.length === 0) {
+      toast.error("No valid contacts to process");
       return;
     }
 
@@ -117,8 +167,8 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
     const { data: auth } = await supabase.auth.getUser();
     
     try {
-      // Create invites for all contacts
-      const invitePromises = contacts.map(async (contact) => {
+      // Create invites only for valid contacts
+      const invitePromises = validContacts.map(async (contact) => {
         const { data, error } = await supabase
           .from("intake_invites")
           .insert({
@@ -227,13 +277,16 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
                 <X className="h-4 w-4 mr-2" />
                 Clear All
               </Button>
-              <Button onClick={createInvitesAndSendSMS} disabled={isSending}>
+              <Button 
+                onClick={createInvitesAndSendSMS} 
+                disabled={isSending || contacts.filter(c => c.isValid).length === 0}
+              >
                 {isSending ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
                   <Send className="h-4 w-4 mr-2" />
                 )}
-                Create Invites & Send SMS ({contacts.length})
+                Create Invites & Send SMS ({contacts.filter(c => c.isValid).length} valid)
               </Button>
             </>
           )}
@@ -247,15 +300,29 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
                   <TableHead className="w-8">#</TableHead>
                   <TableHead>Full Name</TableHead>
                   <TableHead>Phone</TableHead>
+                  <TableHead className="w-24">Status</TableHead>
                   <TableHead className="w-16"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {contacts.map((contact, index) => (
-                  <TableRow key={index}>
+                  <TableRow key={index} className={!contact.isValid ? "bg-destructive/10" : ""}>
                     <TableCell className="text-muted-foreground">{index + 1}</TableCell>
                     <TableCell className="font-medium">{contact.full_name}</TableCell>
                     <TableCell className="text-muted-foreground">{contact.phone}</TableCell>
+                    <TableCell>
+                      {contact.isValid ? (
+                        <span className="flex items-center gap-1 text-green-600 text-xs">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Valid
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-destructive text-xs" title={contact.validationError}>
+                          <AlertCircle className="h-3 w-3" />
+                          {contact.validationError || "Invalid"}
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"
