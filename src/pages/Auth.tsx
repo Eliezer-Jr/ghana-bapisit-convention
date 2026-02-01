@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseFunctions } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,7 +63,7 @@ const Auth = () => {
       }
 
       // Send OTP
-      const { data, error } = await supabase.functions.invoke('frogapi-otp-generate', {
+      const { data, error } = await supabaseFunctions.functions.invoke('frogapi-otp-generate', {
         body: { phoneNumber: validated.phoneNumber }
       });
 
@@ -120,7 +120,7 @@ const Auth = () => {
       }
 
       // Verify OTP for system login
-      const { data, error } = await supabase.functions.invoke('system-otp-verify', {
+      const { data, error } = await supabaseFunctions.functions.invoke('system-otp-verify', {
         body: { 
           phoneNumber, 
           otp,

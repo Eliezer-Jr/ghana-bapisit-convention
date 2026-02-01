@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseFunctions } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -88,7 +88,7 @@ export default function Apply() {
     setLoading(true);
 
     // Check if phone number is approved BEFORE sending OTP via backend function (bypasses RLS)
-    const { data: approvalResp, error: approvalErr } = await supabase.functions.invoke('check-approval', {
+    const { data: approvalResp, error: approvalErr } = await supabaseFunctions.functions.invoke('check-approval', {
       body: { phoneNumber: formattedPhone },
     });
 
@@ -146,7 +146,7 @@ export default function Apply() {
     console.log("Checking approval for phone:", formattedPhone);
 
     // Check if phone number is approved via backend function (bypasses RLS)
-    const { data: approvalResp, error: approvalErr } = await supabase.functions.invoke('check-approval', {
+    const { data: approvalResp, error: approvalErr } = await supabaseFunctions.functions.invoke('check-approval', {
       body: { phoneNumber: formattedPhone },
     });
 

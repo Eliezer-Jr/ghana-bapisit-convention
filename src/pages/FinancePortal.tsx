@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseFunctions } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,7 +40,7 @@ export default function FinancePortal() {
 
   const approveApplicantMutation = useMutation({
     mutationFn: async ({ phoneNumber, notes }: { phoneNumber: string; notes?: string }) => {
-      const { data, error } = await supabase.functions.invoke("approve-applicant", {
+      const { data, error } = await supabaseFunctions.functions.invoke("approve-applicant", {
         body: { phoneNumber, notes },
       });
 
@@ -65,7 +65,7 @@ export default function FinancePortal() {
       const results: { phone: string; success: boolean; error?: string }[] = [];
       for (const phone of phoneNumbers) {
         try {
-          const { data } = await supabase.functions.invoke("approve-applicant", {
+          const { data } = await supabaseFunctions.functions.invoke("approve-applicant", {
             body: { phoneNumber: phone.trim(), notes: "Bulk approved" },
           });
           results.push({ phone, success: !!data?.success, error: data?.error });

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseFunctions } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -59,7 +59,7 @@ export default function ApplyAuth() {
     setLoading(true);
 
     // Check if phone number is approved
-    const { data: approvalResp, error: approvalErr } = await supabase.functions.invoke('check-approval', {
+    const { data: approvalResp, error: approvalErr } = await supabaseFunctions.functions.invoke('check-approval', {
       body: { phoneNumber: formattedPhone },
     });
 
