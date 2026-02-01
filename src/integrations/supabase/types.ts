@@ -454,6 +454,9 @@ export type Database = {
           minister_phone: string | null
           revoked: boolean
           session_id: string
+          sms_message_id: string | null
+          sms_sent_at: string | null
+          sms_status: string | null
         }
         Insert: {
           created_at?: string
@@ -465,6 +468,9 @@ export type Database = {
           minister_phone?: string | null
           revoked?: boolean
           session_id: string
+          sms_message_id?: string | null
+          sms_sent_at?: string | null
+          sms_status?: string | null
         }
         Update: {
           created_at?: string
@@ -476,6 +482,9 @@ export type Database = {
           minister_phone?: string | null
           revoked?: boolean
           session_id?: string
+          sms_message_id?: string | null
+          sms_sent_at?: string | null
+          sms_status?: string | null
         }
         Relationships: [
           {
