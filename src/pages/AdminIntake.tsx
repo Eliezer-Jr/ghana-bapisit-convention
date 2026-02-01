@@ -32,6 +32,9 @@ type IntakeInvite = {
   expires_at: string | null;
   revoked: boolean;
   created_at: string;
+  sms_sent_at: string | null;
+  sms_status: string | null;
+  sms_message_id: string | null;
 };
 
 type IntakeSubmission = {
@@ -86,7 +89,7 @@ export default function AdminIntake() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("intake_invites")
-        .select("id, session_id, minister_full_name, minister_phone, minister_email, expires_at, revoked, created_at")
+        .select("id, session_id, minister_full_name, minister_phone, minister_email, expires_at, revoked, created_at, sms_sent_at, sms_status, sms_message_id")
         .eq("session_id", effectiveSessionId)
         .order("created_at", { ascending: false });
       if (error) throw error;

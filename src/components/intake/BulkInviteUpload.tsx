@@ -18,6 +18,8 @@ interface Props {
   onInvitesCreated: () => void;
 }
 
+const PRODUCTION_DOMAIN = "https://ghanabaptistministers.com";
+
 export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
   const [contacts, setContacts] = useState<MinisterContact[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -85,6 +87,20 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
     setContacts([]);
   };
 
+  const downloadTemplate = () => {
+    const wb = XLSX.utils.book_new();
+    const wsData = [
+      ["Full Name", "Phone"],
+      ["Rev. John Doe", "0241234567"],
+      ["Pastor Jane Smith", "+233201234567"],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws["!cols"] = [{ wch: 25 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, ws, "Ministers");
+    XLSX.writeFile(wb, "minister_intake_template.xlsx");
+    toast.success("Template downloaded");
+  };
+
   const createInvitesAndSendSMS = async () => {
     if (contacts.length === 0) {
       toast.error("No contacts to process");
@@ -92,7 +108,6 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
     }
 
     setIsSending(true);
-    const baseUrl = window.location.origin;
     const { data: auth } = await supabase.auth.getUser();
     
     try {
@@ -114,7 +129,7 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
           id: data.id,
           full_name: contact.full_name,
           phone: contact.phone,
-          link: `${baseUrl}/minister-intake/${data.id}`,
+          link: `${PRODUCTION_DOMAIN}/minister-intake/${data.id}`,
         };
       });
 
@@ -139,6 +154,17 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
         console.error("SMS Error:", smsError);
         toast.warning(`Invites created but SMS failed: ${smsError.message}`);
       } else {
+        // Update SMS status for all created invites
+        const updatePromises = createdInvites.map((invite) =>
+          supabase
+            .from("intake_invites")
+            .update({
+              sms_sent_at: new Date().toISOString(),
+              sms_status: "sent",
+            })
+            .eq("id", invite.id)
+        );
+        await Promise.all(updatePromises);
         toast.success(`Created ${createdInvites.length} invites and sent SMS`);
       }
 
@@ -165,7 +191,7 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -174,6 +200,13 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
             className="hidden"
             id="bulk-upload-input"
           />
+          <Button
+            variant="outline"
+            onClick={downloadTemplate}
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Download Template
+          </Button>
           <Button
             variant="outline"
             onClick={() => fileInputRef.current?.click()}

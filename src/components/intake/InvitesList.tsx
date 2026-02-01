@@ -17,7 +17,12 @@ type IntakeInvite = {
   expires_at: string | null;
   revoked: boolean;
   created_at: string;
+  sms_sent_at: string | null;
+  sms_status: string | null;
+  sms_message_id: string | null;
 };
+
+const PRODUCTION_DOMAIN = "https://ghanabaptistministers.com";
 
 interface Props {
   invites: IntakeInvite[];
@@ -30,7 +35,7 @@ export function InvitesList({ invites, isLoading, onInviteUpdated }: Props) {
   const [sendingId, setSendingId] = useState<string | null>(null);
 
   const getInviteLink = (inviteId: string) => {
-    return `${window.location.origin}/minister-intake/${inviteId}`;
+    return `${PRODUCTION_DOMAIN}/minister-intake/${inviteId}`;
   };
 
   const copyLink = async (inviteId: string) => {
@@ -53,7 +58,7 @@ export function InvitesList({ invites, isLoading, onInviteUpdated }: Props) {
       const name = invite.minister_full_name || "Minister";
       const message = `Dear ${name}, please update your minister information using this link: ${link} - GBC Ministers' Conference`;
 
-      const { error } = await supabaseFunctions.functions.invoke("frogapi-send-personalized", {
+      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-send-personalized", {
         body: {
           senderid: MESSAGING_CONFIG.SENDER_ID,
           destinations: [{
@@ -65,7 +70,20 @@ export function InvitesList({ invites, isLoading, onInviteUpdated }: Props) {
       });
 
       if (error) throw error;
+
+      // Update SMS status in database
+      const messageId = data?.messages?.[0]?.msgid || data?.msgid || null;
+      await supabase
+        .from("intake_invites")
+        .update({
+          sms_sent_at: new Date().toISOString(),
+          sms_status: "sent",
+          sms_message_id: messageId,
+        })
+        .eq("id", invite.id);
+
       toast.success(`SMS sent to ${invite.minister_phone}`);
+      onInviteUpdated();
     } catch (error: any) {
       console.error("SMS Error:", error);
       toast.error(`Failed to send SMS: ${error.message}`);
@@ -116,6 +134,7 @@ export function InvitesList({ invites, isLoading, onInviteUpdated }: Props) {
                   <TableHead>Minister</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>SMS Status</TableHead>
                   <TableHead>Expires</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -133,6 +152,17 @@ export function InvitesList({ invites, isLoading, onInviteUpdated }: Props) {
                       <Badge variant={invite.revoked ? "destructive" : "default"}>
                         {invite.revoked ? "Revoked" : "Active"}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {invite.sms_sent_at ? (
+                        <Badge variant="outline" className="text-green-600 border-green-600">
+                          Sent {new Date(invite.sms_sent_at).toLocaleDateString()}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          Not sent
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {invite.expires_at ? new Date(invite.expires_at).toLocaleString() : "—"}
