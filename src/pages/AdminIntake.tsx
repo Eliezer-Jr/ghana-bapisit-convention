@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Eye, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { SubmissionReviewDialog } from "@/components/intake/SubmissionReviewDialog";
 import { BulkInviteUpload } from "@/components/intake/BulkInviteUpload";
-import { InvitesList } from "@/components/intake/InvitesList";
+import { GroupedInvitesList } from "@/components/intake/GroupedInvitesList";
+import { GroupedSubmissionsList } from "@/components/intake/GroupedSubmissionsList";
+import { GroupedSessionsList } from "@/components/intake/GroupedSessionsList";
 import { SingleInviteForm } from "@/components/intake/SingleInviteForm";
 
 type IntakeSession = {
@@ -62,7 +62,6 @@ export default function AdminIntake() {
   const [newEnd, setNewEnd] = useState("");
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
-  // Review dialog state
   const [reviewSubmission, setReviewSubmission] = useState<IntakeSubmission | null>(null);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
 
@@ -212,57 +211,13 @@ export default function AdminIntake() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Sessions</CardTitle>
-              <CardDescription>Select a session to manage invites and submissions.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {sessionsLoading ? (
-                <div className="text-sm text-muted-foreground">Loading…</div>
-              ) : sessions?.length === 0 ? (
-                <div className="text-sm text-muted-foreground text-center py-4">No sessions yet. Create one above.</div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Window</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(sessions || []).map((s) => (
-                      <TableRow key={s.id} className={s.id === effectiveSessionId ? "bg-muted/50" : ""}>
-                        <TableCell>
-                          <button
-                            className="text-left font-medium hover:underline"
-                            onClick={() => setActiveSessionId(s.id)}
-                          >
-                            {s.title}
-                          </button>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={isSessionOpen(s) ? "default" : "secondary"}>
-                            {isSessionOpen(s) ? "Open" : "Closed"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(s.starts_at).toLocaleString()} → {new Date(s.ends_at).toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="outline" size="sm" onClick={() => toggleCloseSession(s)}>
-                            {s.manually_closed ? "Reopen" : "Close now"}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+          <GroupedSessionsList
+            sessions={sessions || []}
+            isLoading={sessionsLoading}
+            activeSessionId={effectiveSessionId}
+            onSelectSession={setActiveSessionId}
+            onToggleClose={toggleCloseSession}
+          />
         </TabsContent>
 
         <TabsContent value="invites" className="space-y-4">
@@ -279,7 +234,7 @@ export default function AdminIntake() {
                   onInvitesCreated={handleInvitesChanged}
                 />
               </div>
-              <InvitesList
+              <GroupedInvitesList
                 invites={invites || []}
                 isLoading={invitesLoading}
                 onInviteUpdated={handleInvitesChanged}
@@ -289,57 +244,11 @@ export default function AdminIntake() {
         </TabsContent>
 
         <TabsContent value="submissions" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Submissions</CardTitle>
-              <CardDescription>Review and approve submissions to publish to the official minister record.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {submissionsLoading ? (
-                <div className="text-sm text-muted-foreground">Loading…</div>
-              ) : submissions?.length === 0 ? (
-                <div className="text-sm text-muted-foreground text-center py-4">No submissions yet.</div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Submitted</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(submissions || []).map((s) => (
-                      <TableRow key={s.id}>
-                        <TableCell>
-                          <Badge variant={s.status === "approved" ? "default" : s.status === "rejected" ? "destructive" : "secondary"}>
-                            {s.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">{s.payload?.full_name || "—"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{s.payload?.phone || "—"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {s.submitted_at ? new Date(s.submitted_at).toLocaleString() : "—"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openReviewDialog(s)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Review
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+          <GroupedSubmissionsList
+            submissions={submissions || []}
+            isLoading={submissionsLoading}
+            onReview={openReviewDialog}
+          />
         </TabsContent>
       </Tabs>
 
