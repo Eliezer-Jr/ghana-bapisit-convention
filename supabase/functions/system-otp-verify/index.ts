@@ -19,7 +19,6 @@ serve(async (req) => {
       throw new Error("Phone number and OTP are required");
     }
 
-    // Allow skipping fullName requirement for flows like minister intake where name is collected later
     if (isSignup && !fullName && !skipNameRequirement) {
       throw new Error("Full name is required for signup");
     }
@@ -44,25 +43,17 @@ serve(async (req) => {
 
     const otpCode = String(otp).trim();
     
-    // Format phone number for Ghana (E.164 format: +233XXXXXXXXX, total 13 chars)
-    let formattedNumber = phoneNumber.trim();
+    // Format phone number for Ghana (E.164 format: +233XXXXXXXXX)
+    let formattedNumber = phoneNumber.trim().replace(/[\s-]/g, '');
     
-    // Remove any spaces or dashes
-    formattedNumber = formattedNumber.replace(/[\s-]/g, '');
-    
-    // Convert to E.164 format
     if (formattedNumber.startsWith('0')) {
-      // Ghana local format: 0XXXXXXXXX -> +233XXXXXXXXX
       formattedNumber = '+233' + formattedNumber.substring(1);
     } else if (formattedNumber.startsWith('233')) {
-      // Already has country code but missing +
       formattedNumber = '+' + formattedNumber;
     } else if (!formattedNumber.startsWith('+233')) {
-      // Invalid format
       throw new Error("Phone number must start with 0 or 233");
     }
     
-    // Validate E.164 format: +233XXXXXXXXX (13 characters total)
     if (!formattedNumber.match(/^\+233\d{9}$/)) {
       console.error("Invalid phone format:", formattedNumber);
       throw new Error("Invalid phone number format (E.164 required)");
@@ -70,11 +61,6 @@ serve(async (req) => {
     
     console.log("Formatted phone number:", formattedNumber);
     
-    const verifyPayload = {
-      otpcode: otpCode,
-      number: formattedNumber.substring(1) // FrogAPI expects without + (233XXXXXXXXX)
-    };
-
     // Verify OTP with FrogAPI
     const verifyResponse = await fetch('https://frogapi.wigal.com.gh/api/v3/sms/otp/verify', {
       method: 'POST',
@@ -83,7 +69,10 @@ serve(async (req) => {
         'API-KEY': apiKey,
         'USERNAME': username
       },
-      body: JSON.stringify(verifyPayload)
+      body: JSON.stringify({
+        otpcode: otpCode,
+        number: formattedNumber.substring(1)
+      })
     });
 
     const verifyData = await verifyResponse.json();
@@ -104,9 +93,9 @@ serve(async (req) => {
       throw new Error(verifyData.message || "OTP verification failed");
     }
 
-    console.log("OTP verified successfully for system user");
+    console.log("OTP verified successfully");
 
-    // Initialize Supabase admin client pointing to self-hosted instance
+    // Initialize Supabase admin client
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
@@ -114,98 +103,120 @@ serve(async (req) => {
       }
     });
 
-    // Generate a deterministic email for phone-based auth
     const email = `${phoneNumber}@system.local`;
     const loginPassword = `${phoneNumber}_secure_${Date.now()}`;
-    
-    // First, check if user already exists with this phone number
-    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (listError) {
-      console.error("List users error:", listError);
-      throw new Error("Failed to check existing users");
-    }
-
-    // Try multiple matching strategies to find existing user
-    const existingUser = users.find(u => {
-      return u.phone === phoneNumber || 
-        u.phone === formattedNumber ||
-        u.email === email ||
-        u.user_metadata?.phone_number === phoneNumber ||
-        (u.phone && u.phone.endsWith(phoneNumber.substring(1))) ||
-        (u.email && u.email.startsWith(phoneNumber + '@'));
-    });
+    const displayName = fullName || "Minister (pending)";
 
     let userId: string;
+    let userExists = false;
 
-    if (isSignup && !existingUser) {
-      console.log("Creating user with phone:", formattedNumber, "email:", email);
-      
-      // Create new user account with password (use E.164 formatted phone)
-      const displayName = fullName || "Minister (pending)";
-      const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        phone: formattedNumber, // Must be E.164: +233XXXXXXXXX
-        password: loginPassword,
-        email_confirm: true,
-        phone_confirm: true,
-        user_metadata: {
-          full_name: displayName,
-          phone_number: phoneNumber // Keep original format in metadata for display
-        }
-      });
-
-      if (signUpError) {
-        console.error("Signup error:", signUpError);
-        throw new Error(signUpError.message || "Failed to create user account");
-      }
-
-      console.log("User created successfully:", signUpData.user?.id);
-      userId = signUpData.user!.id;
-    } else if (existingUser) {
-      // User exists - proceed with login flow regardless of isSignup flag
-      console.log("User found, updating password for login:", existingUser.id);
-      userId = existingUser.id;
-
-      // Update user password to enable sign in
-      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-        existingUser.id,
-        { password: loginPassword }
-      );
-
-      if (updateError) {
-        console.error("Failed to update password:", updateError);
-        throw new Error("Failed to generate login session");
-      }
-    } else {
-      // No user found and not a signup request
-      console.error("No matching user found for login request");
-      
-      // Check if this might be an applicant-only account
-      const isApplicantAccount = users.some(u => 
-        u.email?.includes('@otp.gbc.local') && 
-        u.user_metadata?.phone_number === phoneNumber
-      );
-      
-      if (isApplicantAccount) {
-        throw new Error("This phone number is registered for applications only. Please use the 'Apply' page to access your application, or contact an administrator to get system access.");
-      }
-      
-      throw new Error(`No system account found with phone number ${phoneNumber}. Please contact an administrator to create your account, or use 'Sign Up' if you're creating a new account.`);
-    }
-
-    // Now sign in the user and get a real session
-    console.log("Signing in user to get session...");
+    // Try to create user - if they exist, we'll get an error
+    console.log("Attempting to create/find user with email:", email);
     
-    // Use a regular client for sign-in (not admin) to get proper session
-    const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
+    const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      phone: formattedNumber,
+      password: loginPassword,
+      email_confirm: true,
+      phone_confirm: true,
+      user_metadata: {
+        full_name: displayName,
+        phone_number: phoneNumber
       }
     });
 
-    const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
+    if (createError) {
+      // Check if user already exists
+      const errorMessage = createError.message?.toLowerCase() || '';
+      if (errorMessage.includes('already') || errorMessage.includes('exists') || errorMessage.includes('registered')) {
+        console.log("User already exists, will update password");
+        userExists = true;
+      } else {
+        console.error("Create user error:", createError);
+        throw new Error(createError.message || "Failed to create user account");
+      }
+    } else {
+      console.log("User created successfully:", createData.user?.id);
+      userId = createData.user!.id;
+    }
+
+    // If user exists, we need to find them and update password
+    if (userExists) {
+      if (!isSignup) {
+        // For login, this is expected - user exists
+        console.log("Login flow: User exists, fetching user list to find them");
+      } else {
+        // For signup, user already exists - treat as login
+        console.log("Signup flow: User already exists, switching to login");
+      }
+
+      // Since we can't list users, try signing in with a temporary approach
+      // First, let's try to get the user by attempting various lookups
+      
+      // Try to sign in with a wrong password to verify user exists and get error info
+      const { error: testError } = await supabaseAdmin.auth.signInWithPassword({
+        email,
+        password: 'wrong_password_test'
+      });
+
+      if (testError) {
+        const testErrorMsg = testError.message?.toLowerCase() || '';
+        if (testErrorMsg.includes('invalid') || testErrorMsg.includes('credentials')) {
+          // User exists! Now we need to update their password
+          // We'll use the magic link approach or admin update
+          
+          // Try to update user by email using admin API
+          // First get all users (if we have permission) or use alternative method
+          try {
+            const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+            
+            if (listError) {
+              console.error("Cannot list users:", listError.message);
+              // Alternative: Use signInWithOtp or other method
+              throw new Error("Cannot verify existing user. Please contact administrator.");
+            }
+
+            const existingUser = users.find(u => 
+              u.email === email || 
+              u.phone === formattedNumber ||
+              u.user_metadata?.phone_number === phoneNumber
+            );
+
+            if (!existingUser) {
+              throw new Error("User account not found. Please try signing up.");
+            }
+
+            userId = existingUser.id;
+            
+            // Update password
+            const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+              userId,
+              { password: loginPassword }
+            );
+
+            if (updateError) {
+              console.error("Failed to update password:", updateError);
+              throw new Error("Failed to prepare login session");
+            }
+            
+            console.log("Password updated for existing user:", userId);
+          } catch (innerError) {
+            console.error("Error finding user:", innerError);
+            throw innerError;
+          }
+        } else if (testErrorMsg.includes('not found') || testErrorMsg.includes('no user')) {
+          throw new Error("No account found. Please sign up first.");
+        } else {
+          console.error("Unexpected auth error:", testError);
+          throw new Error("Authentication error: " + testError.message);
+        }
+      }
+    }
+
+    // Now sign in to get the session
+    console.log("Signing in to get session...");
+    
+    const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
       email,
       password: loginPassword
     });
@@ -219,13 +230,13 @@ serve(async (req) => {
       throw new Error("No session returned from sign in");
     }
 
-    console.log("Session created successfully for user:", userId);
+    console.log("Session created successfully");
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: isSignup ? "Account created successfully." : "Login successful. You will be redirected shortly.",
-        userId: userId,
+        message: isSignup && !userExists ? "Account created successfully." : "Login successful.",
+        userId: signInData.user?.id,
         session: {
           access_token: signInData.session.access_token,
           refresh_token: signInData.session.refresh_token,
