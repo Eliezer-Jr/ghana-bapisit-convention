@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,7 +41,7 @@ serve(async (req) => {
     const username = Deno.env.get('FROGAPI_USERNAME');
     
     // Use self-hosted Supabase for auth operations
-    const supabaseUrl = Deno.env.get('SELF_HOSTED_DB_URL')!;
+    let supabaseUrl = Deno.env.get('SELF_HOSTED_DB_URL')!;
     const supabaseServiceKey = Deno.env.get('SELF_HOSTED_SERVICE_ROLE_KEY')!;
 
     if (!apiKey || !username) {
@@ -52,8 +52,10 @@ serve(async (req) => {
       throw new Error("Self-hosted Supabase credentials not configured");
     }
 
+    // Ensure URL doesn't have trailing slash
+    supabaseUrl = supabaseUrl.replace(/\/$/, '');
+
     // Preflight: ensure the provided key is actually a service_role JWT for the *self-hosted* instance.
-    // If this is the anon key or a key from a different instance, GoTrue returns `403 not_admin`.
     const keyPayload = decodeJwtPayload(supabaseServiceKey);
     const keyRole = typeof keyPayload?.role === 'string' ? (keyPayload.role as string) : undefined;
     if (keyRole && keyRole !== 'service_role') {
@@ -66,6 +68,17 @@ serve(async (req) => {
     console.log("Verifying OTP for system login:", phoneNumber);
     console.log("Using self-hosted Supabase URL:", supabaseUrl);
     console.log("Self-hosted key role claim:", keyRole ?? 'unknown');
+
+    // Quick connectivity check to the self-hosted auth endpoint
+    try {
+      const healthCheck = await fetch(`${supabaseUrl}/auth/v1/health`, {
+        headers: { 'apikey': supabaseServiceKey }
+      });
+      const healthText = await healthCheck.text();
+      console.log("Auth health check status:", healthCheck.status, "body:", healthText.substring(0, 200));
+    } catch (healthErr) {
+      console.error("Auth health check failed:", healthErr);
+    }
 
     const otpCode = String(otp).trim();
     
