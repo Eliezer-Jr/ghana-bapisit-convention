@@ -22,7 +22,13 @@ type IntakeInvite = {
   sms_message_id: string | null;
 };
 
-const PRODUCTION_DOMAIN = "https://ghanabaptistministers.com";
+// Use localhost for local testing
+const getBaseDomain = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return "https://ghanabaptistministers.com";
+};
 
 interface Props {
   invites: IntakeInvite[];
@@ -35,7 +41,7 @@ export function InvitesList({ invites, isLoading, onInviteUpdated }: Props) {
   const [sendingId, setSendingId] = useState<string | null>(null);
 
   const getInviteLink = (inviteId: string) => {
-    return `${PRODUCTION_DOMAIN}/minister-intake/${inviteId}`;
+    return `${getBaseDomain()}/minister-intake/${inviteId}`;
   };
 
   const copyLink = async (inviteId: string) => {
@@ -154,15 +160,27 @@ export function InvitesList({ invites, isLoading, onInviteUpdated }: Props) {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {invite.sms_sent_at ? (
-                        <Badge variant="outline" className="text-green-600 border-green-600">
-                          Sent {new Date(invite.sms_sent_at).toLocaleDateString()}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-muted-foreground">
-                          Not sent
-                        </Badge>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {invite.sms_sent_at ? (
+                          <Badge variant="outline" className="text-green-600 border-green-600">
+                            Sent {new Date(invite.sms_sent_at).toLocaleDateString()}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground">
+                            Not sent
+                          </Badge>
+                        )}
+                        {invite.sms_status && (
+                          <span className="text-xs text-muted-foreground">
+                            Status: {invite.sms_status}
+                          </span>
+                        )}
+                        {invite.sms_message_id && (
+                          <span className="text-xs text-muted-foreground font-mono truncate max-w-[120px]" title={invite.sms_message_id}>
+                            ID: {invite.sms_message_id.slice(0, 10)}...
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {invite.expires_at ? new Date(invite.expires_at).toLocaleString() : "—"}
