@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { ArrowLeft, CheckCircle2, Clock, FileText, Loader2, Lock, Save, Send, ShieldCheck } from "lucide-react";
 import logoGbcc from "@/assets/logo-gbcc.png";
+import IntakeFormTabs from "@/components/intake/IntakeFormTabs";
 
 type IntakeInvite = {
   id: string;
@@ -41,7 +43,6 @@ function formatGhanaPhone(input: string) {
   const digits = input.replace(/\D/g, "");
   if (digits.startsWith("233")) return `+${digits}`;
   if (digits.startsWith("0")) return `+233${digits.slice(1)}`;
-  // assume user typed 9 digits
   if (digits.length === 9) return `+233${digits}`;
   return input.startsWith("+") ? input : `+${input}`;
 }
@@ -60,31 +61,9 @@ export default function MinisterIntake() {
   const [invite, setInvite] = useState<IntakeInvite | null>(null);
   const [session, setSession] = useState<IntakeSession | null>(null);
   const [submission, setSubmission] = useState<IntakeSubmission | null>(null);
-
-  // Simple MVP payload fields
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [association, setAssociation] = useState("");
-  const [sector, setSector] = useState("");
-  const [fellowship, setFellowship] = useState("");
-  const [location, setLocation] = useState("");
-  const [role, setRole] = useState("");
-  const [notes, setNotes] = useState("");
-
-  const payload = useMemo(
-    () => ({
-      full_name: fullName,
-      phone,
-      email,
-      association,
-      sector,
-      fellowship,
-      location,
-      role,
-      notes,
-    }),
-    [association, email, fellowship, fullName, location, notes, phone, role, sector],
-  );
+  const [payload, setPayload] = useState<Record<string, any>>({});
+  const [saving, setSaving] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const loadInviteSessionAndMaybeSubmission = async () => {
     if (!inviteId) {
@@ -96,7 +75,6 @@ export default function MinisterIntake() {
     setLoading(true);
     const { data: currentSession } = await supabase.auth.getSession();
 
-    // If logged out, we can't read the invite yet (RLS requires auth). We'll show OTP gate.
     if (!currentSession.session) {
       setLoading(false);
       setAuthStep("send");
@@ -125,9 +103,9 @@ export default function MinisterIntake() {
     }
 
     setInvite(inviteRow as IntakeInvite);
+    
+    // Pre-fill phone from invite
     if (inviteRow.minister_phone) setPhone(inviteRow.minister_phone);
-    if (inviteRow.minister_full_name) setFullName(inviteRow.minister_full_name);
-    if (inviteRow.minister_email) setEmail(inviteRow.minister_email);
 
     const { data: sessionRow, error: sessionErr } = await supabase
       .from("intake_sessions")
@@ -144,7 +122,6 @@ export default function MinisterIntake() {
 
     setSession((sessionRow as IntakeSession) || null);
 
-    // Load or create submission draft
     const userId = currentSession.session.user.id;
     const { data: subRow } = await supabase
       .from("intake_submissions")
@@ -156,15 +133,13 @@ export default function MinisterIntake() {
     if (subRow) {
       setSubmission(subRow as IntakeSubmission);
       const p = (subRow as any).payload || {};
-      setFullName(p.full_name ?? inviteRow.minister_full_name ?? "");
-      setEmail(p.email ?? inviteRow.minister_email ?? "");
-      setAssociation(p.association ?? "");
-      setSector(p.sector ?? "");
-      setFellowship(p.fellowship ?? "");
-      setLocation(p.location ?? "");
-      setRole(p.role ?? "");
-      setNotes(p.notes ?? "");
-      setPhone(p.phone ?? inviteRow.minister_phone ?? phone);
+      // Merge invite data with saved payload
+      setPayload({
+        ...p,
+        full_name: p.full_name || inviteRow.minister_full_name || "",
+        email: p.email || inviteRow.minister_email || "",
+        phone: p.phone || inviteRow.minister_phone || "",
+      });
     } else {
       const { data: created, error: createErr } = await supabase
         .from("intake_submissions")
@@ -173,10 +148,15 @@ export default function MinisterIntake() {
           session_id: inviteRow.session_id,
           user_id: userId,
           status: "draft",
-          payload: {},
+          payload: {
+            full_name: inviteRow.minister_full_name || "",
+            email: inviteRow.minister_email || "",
+            phone: inviteRow.minister_phone || "",
+          },
         })
         .select("id, invite_id, session_id, user_id, status, payload")
         .single();
+      
       if (createErr) {
         console.error(createErr);
         toast.error("Unable to start your form. The intake window might be closed.");
@@ -184,6 +164,11 @@ export default function MinisterIntake() {
         return;
       }
       setSubmission(created as IntakeSubmission);
+      setPayload({
+        full_name: inviteRow.minister_full_name || "",
+        email: inviteRow.minister_email || "",
+        phone: inviteRow.minister_phone || "",
+      });
     }
 
     setAuthStep("form");
@@ -213,7 +198,7 @@ export default function MinisterIntake() {
     }
     setPhone(formatted);
     setAuthStep("verify");
-    toast.success("OTP sent");
+    toast.success("OTP sent to your phone");
   };
 
   const handleVerifyOtp = async () => {
@@ -226,9 +211,9 @@ export default function MinisterIntake() {
       body: {
         phoneNumber: phone,
         otp,
-        fullName: fullName || invite?.minister_full_name || undefined,
+        fullName: invite?.minister_full_name || undefined,
         isSignup: true,
-        skipNameRequirement: true, // Minister intake collects name in the form after auth
+        skipNameRequirement: true,
       },
     });
     if (error || !data?.success) {
@@ -237,7 +222,6 @@ export default function MinisterIntake() {
       return;
     }
 
-    // Establish authenticated session
     if (data.email && data.password) {
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: data.email,
@@ -260,167 +244,310 @@ export default function MinisterIntake() {
     return session.manually_closed || now < new Date(session.starts_at).getTime() || now > new Date(session.ends_at).getTime();
   }, [session]);
 
+  const isSubmitted = submission?.status === "submitted" || submission?.status === "approved";
+
   const saveDraft = async () => {
     if (!submission) return;
+    setSaving(true);
     const { error } = await supabase
       .from("intake_submissions")
       .update({ payload })
       .eq("id", submission.id);
+    setSaving(false);
     if (error) {
       console.error(error);
       toast.error("Unable to save (session may be closed)");
       return;
     }
-    toast.success("Draft saved");
+    toast.success("Draft saved successfully!");
   };
 
   const submit = async () => {
     if (!submission) return;
+    
+    // Basic validation
+    if (!payload.full_name?.trim()) {
+      toast.error("Full name is required");
+      return;
+    }
+    if (!payload.role?.trim()) {
+      toast.error("Role/Position is required");
+      return;
+    }
+
+    setSubmitting(true);
     const { error } = await supabase
       .from("intake_submissions")
       .update({ payload, status: "submitted", submitted_at: new Date().toISOString() })
       .eq("id", submission.id);
+    setSubmitting(false);
     if (error) {
       console.error(error);
       toast.error("Unable to submit (session may be closed)");
       return;
     }
-    toast.success("Submitted! An administrator will review your information.");
+    setSubmission({ ...submission, status: "submitted" });
+    toast.success("Submitted successfully! An administrator will review your information.");
+  };
+
+  // Format session dates
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4 flex items-center justify-center">
-      <div className="w-full max-w-2xl">
-        <Card className="border-2 shadow-xl">
-          <CardHeader className="space-y-3">
-            <div className="flex items-center gap-3">
-              <img src={logoGbcc} alt="GBCC Logo" className="h-12 w-12 object-contain" />
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5">
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center gap-4 px-4">
+          <img src={logoGbcc} alt="GBCC Logo" className="h-10 w-10 object-contain" />
+          <div className="flex-1">
+            <h1 className="font-semibold text-lg">Ghana Baptist Convention</h1>
+            <p className="text-xs text-muted-foreground">Minister Information Intake</p>
+          </div>
+          {session && (
+            <Badge variant="outline" className="hidden sm:flex gap-1">
+              <Clock className="h-3 w-3" />
+              {formatDate(session.ends_at)}
+            </Badge>
+          )}
+        </div>
+      </header>
+
+      <main className="container max-w-4xl px-4 py-8">
+        {loading ? (
+          <Card className="border-2">
+            <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-muted-foreground">Loading your intake form...</p>
+            </CardContent>
+          </Card>
+        ) : authStep !== "form" ? (
+          /* OTP Verification */
+          <Card className="border-2 shadow-xl max-w-md mx-auto">
+            <CardHeader className="text-center space-y-4">
+              <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
+                <ShieldCheck className="h-12 w-12 text-primary" />
+              </div>
               <div>
-                <CardTitle className="text-xl">Minister Information Intake</CardTitle>
-                <CardDescription>
-                  {session?.title || "Please verify to continue"}
+                <CardTitle className="text-2xl">Verify Your Identity</CardTitle>
+                <CardDescription className="mt-2">
+                  Enter your phone number to receive a verification code
                 </CardDescription>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {loading ? (
-              <div className="text-sm text-muted-foreground">Loading…</div>
-            ) : authStep !== "form" ? (
-              <div className="space-y-4">
-                <div className="rounded-lg border bg-card p-4">
-                  <p className="text-sm text-muted-foreground">
-                    Verify your phone number to access the form.
-                  </p>
-                </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="0241234567 or +233241234567"
+                  disabled={otpSending || otpVerifying}
+                  className="text-center text-lg"
+                />
+              </div>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+233241234567"
-                    disabled={otpSending || otpVerifying}
-                  />
+              {authStep === "verify" && (
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Enter the 6-digit code sent to <span className="font-medium">{phone}</span>
+                    </p>
+                  </div>
+                  <div className="flex justify-center">
+                    <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
                 </div>
+              )}
 
-                {authStep === "verify" && (
-                  <div className="space-y-2">
-                    <Label>OTP</Label>
-                    <div className="flex justify-center py-2">
-                      <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-                        <InputOTPGroup>
-                          <InputOTPSlot index={0} />
-                          <InputOTPSlot index={1} />
-                          <InputOTPSlot index={2} />
-                          <InputOTPSlot index={3} />
-                          <InputOTPSlot index={4} />
-                          <InputOTPSlot index={5} />
-                        </InputOTPGroup>
-                      </InputOTP>
+              <div className="flex gap-3">
+                {authStep === "send" ? (
+                  <Button className="flex-1" onClick={handleSendOtp} disabled={otpSending} size="lg">
+                    {otpSending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Send OTP
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" onClick={() => setAuthStep("send")} className="flex-1">
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back
+                    </Button>
+                    <Button 
+                      onClick={handleVerifyOtp} 
+                      disabled={otpVerifying || otp.length !== 6}
+                      className="flex-1"
+                      size="lg"
+                    >
+                      {otpVerifying ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Verifying...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Verify
+                        </>
+                      )}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          /* Main Form */
+          <div className="space-y-6">
+            {/* Session Info Card */}
+            <Card className="border-2">
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-8 w-8 text-primary" />
+                    <div>
+                      <CardTitle>{session?.title || "Minister Intake Form"}</CardTitle>
+                      <CardDescription>
+                        Please fill in your information accurately
+                      </CardDescription>
                     </div>
                   </div>
-                )}
-
-                <div className="flex gap-2">
-                  {authStep === "send" ? (
-                    <Button className="flex-1" onClick={handleSendOtp} disabled={otpSending}>
-                      {otpSending ? "Sending…" : "Send OTP"}
-                    </Button>
+                  {isSubmitted ? (
+                    <Badge className="bg-green-500 hover:bg-green-600">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      Submitted
+                    </Badge>
+                  ) : sessionClosed ? (
+                    <Badge variant="secondary">
+                      <Lock className="h-3 w-3 mr-1" />
+                      Closed
+                    </Badge>
                   ) : (
-                    <>
-                      <Button variant="outline" className="flex-1" onClick={() => setAuthStep("send")}>
-                        Back
-                      </Button>
-                      <Button className="flex-1" onClick={handleVerifyOtp} disabled={otpVerifying || otp.length !== 6}>
-                        {otpVerifying ? "Verifying…" : "Verify"}
-                      </Button>
-                    </>
+                    <Badge variant="outline">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Open
+                    </Badge>
                   )}
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-5">
-                {sessionClosed && (
-                  <div className="rounded-lg border bg-muted/30 p-4">
-                    <p className="text-sm text-muted-foreground">This intake session is currently closed.</p>
-                  </div>
-                )}
+              </CardHeader>
+            </Card>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="grid gap-2">
-                    <Label>Full Name</Label>
-                    <Input value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={sessionClosed} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Phone</Label>
-                    <Input value={phone} onChange={(e) => setPhone(e.target.value)} disabled />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Email</Label>
-                    <Input value={email} onChange={(e) => setEmail(e.target.value)} disabled={sessionClosed} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Role / Position</Label>
-                    <Input value={role} onChange={(e) => setRole(e.target.value)} disabled={sessionClosed} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Association</Label>
-                    <Input value={association} onChange={(e) => setAssociation(e.target.value)} disabled={sessionClosed} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Sector</Label>
-                    <Input value={sector} onChange={(e) => setSector(e.target.value)} disabled={sessionClosed} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Fellowship</Label>
-                    <Input value={fellowship} onChange={(e) => setFellowship(e.target.value)} disabled={sessionClosed} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Location</Label>
-                    <Input value={location} onChange={(e) => setLocation(e.target.value)} disabled={sessionClosed} />
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label>Notes (optional)</Label>
-                  <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} disabled={sessionClosed} />
-                </div>
-
-                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                  <Button variant="outline" onClick={saveDraft} disabled={sessionClosed}>
-                    Save Draft
-                  </Button>
-                  <Button onClick={submit} disabled={sessionClosed}>
-                    Submit for Review
-                  </Button>
-                </div>
-              </div>
+            {/* Closed Session Warning */}
+            {sessionClosed && !isSubmitted && (
+              <Card className="border-destructive/50 bg-destructive/5">
+                <CardContent className="flex items-center gap-3 py-4">
+                  <Lock className="h-5 w-5 text-destructive" />
+                  <p className="text-sm text-destructive">
+                    This intake session is currently closed. You can view your information but cannot make changes.
+                  </p>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
-      </div>
+
+            {/* Form Tabs */}
+            <Card className="border-2">
+              <CardContent className="pt-6">
+                <IntakeFormTabs
+                  payload={payload}
+                  onChange={setPayload}
+                  disabled={sessionClosed || isSubmitted}
+                  submissionId={submission?.id}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Action Buttons */}
+            {!isSubmitted && !sessionClosed && (
+              <Card className="border-2 sticky bottom-4 bg-background/95 backdrop-blur shadow-lg">
+                <CardContent className="flex flex-col-reverse sm:flex-row gap-3 py-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={saveDraft} 
+                    disabled={saving || sessionClosed}
+                    className="flex-1"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Draft
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    onClick={submit} 
+                    disabled={submitting || sessionClosed}
+                    className="flex-1"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Submit for Review
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Submitted Confirmation */}
+            {isSubmitted && (
+              <Card className="border-green-500/50 bg-green-500/5">
+                <CardContent className="flex flex-col items-center gap-4 py-8 text-center">
+                  <div className="bg-green-500/10 p-4 rounded-full">
+                    <CheckCircle2 className="h-12 w-12 text-green-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">Form Submitted Successfully!</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      An administrator will review your information. You will be notified of any updates.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t mt-auto py-4">
+        <div className="container text-center text-sm text-muted-foreground">
+          © {new Date().getFullYear()} Ghana Baptist Convention. All rights reserved.
+        </div>
+      </footer>
     </div>
   );
 }
