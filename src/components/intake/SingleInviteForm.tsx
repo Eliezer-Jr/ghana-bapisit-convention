@@ -61,7 +61,7 @@ export function SingleInviteForm({ sessionId, isSessionOpen, onInviteCreated }: 
 
       if (error) throw error;
 
-      const link = `${window.location.origin}/minister-intake/${data.id}`;
+      const link = `https://ghanabaptistministers.com/minister-intake/${data.id}`;
       
       // Copy to clipboard
       await navigator.clipboard.writeText(link);

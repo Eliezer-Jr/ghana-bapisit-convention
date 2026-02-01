@@ -22,13 +22,7 @@ type IntakeInvite = {
   sms_message_id: string | null;
 };
 
-// Use localhost for local testing
-const getBaseDomain = () => {
-  if (typeof window !== 'undefined') {
-    return window.location.origin;
-  }
-  return "https://ghanabaptistministers.com";
-};
+const BASE_DOMAIN = "https://ghanabaptistministers.com";
 
 interface Props {
   invites: IntakeInvite[];
@@ -41,7 +35,7 @@ export function InvitesList({ invites, isLoading, onInviteUpdated }: Props) {
   const [sendingId, setSendingId] = useState<string | null>(null);
 
   const getInviteLink = (inviteId: string) => {
-    return `${getBaseDomain()}/minister-intake/${inviteId}`;
+    return `${BASE_DOMAIN}/minister-intake/${inviteId}`;
   };
 
   const copyLink = async (inviteId: string) => {
