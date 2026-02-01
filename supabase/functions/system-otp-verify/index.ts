@@ -7,6 +7,62 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function fetchJsonSafely<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, options);
+  const contentType = res.headers.get('content-type') ?? '';
+  const text = await res.text();
+
+  // Helpful debug context without leaking secrets
+  console.log('HTTP', res.status, url);
+  console.log('Content-Type:', contentType || 'missing');
+  console.log('Body preview:', text.substring(0, 300));
+
+  if (!text) {
+    throw new Error(`Empty response body from auth server (status ${res.status}).`);
+  }
+
+  const looksJson = text.trim().startsWith('{') || text.trim().startsWith('[');
+  if (!contentType.includes('application/json') && !looksJson) {
+    throw new Error(
+      `Expected JSON but got ${contentType || 'unknown content-type'} (status ${res.status}). ` +
+        `This usually indicates a proxy/Kong config issue, upstream crash, or HTML error page.`
+    );
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch (e) {
+    throw new Error(`Failed to parse JSON from auth server (status ${res.status}): ${(e as Error).message}`);
+  }
+}
+
+type PasswordGrantResponse = {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  expires_at?: number;
+  refresh_token: string;
+  user: unknown;
+};
+
+async function signInWithPasswordViaRest(params: {
+  supabaseUrl: string;
+  supabaseServiceKey: string;
+  email: string;
+  password: string;
+}): Promise<PasswordGrantResponse> {
+  const url = `${params.supabaseUrl}/auth/v1/token?grant_type=password`;
+  return await fetchJsonSafely<PasswordGrantResponse>(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: params.supabaseServiceKey,
+      Authorization: `Bearer ${params.supabaseServiceKey}`,
+    },
+    body: JSON.stringify({ email: params.email, password: params.password }),
+  });
+}
+
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const parts = token.split('.');
@@ -193,13 +249,20 @@ serve(async (req) => {
       // First, let's try to get the user by attempting various lookups
       
       // Try to sign in with a wrong password to verify user exists and get error info
-      const { error: testError } = await supabaseAdmin.auth.signInWithPassword({
-        email,
-        password: 'wrong_password_test'
-      });
+       let testError: Error | null = null;
+       try {
+         await signInWithPasswordViaRest({
+           supabaseUrl,
+           supabaseServiceKey,
+           email,
+           password: 'wrong_password_test',
+         });
+       } catch (e) {
+         testError = e as Error;
+       }
 
-      if (testError) {
-        const testErrorMsg = testError.message?.toLowerCase() || '';
+       if (testError) {
+         const testErrorMsg = testError.message?.toLowerCase() || '';
         if (testErrorMsg.includes('invalid') || testErrorMsg.includes('credentials')) {
           // User exists! Now we need to update their password
           // We'll use the magic link approach or admin update
@@ -243,11 +306,11 @@ serve(async (req) => {
             console.error("Error finding user:", innerError);
             throw innerError;
           }
-        } else if (testErrorMsg.includes('not found') || testErrorMsg.includes('no user')) {
+         } else if (testErrorMsg.includes('not found') || testErrorMsg.includes('no user')) {
           throw new Error("No account found. Please sign up first.");
         } else {
-          console.error("Unexpected auth error:", testError);
-          throw new Error("Authentication error: " + testError.message);
+           console.error("Unexpected auth error:", testError);
+           throw new Error("Authentication error: " + testError.message);
         }
       }
     }
@@ -255,19 +318,18 @@ serve(async (req) => {
     // Now sign in to get the session
     console.log("Signing in to get session...");
     
-    const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
-      email,
-      password: loginPassword
-    });
-
-    if (signInError) {
-      console.error("Sign in error:", signInError);
-      throw new Error("Failed to create session: " + signInError.message);
-    }
-
-    if (!signInData.session) {
-      throw new Error("No session returned from sign in");
-    }
+     let signInData: PasswordGrantResponse;
+     try {
+       signInData = await signInWithPasswordViaRest({
+         supabaseUrl,
+         supabaseServiceKey,
+         email,
+         password: loginPassword,
+       });
+     } catch (e) {
+       console.error('Sign in error (REST):', e);
+       throw new Error('Failed to create session: ' + (e as Error).message);
+     }
 
     console.log("Session created successfully");
 
@@ -275,14 +337,15 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         message: isSignup && !userExists ? "Account created successfully." : "Login successful.",
-        userId: signInData.user?.id,
+         // user object shape differs depending on server version; keep it as-is
+         userId: (signInData.user as any)?.id,
         session: {
-          access_token: signInData.session.access_token,
-          refresh_token: signInData.session.refresh_token,
-          expires_in: signInData.session.expires_in,
-          expires_at: signInData.session.expires_at,
-          token_type: signInData.session.token_type,
-          user: signInData.session.user
+           access_token: signInData.access_token,
+           refresh_token: signInData.refresh_token,
+           expires_in: signInData.expires_in,
+           expires_at: signInData.expires_at,
+           token_type: signInData.token_type,
+           user: signInData.user,
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
