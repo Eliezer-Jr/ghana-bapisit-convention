@@ -1,6 +1,6 @@
 -- =====================================================================
 -- GBC Ministers' Conference - COMPLETE DATABASE SCHEMA
--- Generated: 2025-11-29
+-- Generated: 2026-02-01
 -- This file contains all database migrations consolidated into one file
 -- =====================================================================
 
@@ -76,6 +76,21 @@ CREATE TABLE public.activity_logs (
   ip_address TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   CONSTRAINT activity_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+);
+
+-- Error Logs Table
+CREATE TABLE public.error_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  source TEXT NOT NULL,
+  error_message TEXT NOT NULL,
+  stack_trace TEXT,
+  function_name TEXT,
+  url TEXT,
+  user_agent TEXT,
+  user_id UUID,
+  severity TEXT NOT NULL DEFAULT 'error',
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
 -- Ministers Table
@@ -318,7 +333,55 @@ CREATE TABLE public.letter_signatures (
 );
 
 -- =====================================================================
--- PART 4: STORAGE BUCKETS
+-- PART 4: INTAKE SYSTEM TABLES
+-- =====================================================================
+
+-- Intake Sessions Table
+CREATE TABLE public.intake_sessions (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  starts_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  ends_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  manually_closed BOOLEAN NOT NULL DEFAULT false,
+  created_by UUID,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- Intake Invites Table
+CREATE TABLE public.intake_invites (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  session_id UUID NOT NULL REFERENCES public.intake_sessions(id) ON DELETE CASCADE,
+  minister_full_name TEXT,
+  minister_phone TEXT,
+  minister_email TEXT,
+  expires_at TIMESTAMP WITH TIME ZONE,
+  revoked BOOLEAN NOT NULL DEFAULT false,
+  sms_sent_at TIMESTAMP WITH TIME ZONE,
+  sms_message_id TEXT,
+  sms_status TEXT,
+  created_by UUID,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- Intake Submissions Table
+CREATE TABLE public.intake_submissions (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  session_id UUID NOT NULL REFERENCES public.intake_sessions(id) ON DELETE CASCADE,
+  invite_id UUID NOT NULL REFERENCES public.intake_invites(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  status TEXT NOT NULL DEFAULT 'draft',
+  submitted_at TIMESTAMP WITH TIME ZONE,
+  reviewed_by UUID,
+  reviewed_at TIMESTAMP WITH TIME ZONE,
+  rejection_reason TEXT,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- =====================================================================
+-- PART 5: STORAGE BUCKETS
 -- =====================================================================
 
 -- Minister Photos Bucket
@@ -337,7 +400,7 @@ VALUES ('signature-images', 'signature-images', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- =====================================================================
--- PART 5: FUNCTIONS
+-- PART 6: FUNCTIONS
 -- =====================================================================
 
 -- Function to update timestamps
@@ -497,7 +560,7 @@ END;
 $$;
 
 -- =====================================================================
--- PART 6: VIEWS
+-- PART 7: VIEWS
 -- =====================================================================
 
 -- Minister Audit Info View (with SECURITY INVOKER for proper RLS enforcement)
@@ -524,7 +587,7 @@ LEFT JOIN profiles pu ON m.updated_by = pu.id;
 GRANT SELECT ON public.minister_audit_info TO authenticated;
 
 -- =====================================================================
--- PART 7: TRIGGERS
+-- PART 8: TRIGGERS
 -- =====================================================================
 
 -- Trigger for new user creation
@@ -581,14 +644,27 @@ CREATE TRIGGER update_letter_signatures_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
+-- Trigger for intake sessions timestamp
+CREATE TRIGGER update_intake_sessions_updated_at
+  BEFORE UPDATE ON public.intake_sessions
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Trigger for intake submissions timestamp
+CREATE TRIGGER update_intake_submissions_updated_at
+  BEFORE UPDATE ON public.intake_submissions
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
 -- =====================================================================
--- PART 8: ROW LEVEL SECURITY (RLS)
+-- PART 9: ROW LEVEL SECURITY (RLS)
 -- =====================================================================
 
 -- Enable RLS on all tables
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.error_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ministers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.educational_qualifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ministerial_history ENABLE ROW LEVEL SECURITY;
@@ -602,6 +678,9 @@ ALTER TABLE public.approved_applicants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.phone_number_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.letter_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.letter_signatures ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.intake_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.intake_invites ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.intake_submissions ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================================
 -- USER_ROLES POLICIES
@@ -673,6 +752,25 @@ CREATE POLICY "Authenticated users can insert logs"
   ON public.activity_logs
   FOR INSERT
   WITH CHECK (auth.uid() = user_id);
+
+-- =====================================================================
+-- ERROR_LOGS POLICIES
+-- =====================================================================
+
+CREATE POLICY "Admins can view error logs"
+  ON public.error_logs
+  FOR SELECT
+  USING (has_role(auth.uid(), 'admin'::app_role));
+
+CREATE POLICY "Super admins can view all error logs"
+  ON public.error_logs
+  FOR SELECT
+  USING (has_role(auth.uid(), 'super_admin'::app_role));
+
+CREATE POLICY "Service role can insert logs"
+  ON public.error_logs
+  FOR INSERT
+  WITH CHECK (true);
 
 -- =====================================================================
 -- MINISTERS POLICIES
@@ -1020,9 +1118,9 @@ CREATE POLICY "Super admins can manage letter templates"
   FOR ALL
   USING (
     EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_id = auth.uid()
-      AND role = 'super_admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'super_admin'::app_role
     )
   );
 
@@ -1040,14 +1138,111 @@ CREATE POLICY "Super admins can manage signatures"
   FOR ALL
   USING (
     EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_id = auth.uid()
-      AND role = 'super_admin'
+      SELECT 1 FROM user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role = 'super_admin'::app_role
     )
   );
 
 -- =====================================================================
--- STORAGE POLICIES
+-- INTAKE_SESSIONS POLICIES
+-- =====================================================================
+
+CREATE POLICY "Admins can manage intake sessions"
+  ON public.intake_sessions
+  FOR ALL
+  USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role))
+  WITH CHECK (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role));
+
+CREATE POLICY "Authenticated users can view intake sessions"
+  ON public.intake_sessions
+  FOR SELECT
+  USING (auth.uid() IS NOT NULL);
+
+-- =====================================================================
+-- INTAKE_INVITES POLICIES
+-- =====================================================================
+
+CREATE POLICY "Admins can manage intake invites"
+  ON public.intake_invites
+  FOR ALL
+  USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role))
+  WITH CHECK (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role));
+
+CREATE POLICY "Authenticated users can view their intake invite"
+  ON public.intake_invites
+  FOR SELECT
+  USING (
+    auth.uid() IS NOT NULL
+    AND revoked = false
+    AND (expires_at IS NULL OR expires_at > now())
+    AND (
+      minister_phone IS NULL
+      OR minister_phone = (SELECT p.phone_number FROM profiles p WHERE p.id = auth.uid())
+      OR (SELECT p.phone_number FROM profiles p WHERE p.id = auth.uid()) IS NULL
+    )
+  );
+
+-- =====================================================================
+-- INTAKE_SUBMISSIONS POLICIES
+-- =====================================================================
+
+CREATE POLICY "Admins can view all intake submissions"
+  ON public.intake_submissions
+  FOR SELECT
+  USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role));
+
+CREATE POLICY "Admins can update intake submissions"
+  ON public.intake_submissions
+  FOR UPDATE
+  USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role))
+  WITH CHECK (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role));
+
+CREATE POLICY "Users can view their own intake submissions"
+  ON public.intake_submissions
+  FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create their own intake submissions"
+  ON public.intake_submissions
+  FOR INSERT
+  WITH CHECK (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1
+      FROM intake_invites i
+      JOIN intake_sessions s ON s.id = i.session_id
+      WHERE i.id = intake_submissions.invite_id
+        AND i.revoked = false
+        AND (i.expires_at IS NULL OR i.expires_at > now())
+        AND s.manually_closed = false
+        AND now() >= s.starts_at
+        AND now() <= s.ends_at
+    )
+  );
+
+CREATE POLICY "Users can update their own intake submissions"
+  ON public.intake_submissions
+  FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (
+    auth.uid() = user_id
+    AND status IN ('draft', 'submitted')
+    AND EXISTS (
+      SELECT 1
+      FROM intake_invites i
+      JOIN intake_sessions s ON s.id = i.session_id
+      WHERE i.id = intake_submissions.invite_id
+        AND i.revoked = false
+        AND (i.expires_at IS NULL OR i.expires_at > now())
+        AND s.manually_closed = false
+        AND now() >= s.starts_at
+        AND now() <= s.ends_at
+    )
+  );
+
+-- =====================================================================
+-- PART 10: STORAGE POLICIES
 -- =====================================================================
 
 -- Minister Photos Storage Policies
@@ -1057,114 +1252,64 @@ CREATE POLICY "Anyone can view minister photos"
 
 CREATE POLICY "Authenticated users can upload minister photos"
   ON storage.objects FOR INSERT
-  WITH CHECK (bucket_id = 'minister-photos' AND auth.uid() IS NOT NULL);
+  TO authenticated
+  WITH CHECK (bucket_id = 'minister-photos');
 
 CREATE POLICY "Authenticated users can update minister photos"
   ON storage.objects FOR UPDATE
-  USING (bucket_id = 'minister-photos' AND auth.uid() IS NOT NULL);
+  TO authenticated
+  USING (bucket_id = 'minister-photos');
 
 CREATE POLICY "Authenticated users can delete minister photos"
   ON storage.objects FOR DELETE
-  USING (bucket_id = 'minister-photos' AND auth.uid() IS NOT NULL);
+  TO authenticated
+  USING (bucket_id = 'minister-photos');
 
 -- Application Documents Storage Policies
-CREATE POLICY "Anyone can upload application documents"
-  ON storage.objects
-  FOR INSERT
-  TO anon, authenticated
-  WITH CHECK (bucket_id = 'application-documents');
-
 CREATE POLICY "Anyone can view application documents"
-  ON storage.objects
-  FOR SELECT
-  TO anon, authenticated
+  ON storage.objects FOR SELECT
   USING (bucket_id = 'application-documents');
 
+CREATE POLICY "Anyone can upload application documents"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'application-documents');
+
 CREATE POLICY "Anyone can update application documents"
-  ON storage.objects
-  FOR UPDATE
-  TO anon, authenticated
+  ON storage.objects FOR UPDATE
   USING (bucket_id = 'application-documents');
 
 CREATE POLICY "Anyone can delete application documents"
-  ON storage.objects
-  FOR DELETE
-  TO anon, authenticated
+  ON storage.objects FOR DELETE
   USING (bucket_id = 'application-documents');
 
-CREATE POLICY "Admins can view application documents"
-  ON storage.objects
-  FOR SELECT
-  TO authenticated
-  USING (
-    bucket_id = 'application-documents' 
-    AND (
-      EXISTS (
-        SELECT 1 FROM user_roles 
-        WHERE user_id = auth.uid() 
-        AND role IN ('super_admin', 'admin', 'admission_reviewer', 'local_officer', 'association_head', 'vp_office')
-      )
-    )
-  );
-
 -- Signature Images Storage Policies
-CREATE POLICY "Public can view signature images"
-  ON storage.objects
-  FOR SELECT
+CREATE POLICY "Anyone can view signature images"
+  ON storage.objects FOR SELECT
   USING (bucket_id = 'signature-images');
 
-CREATE POLICY "Super admins can upload signature images"
-  ON storage.objects
-  FOR INSERT
-  WITH CHECK (
-    bucket_id = 'signature-images' AND
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_id = auth.uid()
-      AND role = 'super_admin'
-    )
-  );
+CREATE POLICY "Authenticated users can upload signature images"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (bucket_id = 'signature-images');
 
-CREATE POLICY "Super admins can delete signature images"
-  ON storage.objects
-  FOR DELETE
-  USING (
-    bucket_id = 'signature-images' AND
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_id = auth.uid()
-      AND role = 'super_admin'
-    )
-  );
+CREATE POLICY "Authenticated users can update signature images"
+  ON storage.objects FOR UPDATE
+  TO authenticated
+  USING (bucket_id = 'signature-images');
+
+CREATE POLICY "Authenticated users can delete signature images"
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (bucket_id = 'signature-images');
 
 -- =====================================================================
--- PART 9: INDEXES
--- =====================================================================
-
-CREATE INDEX IF NOT EXISTS idx_profiles_phone_number ON public.profiles(phone_number);
-CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id ON public.activity_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON public.activity_logs(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_activity_logs_action ON public.activity_logs(action);
-CREATE INDEX IF NOT EXISTS idx_ministers_minister_id ON public.ministers(minister_id);
-CREATE INDEX IF NOT EXISTS idx_approved_applicants_phone ON public.approved_applicants(phone_number);
-CREATE INDEX IF NOT EXISTS idx_approved_applicants_used ON public.approved_applicants(used);
-CREATE INDEX IF NOT EXISTS idx_phone_number_history_applicant ON public.phone_number_history(approved_applicant_id);
-
--- =====================================================================
--- PART 10: DEFAULT DATA
+-- PART 11: DEFAULT DATA
 -- =====================================================================
 
 -- Insert default letter template
 INSERT INTO public.letter_templates (template_type)
 VALUES ('default')
 ON CONFLICT (template_type) DO NOTHING;
-
--- Insert default signatures
-INSERT INTO public.letter_signatures (name, role, image_url, display_order)
-VALUES 
-  ('Convention Secretary', 'secretary', '/assets/signature-secretary.png', 1),
-  ('Vice President', 'vice_president', '/assets/signature-vp.png', 2)
-ON CONFLICT DO NOTHING;
 
 -- =====================================================================
 -- END OF SCHEMA
