@@ -9,8 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Eye } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { SubmissionReviewDialog } from "@/components/intake/SubmissionReviewDialog";
+import { BulkInviteUpload } from "@/components/intake/BulkInviteUpload";
+import { InvitesList } from "@/components/intake/InvitesList";
+import { SingleInviteForm } from "@/components/intake/SingleInviteForm";
 
 type IntakeSession = {
   id: string;
@@ -55,11 +58,6 @@ export default function AdminIntake() {
   const [newStart, setNewStart] = useState("");
   const [newEnd, setNewEnd] = useState("");
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-
-  const [inviteName, setInviteName] = useState("");
-  const [invitePhone, setInvitePhone] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteExpiresAt, setInviteExpiresAt] = useState("");
 
   // Review dialog state
   const [reviewSubmission, setReviewSubmission] = useState<IntakeSubmission | null>(null);
@@ -149,50 +147,6 @@ export default function AdminIntake() {
     qc.invalidateQueries({ queryKey: ["intake-sessions"] });
   };
 
-  const createInvite = async () => {
-    if (!effectiveSessionId) return;
-    const { data: auth } = await supabase.auth.getUser();
-
-    const { data, error } = await supabase
-      .from("intake_invites")
-      .insert({
-        session_id: effectiveSessionId,
-        minister_full_name: inviteName.trim() || null,
-        minister_phone: invitePhone.trim() || null,
-        minister_email: inviteEmail.trim() || null,
-        expires_at: inviteExpiresAt ? new Date(inviteExpiresAt).toISOString() : null,
-        created_by: auth.user?.id,
-      })
-      .select("id")
-      .single();
-
-    if (error) {
-      console.error(error);
-      toast.error("Failed to create invite");
-      return;
-    }
-
-    const link = `${window.location.origin}/minister-intake/${data.id}`;
-    await navigator.clipboard.writeText(link);
-    toast.success("Invite created (link copied)");
-    setInviteName("");
-    setInvitePhone("");
-    setInviteEmail("");
-    setInviteExpiresAt("");
-    qc.invalidateQueries({ queryKey: ["intake-invites", effectiveSessionId] });
-  };
-
-  const revokeInvite = async (id: string, revoked: boolean) => {
-    const { error } = await supabase.from("intake_invites").update({ revoked: !revoked }).eq("id", id);
-    if (error) {
-      console.error(error);
-      toast.error("Failed to update invite");
-      return;
-    }
-    toast.success(!revoked ? "Invite revoked" : "Invite re-enabled");
-    qc.invalidateQueries({ queryKey: ["intake-invites", effectiveSessionId] });
-  };
-
   const openReviewDialog = (sub: IntakeSubmission) => {
     setReviewSubmission(sub);
     setReviewDialogOpen(true);
@@ -202,30 +156,38 @@ export default function AdminIntake() {
     qc.invalidateQueries({ queryKey: ["intake-submissions", effectiveSessionId] });
   };
 
+  const handleInvitesChanged = () => {
+    qc.invalidateQueries({ queryKey: ["intake-invites", effectiveSessionId] });
+  };
+
   const selectedSession = sessions?.find((s) => s.id === effectiveSessionId) ?? null;
+  const sessionIsOpen = selectedSession ? isSessionOpen(selectedSession) : false;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Minister Intake</h1>
-        <p className="text-sm text-muted-foreground">Open/close intake windows, generate invites, and review submissions.</p>
+        <p className="text-sm text-muted-foreground">Open/close intake windows, generate unique invites, and review submissions.</p>
       </div>
 
       <Tabs defaultValue="sessions">
         <TabsList>
           <TabsTrigger value="sessions">Sessions</TabsTrigger>
           <TabsTrigger value="invites" disabled={!effectiveSessionId}>
-            Invites
+            Invites {invites?.length ? `(${invites.length})` : ""}
           </TabsTrigger>
           <TabsTrigger value="submissions" disabled={!effectiveSessionId}>
-            Submissions
+            Submissions {submissions?.length ? `(${submissions.length})` : ""}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="sessions" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Create Session</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="h-5 w-5" />
+                Create Session
+              </CardTitle>
               <CardDescription>Set a start/end time; you can close it early anytime.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-3">
@@ -255,6 +217,8 @@ export default function AdminIntake() {
             <CardContent>
               {sessionsLoading ? (
                 <div className="text-sm text-muted-foreground">Loading…</div>
+              ) : sessions?.length === 0 ? (
+                <div className="text-sm text-muted-foreground text-center py-4">No sessions yet. Create one above.</div>
               ) : (
                 <Table>
                   <TableHeader>
@@ -267,7 +231,7 @@ export default function AdminIntake() {
                   </TableHeader>
                   <TableBody>
                     {(sessions || []).map((s) => (
-                      <TableRow key={s.id}>
+                      <TableRow key={s.id} className={s.id === effectiveSessionId ? "bg-muted/50" : ""}>
                         <TableCell>
                           <button
                             className="text-left font-medium hover:underline"
@@ -276,8 +240,10 @@ export default function AdminIntake() {
                             {s.title}
                           </button>
                         </TableCell>
-                        <TableCell className="text-sm">
-                          {isSessionOpen(s) ? "Open" : "Closed"}
+                        <TableCell>
+                          <Badge variant={isSessionOpen(s) ? "default" : "secondary"}>
+                            {isSessionOpen(s) ? "Open" : "Closed"}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {new Date(s.starts_at).toLocaleString()} → {new Date(s.ends_at).toLocaleString()}
@@ -297,88 +263,39 @@ export default function AdminIntake() {
         </TabsContent>
 
         <TabsContent value="invites" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Create Invite</CardTitle>
-              <CardDescription>Creates a unique link and copies it to clipboard.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label>Full Name (optional)</Label>
-                <Input value={inviteName} onChange={(e) => setInviteName(e.target.value)} />
+          {effectiveSessionId && (
+            <>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <SingleInviteForm
+                  sessionId={effectiveSessionId}
+                  isSessionOpen={sessionIsOpen}
+                  onInviteCreated={handleInvitesChanged}
+                />
+                <BulkInviteUpload
+                  sessionId={effectiveSessionId}
+                  onInvitesCreated={handleInvitesChanged}
+                />
               </div>
-              <div className="grid gap-2">
-                <Label>Phone (optional)</Label>
-                <Input value={invitePhone} onChange={(e) => setInvitePhone(e.target.value)} placeholder="+233…" />
-              </div>
-              <div className="grid gap-2">
-                <Label>Email (optional)</Label>
-                <Input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label>Expires at (optional)</Label>
-                <Input type="datetime-local" value={inviteExpiresAt} onChange={(e) => setInviteExpiresAt(e.target.value)} />
-              </div>
-              <div className="sm:col-span-2">
-                <Button onClick={createInvite} className="w-full" disabled={!selectedSession || !isSessionOpen(selectedSession)}>
-                  Create & Copy Link
-                </Button>
-                {!selectedSession || !isSessionOpen(selectedSession) ? (
-                  <p className="mt-2 text-xs text-muted-foreground">Select an open session to create invites.</p>
-                ) : null}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Invites</CardTitle>
-              <CardDescription>Revoke an invite to disable its link.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {invitesLoading ? (
-                <div className="text-sm text-muted-foreground">Loading…</div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Minister</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Expires</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(invites || []).map((i) => (
-                      <TableRow key={i.id}>
-                        <TableCell className="font-medium">{i.minister_full_name || "(not set)"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{i.minister_phone || "—"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {i.expires_at ? new Date(i.expires_at).toLocaleString() : "—"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="outline" size="sm" onClick={() => revokeInvite(i.id, i.revoked)}>
-                            {i.revoked ? "Enable" : "Revoke"}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+              <InvitesList
+                invites={invites || []}
+                isLoading={invitesLoading}
+                onInviteUpdated={handleInvitesChanged}
+              />
+            </>
+          )}
         </TabsContent>
 
         <TabsContent value="submissions" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Submissions</CardTitle>
-              <CardDescription>Review and approve submissions (publishing to the official minister record can be added next).</CardDescription>
+              <CardDescription>Review and approve submissions to publish to the official minister record.</CardDescription>
             </CardHeader>
             <CardContent>
               {submissionsLoading ? (
                 <div className="text-sm text-muted-foreground">Loading…</div>
+              ) : submissions?.length === 0 ? (
+                <div className="text-sm text-muted-foreground text-center py-4">No submissions yet.</div>
               ) : (
                 <Table>
                   <TableHeader>
