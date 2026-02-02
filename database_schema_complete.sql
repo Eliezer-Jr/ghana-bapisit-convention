@@ -389,10 +389,10 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('minister-photos', 'minister-photos', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Application Documents Bucket
+-- Application Documents Bucket (PRIVATE - use signed URLs)
 INSERT INTO storage.buckets (id, name, public) 
-VALUES ('application-documents', 'application-documents', true)
-ON CONFLICT (id) DO NOTHING;
+VALUES ('application-documents', 'application-documents', false)
+ON CONFLICT (id) DO UPDATE SET public = false;
 
 -- Signature Images Bucket
 INSERT INTO storage.buckets (id, name, public)
@@ -948,31 +948,27 @@ CREATE POLICY "Authenticated users can delete convention positions"
 -- APPLICATIONS POLICIES
 -- =====================================================================
 
-CREATE POLICY "Anyone can submit applications"
-  ON applications
-  FOR INSERT
-  WITH CHECK (true);
-
-CREATE POLICY "Anyone can view applications"
-  ON applications
-  FOR SELECT
-  TO anon, authenticated
-  USING (true);
-
-CREATE POLICY "Applicants can update their applications"
+-- Applicants can view only their own applications
+CREATE POLICY "Applicants can view own applications"
   ON public.applications
-  FOR UPDATE 
-  USING (true)
-  WITH CHECK (
-    status IN (
-      'draft'::application_status,
-      'submitted'::application_status,
-      'local_screening'::application_status,
-      'association_approved'::application_status,
-      'vp_review'::application_status,
-      'interview_scheduled'::application_status
-    )
-  );
+  FOR SELECT
+  TO authenticated
+  USING (auth.uid() = user_id);
+
+-- Applicants can submit their own applications
+CREATE POLICY "Applicants can submit own applications"
+  ON public.applications
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+-- Applicants can update only their own draft/submitted applications
+CREATE POLICY "Applicants can update own applications"
+  ON public.applications
+  FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = user_id AND status IN ('draft', 'submitted'))
+  WITH CHECK (auth.uid() = user_id AND status IN ('draft', 'submitted'));
 
 CREATE POLICY "Admins can view all applications"
   ON public.applications FOR SELECT
@@ -1034,28 +1030,56 @@ CREATE POLICY "VP office can update all applications"
 -- APPLICATION_DOCUMENTS POLICIES
 -- =====================================================================
 
-CREATE POLICY "Anyone can insert application documents"
-  ON application_documents
+-- Users can insert documents for their own applications
+CREATE POLICY "Users can insert documents for own applications"
+  ON public.application_documents
   FOR INSERT
-  TO anon, authenticated
-  WITH CHECK (true);
+  TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.applications a
+      WHERE a.id = application_id AND a.user_id = auth.uid()
+    )
+  );
 
-CREATE POLICY "Anyone can view application documents"
-  ON application_documents
-  FOR SELECT
-  TO anon, authenticated
-  USING (true);
-
-CREATE POLICY "Anyone can delete application documents"
-  ON application_documents
+-- Users can delete documents from their own draft/submitted applications
+CREATE POLICY "Users can delete documents from own applications"
+  ON public.application_documents
   FOR DELETE
-  TO anon, authenticated
-  USING (true);
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.applications a
+      WHERE a.id = application_id 
+      AND a.user_id = auth.uid()
+      AND a.status IN ('draft', 'submitted')
+    )
+  );
 
+-- Users can view their own documents OR reviewers can view all
+CREATE POLICY "Users can view documents for own applications"
+  ON public.application_documents
+  FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.applications a
+      WHERE a.id = application_id AND a.user_id = auth.uid()
+    )
+    OR has_role(auth.uid(), 'admin'::app_role)
+    OR has_role(auth.uid(), 'super_admin'::app_role)
+    OR has_role(auth.uid(), 'admission_reviewer'::app_role)
+    OR has_role(auth.uid(), 'local_officer'::app_role)
+    OR has_role(auth.uid(), 'association_head'::app_role)
+    OR has_role(auth.uid(), 'vp_office'::app_role)
+  );
+
+-- Admins can view all documents (for backward compatibility)
 CREATE POLICY "Admins can view all documents"
   ON public.application_documents FOR SELECT
   USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role));
 
+-- Admission reviewers can view application documents (for backward compatibility)
 CREATE POLICY "Admission reviewers can view application documents"
   ON public.application_documents FOR SELECT
   USING (has_role(auth.uid(), 'admission_reviewer'::app_role));
@@ -1265,22 +1289,51 @@ CREATE POLICY "Authenticated users can delete minister photos"
   TO authenticated
   USING (bucket_id = 'minister-photos');
 
--- Application Documents Storage Policies
-CREATE POLICY "Anyone can view application documents"
-  ON storage.objects FOR SELECT
-  USING (bucket_id = 'application-documents');
+-- Application Documents Storage Policies (PRIVATE BUCKET - owner-based access)
+-- Users can upload to their own application folder
+CREATE POLICY "Users can upload to own application folder"
+  ON storage.objects
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    bucket_id = 'application-documents' 
+    AND (storage.foldername(name))[1] IN (
+      SELECT id::text FROM public.applications WHERE user_id = auth.uid()
+    )
+  );
 
-CREATE POLICY "Anyone can upload application documents"
-  ON storage.objects FOR INSERT
-  WITH CHECK (bucket_id = 'application-documents');
+-- Users and reviewers can view application documents
+CREATE POLICY "Users and reviewers can view application documents"
+  ON storage.objects
+  FOR SELECT
+  TO authenticated
+  USING (
+    bucket_id = 'application-documents'
+    AND (
+      (storage.foldername(name))[1] IN (
+        SELECT id::text FROM public.applications WHERE user_id = auth.uid()
+      )
+      OR has_role(auth.uid(), 'admin'::app_role)
+      OR has_role(auth.uid(), 'super_admin'::app_role)
+      OR has_role(auth.uid(), 'admission_reviewer'::app_role)
+      OR has_role(auth.uid(), 'local_officer'::app_role)
+      OR has_role(auth.uid(), 'association_head'::app_role)
+      OR has_role(auth.uid(), 'vp_office'::app_role)
+    )
+  );
 
-CREATE POLICY "Anyone can update application documents"
-  ON storage.objects FOR UPDATE
-  USING (bucket_id = 'application-documents');
-
-CREATE POLICY "Anyone can delete application documents"
-  ON storage.objects FOR DELETE
-  USING (bucket_id = 'application-documents');
+-- Users can delete files from their own draft/submitted applications
+CREATE POLICY "Users can delete from own application folder"
+  ON storage.objects
+  FOR DELETE
+  TO authenticated
+  USING (
+    bucket_id = 'application-documents'
+    AND (storage.foldername(name))[1] IN (
+      SELECT id::text FROM public.applications 
+      WHERE user_id = auth.uid() AND status IN ('draft', 'submitted')
+    )
+  );
 
 -- Signature Images Storage Policies
 CREATE POLICY "Anyone can view signature images"
