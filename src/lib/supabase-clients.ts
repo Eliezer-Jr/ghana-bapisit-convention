@@ -2,10 +2,10 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
 // Self-hosted Supabase - Database, Auth, Storage
-const supabaseUrl = "http://supabase.ghanabaptistministers.com";
-const supabaseKey = import.meta.env.VITE_SUPABASE_DB_KEY;
+const dbUrl = import.meta.env.VITE_SUPABASE_DB_URL || import.meta.env.VITE_SUPABASE_URL;
+const dbKey = import.meta.env.VITE_SUPABASE_DB_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-export const supabaseDB = createClient<Database>(supabaseUrl, supabaseKey, {
+export const supabaseDB = createClient<Database>(dbUrl, dbKey, {
   auth: {
     storage: typeof window !== "undefined" ? window.localStorage : undefined,
     autoRefreshToken: true,
@@ -15,7 +15,7 @@ export const supabaseDB = createClient<Database>(supabaseUrl, supabaseKey, {
 });
 
 // Lovable Cloud - Edge Functions & Secrets
-const functionsUrl = "https://vnmwvrjuowmdvjhyuebm.supabase.co";
-const functionsKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZubXd2cmp1b3dtZHZqaHl1ZWJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3NDUzMzIsImV4cCI6MjA3NjMyMTMzMn0.SG4Zc3M3rhUPSMgSQwokan4o8_4Vq1zab1IzX3nXPAo";
+const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || import.meta.env.VITE_SUPABASE_URL;
+const functionsKey = import.meta.env.VITE_SUPABASE_FUNCTIONS_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export const supabaseFunctions = createClient<Database>(functionsUrl, functionsKey);
