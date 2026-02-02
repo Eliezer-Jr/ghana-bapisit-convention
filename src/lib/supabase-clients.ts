@@ -2,10 +2,10 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
 // Self-hosted Supabase - Database, Auth, Storage
-const dbUrl = import.meta.env.VITE_SUPABASE_DB_URL || import.meta.env.VITE_SUPABASE_URL;
-const dbKey = import.meta.env.VITE_SUPABASE_DB_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const supabaseUrl = "http://supabase.ghanabaptistministers.com";
+const supabaseKey = import.meta.env.VITE_SUPABASE_DB_KEY;
 
-export const supabaseDB = createClient<Database>(dbUrl, dbKey, {
+export const supabaseDB = createClient<Database>(supabaseUrl, supabaseKey, {
   auth: {
     storage: typeof window !== "undefined" ? window.localStorage : undefined,
     autoRefreshToken: true,
