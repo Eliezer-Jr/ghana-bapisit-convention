@@ -773,32 +773,32 @@ CREATE POLICY "Service role can insert logs"
   WITH CHECK (true);
 
 -- =====================================================================
--- MINISTERS POLICIES
+-- MINISTERS POLICIES (Admin/Super Admin only)
 -- =====================================================================
 
-CREATE POLICY "Authenticated users can view all ministers" 
-  ON public.ministers 
-  FOR SELECT 
+CREATE POLICY "Admins can view ministers"
+  ON public.ministers
+  FOR SELECT
   TO authenticated
-  USING (true);
+  USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role));
 
-CREATE POLICY "Authenticated users can create ministers" 
-  ON public.ministers 
-  FOR INSERT 
+CREATE POLICY "Admins can create ministers"
+  ON public.ministers
+  FOR INSERT
   TO authenticated
-  WITH CHECK (true);
+  WITH CHECK (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role));
 
-CREATE POLICY "Authenticated users can update ministers" 
-  ON public.ministers 
-  FOR UPDATE 
+CREATE POLICY "Admins can update ministers"
+  ON public.ministers
+  FOR UPDATE
   TO authenticated
-  USING (true);
+  USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role));
 
-CREATE POLICY "Authenticated users can delete ministers" 
-  ON public.ministers 
-  FOR DELETE 
+CREATE POLICY "Admins can delete ministers"
+  ON public.ministers
+  FOR DELETE
   TO authenticated
-  USING (true);
+  USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role));
 
 -- =====================================================================
 -- EDUCATIONAL_QUALIFICATIONS POLICIES
