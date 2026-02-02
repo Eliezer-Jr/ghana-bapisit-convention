@@ -5,8 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowRight, ArrowLeft, Save, Upload, FileText, Trash2, Eye } from "lucide-react";
-
+import { ArrowRight, ArrowLeft, Save, Upload, FileText, Trash2, Eye, Loader2 } from "lucide-react";
+import { getSignedUrl, extractStoragePath } from "@/hooks/useSignedUrl";
 const REQUIRED_DOCUMENTS = {
   all: [
     "Birth Certificate",
@@ -49,6 +49,8 @@ export default function DocumentsStep({
   const [documents, setDocuments] = useState<any[]>([]);
   const [uploading, setUploading] = useState<string | null>(null);
   const [previewDoc, setPreviewDoc] = useState<any>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
 
   useEffect(() => {
     if (applicationId) {
@@ -112,25 +114,22 @@ export default function DocumentsStep({
 
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${applicationId}/${documentType.replace(/\s+/g, "_")}_${Date.now()}.${fileExt}`;
+      const filePath = `${applicationId}/${documentType.replace(/\s+/g, "_")}_${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("application-documents")
-        .upload(fileName, file);
+        .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from("application-documents")
-        .getPublicUrl(fileName);
-
+      // Store the file path (not public URL) for signed URL generation later
       const { error: dbError } = await supabase
         .from("application_documents")
         .insert({
           application_id: applicationId,
           document_type: documentType,
           document_name: file.name,
-          document_url: urlData.publicUrl,
+          document_url: filePath, // Store path, not public URL
         });
 
       if (dbError) throw dbError;
@@ -235,7 +234,14 @@ export default function DocumentsStep({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setPreviewDoc(doc)}
+                      onClick={async () => {
+                        setLoadingPreview(true);
+                        setPreviewDoc(doc);
+                        const storagePath = extractStoragePath(doc.document_url, "application-documents");
+                        const url = await getSignedUrl("application-documents", storagePath);
+                        setPreviewUrl(url);
+                        setLoadingPreview(false);
+                      }}
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       Preview
@@ -270,30 +276,48 @@ export default function DocumentsStep({
       )}
 
       {/* Document Preview Modal */}
-      <Dialog open={!!previewDoc} onOpenChange={(open) => !open && setPreviewDoc(null)}>
+      <Dialog open={!!previewDoc} onOpenChange={(open) => {
+        if (!open) {
+          setPreviewDoc(null);
+          setPreviewUrl(null);
+        }
+      }}>
         <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>{previewDoc?.document_type}</DialogTitle>
             <p className="text-sm text-muted-foreground">{previewDoc?.document_name}</p>
           </DialogHeader>
           <div className="flex-1 overflow-hidden">
-            {previewDoc && (
+            {loadingPreview ? (
+              <div className="w-full h-[70vh] flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : previewUrl ? (
               <iframe
-                src={previewDoc.document_url}
+                src={previewUrl}
                 className="w-full h-[70vh] border rounded-md"
-                title={previewDoc.document_type}
+                title={previewDoc?.document_type}
               />
+            ) : (
+              <div className="w-full h-[70vh] flex items-center justify-center text-muted-foreground">
+                Failed to load document preview
+              </div>
             )}
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setPreviewDoc(null)}>
+            <Button variant="outline" onClick={() => {
+              setPreviewDoc(null);
+              setPreviewUrl(null);
+            }}>
               Close
             </Button>
-            <Button asChild>
-              <a href={previewDoc?.document_url} target="_blank" rel="noopener noreferrer" download>
-                Download
-              </a>
-            </Button>
+            {previewUrl && (
+              <Button asChild>
+                <a href={previewUrl} target="_blank" rel="noopener noreferrer" download>
+                  Download
+                </a>
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

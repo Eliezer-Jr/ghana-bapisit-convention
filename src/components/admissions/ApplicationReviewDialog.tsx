@@ -6,12 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Download, Eye, FileText, User, Church, GraduationCap, MessageSquare, Send } from "lucide-react";
+import { Calendar, Download, Eye, FileText, User, Church, GraduationCap, MessageSquare, Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import { InfoField } from "@/components/InfoField";
 import logoWatermark from "@/assets/logo-watermark.png";
+import { getSignedUrl, extractStoragePath } from "@/hooks/useSignedUrl";
 
 interface ApplicationReviewDialogProps {
   application: any;
@@ -30,6 +31,8 @@ export function ApplicationReviewDialog({
 }: ApplicationReviewDialogProps) {
   const [documents, setDocuments] = useState<any[]>([]);
   const [previewDoc, setPreviewDoc] = useState<any>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
   const [notes, setNotes] = useState("");
   const [interviewDate, setInterviewDate] = useState("");
   const [interviewLocation, setInterviewLocation] = useState("");
@@ -408,7 +411,14 @@ export function ApplicationReviewDialog({
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setPreviewDoc(doc)}
+                            onClick={async () => {
+                              setLoadingPreview(true);
+                              setPreviewDoc(doc);
+                              const storagePath = extractStoragePath(doc.document_url, "application-documents");
+                              const url = await getSignedUrl("application-documents", storagePath);
+                              setPreviewUrl(url);
+                              setLoadingPreview(false);
+                            }}
                           >
                             <Eye className="h-4 w-4 mr-2" />
                             View
@@ -533,17 +543,30 @@ export function ApplicationReviewDialog({
       </Dialog>
 
       {/* Document Preview Dialog */}
-      <Dialog open={!!previewDoc} onOpenChange={() => setPreviewDoc(null)}>
+      <Dialog open={!!previewDoc} onOpenChange={() => {
+        setPreviewDoc(null);
+        setPreviewUrl(null);
+      }}>
         <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>{previewDoc?.document_name}</DialogTitle>
           </DialogHeader>
           <div className="w-full h-[70vh]">
-            <iframe
-              src={previewDoc?.document_url}
-              className="w-full h-full border rounded"
-              title="Document Preview"
-            />
+            {loadingPreview ? (
+              <div className="w-full h-full flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : previewUrl ? (
+              <iframe
+                src={previewUrl}
+                className="w-full h-full border rounded"
+                title="Document Preview"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                Failed to load document preview
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
