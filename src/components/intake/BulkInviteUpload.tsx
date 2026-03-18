@@ -199,7 +199,7 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
       }));
 
       // Send SMS via edge function
-      const { error: smsError } = await supabaseFunctions.functions.invoke("frogapi-send-personalized", {
+      const { error: smsError } = await supabaseFunctions.functions.invoke("moolre-send-personalized", {
         body: {
           senderid: MESSAGING_CONFIG.SENDER_ID,
           destinations: smsDestinations,

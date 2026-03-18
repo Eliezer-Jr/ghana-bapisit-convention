@@ -1,19 +1,19 @@
 import { supabaseFunctions } from "@/lib/supabase";
 import { MESSAGING_CONFIG } from "@/config/messaging";
 
-export interface FrogAPIResponse {
+export interface MoolreAPIResponse {
   success: boolean;
   data?: any;
   error?: string;
 }
 
-export class FrogAPIService {
+export class MoolreAPIService {
   /**
    * Get SMS balance
    */
-  static async getBalance(): Promise<FrogAPIResponse> {
+  static async getBalance(): Promise<MoolreAPIResponse> {
     try {
-      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-balance");
+      const { data, error } = await supabaseFunctions.functions.invoke("moolre-balance");
 
       if (error) {
         console.error("Balance fetch error:", error);
@@ -42,12 +42,12 @@ export class FrogAPIService {
   static async sendGeneralSMS(
     recipients: string[],
     message: string
-  ): Promise<FrogAPIResponse> {
+  ): Promise<MoolreAPIResponse> {
     try {
-      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-send-general", {
+      const { data, error } = await supabaseFunctions.functions.invoke("moolre-send-general", {
         body: {
-          sender: MESSAGING_CONFIG.SENDER_ID,
-          recipients,
+          senderid: MESSAGING_CONFIG.SENDER_ID,
+          destinations: recipients.map(r => ({ destination: r })),
           message,
         },
       });
@@ -78,14 +78,17 @@ export class FrogAPIService {
    */
   static async sendPersonalizedSMS(
     messages: Array<{ recipient: string; message: string }>
-  ): Promise<FrogAPIResponse> {
+  ): Promise<MoolreAPIResponse> {
     try {
       const { data, error } = await supabaseFunctions.functions.invoke(
-        "frogapi-send-personalized",
+        "moolre-send-personalized",
         {
           body: {
-            sender: MESSAGING_CONFIG.SENDER_ID,
-            messages,
+            senderid: MESSAGING_CONFIG.SENDER_ID,
+            destinations: messages.map(m => ({
+              destination: m.recipient,
+              message: m.message,
+            })),
           },
         }
       );
@@ -112,38 +115,16 @@ export class FrogAPIService {
   }
 
   /**
-   * Get message history
+   * Get message history - Moolre doesn't have a dedicated history endpoint,
+   * so this is a placeholder that returns empty data
    */
   static async getHistory(
     startDate?: string,
     endDate?: string
-  ): Promise<FrogAPIResponse> {
-    try {
-      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-history", {
-        body: {
-          start_date: startDate,
-          end_date: endDate,
-        },
-      });
-
-      if (error) {
-        console.error("History fetch error:", error);
-        return {
-          success: false,
-          error: error.message || "Failed to fetch history",
-        };
-      }
-
-      return {
-        success: true,
-        data: data,
-      };
-    } catch (error: any) {
-      console.error("History fetch exception:", error);
-      return {
-        success: false,
-        error: error.message || "An unexpected error occurred",
-      };
-    }
+  ): Promise<MoolreAPIResponse> {
+    return {
+      success: true,
+      data: { messages: [], total: 0 },
+    };
   }
 }

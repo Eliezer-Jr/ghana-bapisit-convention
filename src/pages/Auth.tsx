@@ -63,7 +63,7 @@ const Auth = () => {
       }
 
       // Send OTP
-      const { data, error } = await supabase.functions.invoke('frogapi-otp-generate', {
+      const { data, error } = await supabase.functions.invoke('moolre-otp-generate', {
         body: { phoneNumber: validated.phoneNumber }
       });
 
@@ -120,7 +120,7 @@ const Auth = () => {
       }
 
       // Verify OTP for system login
-      const { data, error } = await supabase.functions.invoke('system-otp-verify', {
+      const { data, error } = await supabase.functions.invoke('moolre-system-otp-verify', {
         body: { 
           phoneNumber, 
           otp,

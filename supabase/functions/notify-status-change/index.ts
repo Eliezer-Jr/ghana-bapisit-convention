@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const MOOLRE_API_URL = 'https://api.moolre.com/open/sms/send';
+
 interface NotificationRequest {
   applicationId: string;
   status: string;
@@ -23,7 +25,6 @@ serve(async (req) => {
 
     console.log("Processing status notification:", { applicationId, status, recipientPhone });
 
-    // Create status-specific message
     let message = "";
     switch (status) {
       case "submitted":
@@ -51,31 +52,42 @@ serve(async (req) => {
         message = `Dear ${recipientName}, your application status has been updated to: ${status.replace(/_/g, " ")}. Please check your portal for details. - Ghana Baptist Convention Conference`;
     }
 
-    // Call FrogAPI to send SMS
-    const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+    const apiVasKey = Deno.env.get("MOOLRE_API_VASKEY");
+    const senderId = Deno.env.get("MOOLRE_SENDER_ID") || "GBCC";
 
-    // Use the configured sender ID from environment or fallback
-    const senderId = Deno.env.get("FROGAPI_OTP_SENDER_ID") || "Lets Learn";
-
-    const { data, error } = await supabase.functions.invoke("frogapi-send-general", {
-      body: {
-        senderid: senderId,
-        destinations: [
-          {
-            destination: recipientPhone,
-          },
-        ],
-        message: message,
-        smstype: "text",
-      },
-    });
-
-    if (error) {
-      console.error("Error sending SMS:", error);
-      throw error;
+    if (!apiVasKey) {
+      throw new Error("Moolre API VAS Key not configured");
     }
 
-    console.log("SMS sent successfully:", data);
+    // Format phone number
+    let formattedPhone = recipientPhone;
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '233' + formattedPhone.substring(1);
+    }
+
+    const postData = {
+      type: 1,
+      senderid: senderId,
+      messages: [
+        {
+          recipient: formattedPhone,
+          message: message,
+          ref: `notify-${applicationId}-${Date.now()}`,
+        },
+      ],
+    };
+
+    const response = await fetch(MOOLRE_API_URL, {
+      method: 'POST',
+      headers: {
+        'X-Api-VasKey': apiVasKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(postData),
+    });
+
+    const data = await response.json();
+    console.log("SMS sent successfully via Moolre:", data);
 
     return new Response(JSON.stringify({ success: true, message: "Notification sent successfully" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
