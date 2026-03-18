@@ -120,7 +120,7 @@ const Auth = () => {
       }
 
       // Verify OTP for system login
-      const { data, error } = await supabase.functions.invoke('system-otp-verify', {
+      const { data, error } = await supabase.functions.invoke('moolre-system-otp-verify', {
         body: { 
           phoneNumber, 
           otp,

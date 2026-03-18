@@ -58,7 +58,7 @@ export function InvitesList({ invites, isLoading, onInviteUpdated }: Props) {
       const name = invite.minister_full_name || "Minister";
       const message = `Dear ${name}, please update your minister information using this link: ${link} - GBC Ministers' Conference`;
 
-      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-send-personalized", {
+      const { data, error } = await supabaseFunctions.functions.invoke("moolre-send-personalized", {
         body: {
           senderid: MESSAGING_CONFIG.SENDER_ID,
           destinations: [{

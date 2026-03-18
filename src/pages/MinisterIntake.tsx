@@ -211,7 +211,7 @@ export default function MinisterIntake() {
       return;
     }
     setOtpVerifying(true);
-    const { data, error } = await supabase.functions.invoke("system-otp-verify", {
+    const { data, error } = await supabase.functions.invoke("moolre-system-otp-verify", {
       body: {
         phoneNumber: phone,
         otp,
