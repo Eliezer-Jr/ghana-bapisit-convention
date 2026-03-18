@@ -191,7 +191,7 @@ export default function MinisterIntake() {
       return;
     }
     setOtpSending(true);
-    const { data, error } = await supabase.functions.invoke("frogapi-otp-generate", {
+    const { data, error } = await supabase.functions.invoke("moolre-otp-generate", {
       body: { phoneNumber: formatted.startsWith("+233") ? `0${formatted.slice(4)}` : formatted },
     });
     setOtpSending(false);
