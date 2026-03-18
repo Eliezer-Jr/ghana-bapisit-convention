@@ -931,6 +931,33 @@ export type Database = {
           },
         ]
       }
+      otp_codes: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          otp_code: string
+          phone_number: string
+          used: boolean
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          otp_code: string
+          phone_number: string
+          used?: boolean
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          phone_number?: string
+          used?: boolean
+        }
+        Relationships: []
+      }
       phone_number_history: {
         Row: {
           approved_applicant_id: string
