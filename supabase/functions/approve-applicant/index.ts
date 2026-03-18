@@ -190,34 +190,37 @@ serve(async (req) => {
       approvedData = insertedData;
     }
 
-    // Send SMS notification using FrogAPI
-    const frogApiUsername = Deno.env.get('FROGAPI_USERNAME');
-    const frogApiKey = Deno.env.get('FROGAPI_KEY');
-    const frogApiSenderId = Deno.env.get('FROGAPI_OTP_SENDER_ID');
+    // Send SMS notification using Moolre
+    const apiVasKey = Deno.env.get('MOOLRE_API_VASKEY');
+    const senderId = Deno.env.get('MOOLRE_SENDER_ID');
 
-    if (frogApiUsername && frogApiKey && frogApiSenderId) {
+    if (apiVasKey && senderId) {
       const message = `Your phone number has been approved to apply for ministerial admission. Please visit the application portal and use OTP verification to proceed.`;
 
       const smsPayload = {
-        username: frogApiUsername,
-        password: frogApiKey,
-        sender_id: frogApiSenderId,
-        message: message,
-        destinations: [formattedPhone.replace('+', '')],
+        type: 1,
+        senderid: senderId,
+        messages: [{
+          recipient: formattedPhone.replace('+', ''),
+          message: message,
+          ref: `approve-${Date.now()}`,
+        }],
       };
 
       try {
-        const smsResponse = await fetch('https://api.frogapi.net/sms/send', {
+        const smsResponse = await fetch('https://api.moolre.com/open/sms/send', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'X-Api-VasKey': apiVasKey,
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify(smsPayload),
         });
 
         const smsResult = await smsResponse.json();
-        console.log('SMS notification sent:', smsResult);
+        console.log('SMS notification sent via Moolre:', smsResult);
       } catch (smsError) {
         console.error('Error sending SMS notification:', smsError);
-        // Don't fail the request if SMS fails
       }
     }
 
