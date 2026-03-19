@@ -58,7 +58,7 @@ serve(async (req) => {
     const response = await fetch(MOOLRE_API_URL, {
       method: 'POST',
       headers: {
-        'X-Api-VasKey': apiVasKey,
+        'X-API-VASKEY': apiVasKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(postData),
