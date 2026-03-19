@@ -67,20 +67,15 @@ serve(async (req) => {
     const data = await response.json();
     console.log("Moolre OTP send response:", JSON.stringify(data, null, 2));
 
-    // Store OTP in a temporary way - we'll verify it in the verify function
-    // Using Supabase to store the OTP temporarily
+    // Check if Moolre API returned an error
+    if (data.status === 0 || data.code === 'AIN01') {
+      throw new Error(`SMS delivery failed: ${data.message || 'Unknown error'}`);
+    }
+
+    // Only store OTP if SMS was sent successfully
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
-    // Store OTP hash for verification (expires in 5 minutes)
-    const otpData = {
-      phone: formattedNumber,
-      code: otpCode,
-      expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-    };
-
-    // Store in a simple key-value approach using edge function state
-    // We'll use the Supabase database for this
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.39.3');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
@@ -88,7 +83,7 @@ serve(async (req) => {
     await supabase.from('otp_codes').upsert({
       phone_number: formattedNumber,
       otp_code: otpCode,
-      expires_at: otpData.expires_at,
+      expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
       used: false,
     }, { onConflict: 'phone_number' });
 
