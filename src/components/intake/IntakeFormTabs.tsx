@@ -93,10 +93,10 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
 
   return (
     <Tabs defaultValue="bio" className="w-full">
-      <TabsList className="grid w-full grid-cols-6 h-auto p-1">
-        <TabsTrigger value="bio" className="text-xs sm:text-sm py-2">Bio Data</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto p-1 gap-1">
+        <TabsTrigger value="bio" className="text-xs sm:text-sm py-2">Bio</TabsTrigger>
         <TabsTrigger value="education" className="text-xs sm:text-sm py-2">Education</TabsTrigger>
-        <TabsTrigger value="ministerial" className="text-xs sm:text-sm py-2">Ministerial</TabsTrigger>
+        <TabsTrigger value="ministerial" className="text-xs sm:text-sm py-2">Ministry</TabsTrigger>
         <TabsTrigger value="history" className="text-xs sm:text-sm py-2">History</TabsTrigger>
         <TabsTrigger value="other" className="text-xs sm:text-sm py-2">Other</TabsTrigger>
         <TabsTrigger value="review" className="text-xs sm:text-sm py-2 flex items-center gap-1">
@@ -323,8 +323,8 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
           <h3 className="font-semibold text-lg border-b pb-2">Children Details</h3>
           <div className="space-y-3">
             {(payload.children || []).map((child: any, idx: number) => (
-              <div key={idx} className="flex gap-2 items-end">
-                <div className="flex-1 space-y-1">
+              <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 items-end border rounded-md p-3">
+                <div className="space-y-1">
                   <Label className="text-xs">Child Name</Label>
                   <Input
                     value={child.child_name || ""}
@@ -333,7 +333,7 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
                     placeholder="Child's name"
                   />
                 </div>
-                <div className="w-40 space-y-1">
+                <div className="space-y-1">
                   <Label className="text-xs">Date of Birth</Label>
                   <Input
                     type="date"
@@ -348,7 +348,7 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
                   size="icon"
                   onClick={() => removeArrayItem("children", idx)}
                   disabled={disabled}
-                  className="shrink-0"
+                  className="shrink-0 self-end"
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
