@@ -355,14 +355,14 @@ export default function MinisterIntake() {
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center gap-4 px-4">
-          <img src={logoGbcc} alt="GBCC Logo" className="h-10 w-10 object-contain" />
-          <div className="flex-1">
-            <h1 className="font-semibold text-lg">Ghana Baptist Convention</h1>
-            <p className="text-xs text-muted-foreground">Minister Information Intake</p>
+        <div className="container flex h-14 sm:h-16 items-center gap-3 px-3 sm:px-4">
+          <img src={logoGbcc} alt="GBCC Logo" className="h-8 w-8 sm:h-10 sm:w-10 object-contain shrink-0" />
+          <div className="flex-1 min-w-0">
+            <h1 className="font-semibold text-sm sm:text-lg truncate">Ghana Baptist Convention</h1>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Minister Information Intake</p>
           </div>
           {session && (
-            <Badge variant="outline" className="hidden sm:flex gap-1">
+            <Badge variant="outline" className="hidden sm:flex gap-1 shrink-0">
               <Clock className="h-3 w-3" />
               {formatDate(session.ends_at)}
             </Badge>
@@ -372,7 +372,7 @@ export default function MinisterIntake() {
               variant="outline" 
               size="sm" 
               onClick={handleLogout}
-              className="gap-2"
+              className="gap-1.5 shrink-0"
             >
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Logout</span>
