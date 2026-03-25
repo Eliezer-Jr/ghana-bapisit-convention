@@ -487,29 +487,29 @@ export default function MinisterIntake() {
           <div className="space-y-6">
             {/* Session Info Card */}
             <Card className="border-2">
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-8 w-8 text-primary" />
-                    <div>
-                      <CardTitle>{session?.title || "Minister Intake Form"}</CardTitle>
-                      <CardDescription>
+              <CardHeader className="pb-4 px-4 sm:px-6">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-primary shrink-0" />
+                    <div className="min-w-0">
+                      <CardTitle className="text-base sm:text-lg truncate">{session?.title || "Minister Intake Form"}</CardTitle>
+                      <CardDescription className="text-xs sm:text-sm">
                         Please fill in your information accurately
                       </CardDescription>
                     </div>
                   </div>
                   {isSubmitted ? (
-                    <Badge className="bg-green-500 hover:bg-green-600">
+                    <Badge className="bg-green-500 hover:bg-green-600 shrink-0 self-start">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
                       Submitted
                     </Badge>
                   ) : sessionClosed ? (
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" className="shrink-0 self-start">
                       <Lock className="h-3 w-3 mr-1" />
                       Closed
                     </Badge>
                   ) : (
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="shrink-0 self-start">
                       <Clock className="h-3 w-3 mr-1" />
                       Open
                     </Badge>
