@@ -381,7 +381,7 @@ export default function MinisterIntake() {
         </div>
       </header>
 
-      <main className="container max-w-4xl px-4 py-8">
+      <main className="container max-w-4xl px-3 sm:px-4 py-4 sm:py-8">
         {loading ? (
           <Card className="border-2">
             <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
