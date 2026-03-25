@@ -24,6 +24,7 @@ serve(async (req) => {
 
   try {
     const apiVasKey = Deno.env.get('MOOLRE_API_VASKEY');
+    const senderId = Deno.env.get('MOOLRE_SENDER_ID') || 'GBCC';
 
     if (!apiVasKey) {
       throw new Error('Moolre API VAS Key not configured');
@@ -31,10 +32,10 @@ serve(async (req) => {
 
     const body: SendGeneralRequest = await req.json();
     
-    // Convert to Moolre format
+    // Convert to Moolre format - always use server-side sender ID
     const postData = {
       type: 1,
-      senderid: body.senderid,
+      senderid: senderId,
       messages: body.destinations.map((dest, idx) => ({
         recipient: dest.destination,
         message: body.message,
