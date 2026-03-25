@@ -93,10 +93,10 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
 
   return (
     <Tabs defaultValue="bio" className="w-full">
-      <TabsList className="grid w-full grid-cols-6 h-auto p-1">
-        <TabsTrigger value="bio" className="text-xs sm:text-sm py-2">Bio Data</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto p-1 gap-1">
+        <TabsTrigger value="bio" className="text-xs sm:text-sm py-2">Bio</TabsTrigger>
         <TabsTrigger value="education" className="text-xs sm:text-sm py-2">Education</TabsTrigger>
-        <TabsTrigger value="ministerial" className="text-xs sm:text-sm py-2">Ministerial</TabsTrigger>
+        <TabsTrigger value="ministerial" className="text-xs sm:text-sm py-2">Ministry</TabsTrigger>
         <TabsTrigger value="history" className="text-xs sm:text-sm py-2">History</TabsTrigger>
         <TabsTrigger value="other" className="text-xs sm:text-sm py-2">Other</TabsTrigger>
         <TabsTrigger value="review" className="text-xs sm:text-sm py-2 flex items-center gap-1">
