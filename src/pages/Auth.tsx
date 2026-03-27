@@ -68,7 +68,13 @@ const Auth = () => {
       });
 
       if (error) throw error;
-      if (!data.success) throw new Error(data.error || "Failed to send OTP");
+      if (!data.success) {
+        const errMsg = data.error || "Failed to send OTP";
+        if (errMsg.toLowerCase().includes('dbcrash') || errMsg.toLowerCase().includes('invalid response')) {
+          throw new Error("Our SMS service is temporarily unavailable. Please try again in a few minutes.");
+        }
+        throw new Error(errMsg);
+      }
 
       setOtpSent(true);
       setCanResend(false);

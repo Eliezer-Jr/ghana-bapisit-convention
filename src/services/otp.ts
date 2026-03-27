@@ -28,9 +28,11 @@ export class OTPService {
       }
 
       if (!data?.success) {
+        const errMsg = data?.data?.message || data?.error || "Failed to send OTP";
+        const isSmsDown = errMsg.toLowerCase().includes('dbcrash') || errMsg.toLowerCase().includes('invalid response');
         return {
           success: false,
-          error: data?.data?.message || data?.error || "Failed to send OTP",
+          error: isSmsDown ? "Our SMS service is temporarily unavailable. Please try again in a few minutes." : errMsg,
         };
       }
 

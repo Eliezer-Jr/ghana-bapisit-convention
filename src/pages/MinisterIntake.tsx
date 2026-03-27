@@ -197,7 +197,12 @@ export default function MinisterIntake() {
     setOtpSending(false);
     if (error || !data?.success) {
       console.error(error || data);
-      toast.error(data?.error || error?.message || "Failed to send OTP");
+      const errMsg = data?.error || error?.message || "Failed to send OTP";
+      if (errMsg.toLowerCase().includes('dbcrash') || errMsg.toLowerCase().includes('invalid response')) {
+        toast.error("Our SMS service is temporarily unavailable. Please try again in a few minutes.");
+      } else {
+        toast.error(errMsg);
+      }
       return;
     }
     setPhone(formatted);
