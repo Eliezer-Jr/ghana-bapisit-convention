@@ -64,12 +64,19 @@ serve(async (req) => {
       body: JSON.stringify(postData),
     });
 
-    const data = await response.json();
-    console.log("Moolre OTP send response:", JSON.stringify(data, null, 2));
+    const responseText = await response.text();
+    console.log("Moolre OTP raw response:", responseText);
+
+    let data: any;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      throw new Error(`Moolre API returned invalid response: ${responseText.substring(0, 200)}`);
+    }
 
     // Check if Moolre API returned an error
-    if (data.status === 0 || data.code === 'AIN01') {
-      throw new Error(`SMS delivery failed: ${data.message || 'Unknown error'}`);
+    if (!response.ok || data.status === 0 || data.code === 'AIN01') {
+      throw new Error(`SMS delivery failed: ${data.message || responseText.substring(0, 200)}`);
     }
 
     // Only store OTP if SMS was sent successfully
