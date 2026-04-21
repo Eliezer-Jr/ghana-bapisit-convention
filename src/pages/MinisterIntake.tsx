@@ -387,7 +387,7 @@ export default function MinisterIntake() {
   };
 
   const handlePrimaryAction = () => {
-    if (isReadyForSubmission) {
+    if (activeTab === "review" && isReadyForSubmission) {
       submit();
       return;
     }
@@ -643,7 +643,7 @@ export default function MinisterIntake() {
                       </>
                     ) : (
                       <>
-                        {isReadyForSubmission ? (
+                        {activeTab === "review" && isReadyForSubmission ? (
                           <>
                             <Send className="h-4 w-4 mr-2" />
                             Submit for Review
