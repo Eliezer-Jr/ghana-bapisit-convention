@@ -33,7 +33,7 @@ export default function ChurchInformationStep({
   };
 
   const handleSectorChange = (value: string) => {
-    setData({ ...data, sector: value, association: "" });
+    setData({ ...data, sector: value, association: "", fellowship: "" });
   };
 
   const handleSave = () => {
@@ -110,13 +110,13 @@ export default function ChurchInformationStep({
           <Select
             value={data.fellowship}
             onValueChange={(value) => handleChange("fellowship", value)}
-            disabled={isSubmitted}
+            disabled={isSubmitted || !data.association}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select fellowship" />
+              <SelectValue placeholder={data.association ? "Select fellowship" : "Select association first"} />
             </SelectTrigger>
             <SelectContent>
-              {FELLOWSHIPS.map((f) => (
+              {getFellowshipsForAssociation(data.association).map((f) => (
                 <SelectItem key={f} value={f}>{f}</SelectItem>
               ))}
             </SelectContent>
