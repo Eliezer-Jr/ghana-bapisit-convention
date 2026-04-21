@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, ArrowLeft, Save } from "lucide-react";
-import { SECTORS, FELLOWSHIPS, getAssociationsForSector } from "@/config/ministerOptions";
+import { SECTORS, getAssociationsForSector, getFellowshipsForAssociation } from "@/config/ministerOptions";
 
 interface ChurchInformationStepProps {
   formData: any;

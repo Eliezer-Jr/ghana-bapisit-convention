@@ -805,7 +805,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   <Label htmlFor="association">Association</Label>
                   <Select
                     value={formData.association}
-                    onValueChange={(value) => setFormData({ ...formData, association: value })}
+                    onValueChange={(value) => setFormData({ ...formData, association: value, fellowship: "" })}
                     disabled={loading || !formData.sector}
                   >
                     <SelectTrigger>
@@ -840,13 +840,13 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   <Select
                     value={formData.fellowship}
                     onValueChange={(value) => setFormData({ ...formData, fellowship: value })}
-                    disabled={loading}
+                    disabled={loading || !formData.association}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select Fellowship" />
+                      <SelectValue placeholder={formData.association ? "Select Fellowship" : "Select Association first"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {FELLOWSHIPS.map((f) => (
+                      {getFellowshipsForAssociation(formData.association).map((f) => (
                         <SelectItem key={f} value={f}>{f}</SelectItem>
                       ))}
                     </SelectContent>
