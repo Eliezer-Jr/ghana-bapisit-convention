@@ -23,10 +23,14 @@ interface IntakeFormTabsProps {
 }
 
 export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChange, disabled, submissionId }: IntakeFormTabsProps) {
+  const OTHER_CHURCH_VALUE = "__other__";
   const [uploading, setUploading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string>(payload.photo_url || "");
+  const [useCustomCurrentChurch, setUseCustomCurrentChurch] = useState(false);
+  const [customHistoryChurchRows, setCustomHistoryChurchRows] = useState<Record<number, boolean>>({});
   const churchOptions = getChurchesForAssociation(payload.association || "");
   const isSingle = payload.marital_status === "single";
+  const isCustomCurrentChurch = useCustomCurrentChurch || (!!payload.current_church_name && !churchOptions.includes(payload.current_church_name));
 
   const updateField = (field: string, value: any) => {
     onChange({ ...payload, [field]: value });
@@ -56,6 +60,17 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
   const removeArrayItem = (field: string, index: number) => {
     const arr = (payload[field] || []).filter((_: any, i: number) => i !== index);
     onChange({ ...payload, [field]: arr });
+    if (field === "ministerial_history") {
+      setCustomHistoryChurchRows((prev) => {
+        const next: Record<number, boolean> = {};
+        Object.entries(prev).forEach(([key, value]) => {
+          const rowIndex = Number(key);
+          if (rowIndex < index) next[rowIndex] = value;
+          if (rowIndex > index) next[rowIndex - 1] = value;
+        });
+        return next;
+      });
+    }
   };
 
   const handleMaritalStatusChange = (value: string) => {
@@ -484,6 +499,7 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                     fellowship: "",
                     current_church_name: "",
                   });
+                  setUseCustomCurrentChurch(false);
                 }}
                 disabled={disabled}
                 required
@@ -510,6 +526,7 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                     current_church_name: "",
                     ...(sector ? { sector } : {}),
                   });
+                  setUseCustomCurrentChurch(false);
                 }}
                 disabled={disabled || !payload.sector}
                 required
@@ -579,32 +596,47 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
             </div>
             <div className="space-y-2">
               <Label>Current Church Name <span className="text-destructive">*</span></Label>
-              <Select
-                value={payload.current_church_name || ""}
-                onValueChange={(value) => updateField("current_church_name", value)}
-                disabled={disabled || !payload.association || churchOptions.length === 0}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      !payload.association
-                        ? "Select association first"
-                        : churchOptions.length > 0
-                          ? "Select church"
-                          : "No churches found"
+              <div className="space-y-2">
+                <Select
+                  value={isCustomCurrentChurch ? OTHER_CHURCH_VALUE : payload.current_church_name || ""}
+                  onValueChange={(value) => {
+                    if (value === OTHER_CHURCH_VALUE) {
+                      setUseCustomCurrentChurch(true);
+                      updateField("current_church_name", "");
+                      return;
                     }
+                    setUseCustomCurrentChurch(false);
+                    updateField("current_church_name", value);
+                  }}
+                  disabled={disabled || !payload.association}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        !payload.association
+                          ? "Select association first"
+                          : "Select church"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {churchOptions.map((church) => (
+                      <SelectItem key={church} value={church}>{church}</SelectItem>
+                    ))}
+                    <SelectItem value={OTHER_CHURCH_VALUE}>Other (Type manually)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {isCustomCurrentChurch && (
+                  <Input
+                    value={payload.current_church_name || ""}
+                    onChange={(e) => updateField("current_church_name", e.target.value)}
+                    disabled={disabled}
+                    placeholder="Type church name"
+                    required
                   />
-                </SelectTrigger>
-                <SelectContent>
-                  {(payload.current_church_name && !churchOptions.includes(payload.current_church_name)
-                    ? [payload.current_church_name, ...churchOptions]
-                    : churchOptions
-                  ).map((church) => (
-                    <SelectItem key={church} value={church}>{church}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Position at Church <span className="text-destructive">*</span></Label>
@@ -682,6 +714,10 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
           <div className="space-y-3">
             {(payload.ministerial_history || []).map((hist: any, idx: number) => (
               <Card key={idx} className="p-4">
+                {(() => {
+                  const historyChurchOptions = getChurchesForAssociation(hist.association || "");
+                  const isCustomHistoryChurch = customHistoryChurchRows[idx] || (!!hist.church_name && !historyChurchOptions.includes(hist.church_name));
+                  return (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Select
                     value={hist.sector || ""}
@@ -700,7 +736,7 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                         <SelectItem key={sector} value={sector}>{sector}</SelectItem>
                       ))}
                     </SelectContent>
-                  </Select>
+                    </Select>
                   <Select
                     value={hist.association || ""}
                     onValueChange={(value) => updateArrayFields("ministerial_history", idx, {
@@ -717,32 +753,46 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                         <SelectItem key={association} value={association}>{association}</SelectItem>
                       ))}
                     </SelectContent>
-                  </Select>
-                  <Select
-                    value={hist.church_name || ""}
-                    onValueChange={(value) => updateArrayField("ministerial_history", idx, "church_name", value)}
-                    disabled={disabled || !hist.association || getChurchesForAssociation(hist.association || "").length === 0}
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          !hist.association
-                            ? "Select association first"
-                            : getChurchesForAssociation(hist.association || "").length > 0
-                              ? "Select church"
-                              : "No churches found"
+                    </Select>
+                  <div className="space-y-2">
+                    <Select
+                      value={isCustomHistoryChurch ? OTHER_CHURCH_VALUE : hist.church_name || ""}
+                      onValueChange={(value) => {
+                        if (value === OTHER_CHURCH_VALUE) {
+                          setCustomHistoryChurchRows((prev) => ({ ...prev, [idx]: true }));
+                          updateArrayField("ministerial_history", idx, "church_name", "");
+                          return;
                         }
+                        setCustomHistoryChurchRows((prev) => ({ ...prev, [idx]: false }));
+                        updateArrayField("ministerial_history", idx, "church_name", value);
+                      }}
+                      disabled={disabled || !hist.association}
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={
+                            !hist.association
+                              ? "Select association first"
+                              : "Select church"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {historyChurchOptions.map((church) => (
+                          <SelectItem key={church} value={church}>{church}</SelectItem>
+                        ))}
+                        <SelectItem value={OTHER_CHURCH_VALUE}>Other (Type manually)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {isCustomHistoryChurch && (
+                      <Input
+                        value={hist.church_name || ""}
+                        onChange={(e) => updateArrayField("ministerial_history", idx, "church_name", e.target.value)}
+                        disabled={disabled}
+                        placeholder="Type church name"
                       />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(hist.church_name && !getChurchesForAssociation(hist.association || "").includes(hist.church_name)
-                        ? [hist.church_name, ...getChurchesForAssociation(hist.association || "")]
-                        : getChurchesForAssociation(hist.association || "")
-                      ).map((church) => (
-                        <SelectItem key={church} value={church}>{church}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    )}
+                  </div>
                   <Input
                     placeholder="Position"
                     value={hist.position || ""}
@@ -775,6 +825,8 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                     </Button>
                   </div>
                 </div>
+                  );
+                })()}
               </Card>
             ))}
             <Button

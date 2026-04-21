@@ -54,9 +54,12 @@ interface MinisterDialogProps {
 }
 
 const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDialogProps) => {
+  const OTHER_CHURCH_VALUE = "__other__";
   const [loading, setLoading] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>("");
+  const [useCustomCurrentChurch, setUseCustomCurrentChurch] = useState(false);
+  const [customHistoryChurchRows, setCustomHistoryChurchRows] = useState<Record<number, boolean>>({});
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -103,6 +106,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
   });
 
   const churchOptions = getChurchesForAssociation(formData.association);
+  const isCustomCurrentChurch = useCustomCurrentChurch || (!!formData.current_church_name && !churchOptions.includes(formData.current_church_name));
   const isSingle = formData.marital_status === "single";
 
   const handleMaritalStatusChange = (value: string) => {
@@ -182,6 +186,8 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         if (nonChurchData.data) setNonChurchWork(nonChurchData.data);
         if (conventionData.data) setConventionPositions(conventionData.data);
         if (childData.data) setChildren(childData.data);
+        setUseCustomCurrentChurch(false);
+        setCustomHistoryChurchRows({});
         if (emergData.data) {
           setEmergencyContact({
             contact_name: emergData.data.contact_name || "",
@@ -231,6 +237,8 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         setEmergencyContact({ contact_name: "", relationship: "", phone_number: "" });
         setPhotoPreview("");
         setPhotoFile(null);
+        setUseCustomCurrentChurch(false);
+        setCustomHistoryChurchRows({});
       }
     };
 
@@ -843,7 +851,10 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   <Label htmlFor="sector">Sector</Label>
                   <Select
                     value={formData.sector}
-                    onValueChange={(value) => setFormData({ ...formData, sector: value, association: "", fellowship: "", current_church_name: "" })}
+                    onValueChange={(value) => {
+                      setUseCustomCurrentChurch(false);
+                      setFormData({ ...formData, sector: value, association: "", fellowship: "", current_church_name: "" });
+                    }}
                     disabled={loading}
                   >
                     <SelectTrigger>
@@ -860,7 +871,10 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   <Label htmlFor="association">Association</Label>
                   <Select
                     value={formData.association}
-                    onValueChange={(value) => setFormData({ ...formData, association: value, fellowship: "", current_church_name: "" })}
+                    onValueChange={(value) => {
+                      setUseCustomCurrentChurch(false);
+                      setFormData({ ...formData, association: value, fellowship: "", current_church_name: "" });
+                    }}
                     disabled={loading || !formData.sector}
                   >
                     <SelectTrigger>
@@ -875,31 +889,45 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="current_church_name">Current Church Name</Label>
-                  <Select
-                    value={formData.current_church_name}
-                    onValueChange={(value) => setFormData({ ...formData, current_church_name: value })}
-                    disabled={loading || !formData.association || churchOptions.length === 0}
-                  >
-                    <SelectTrigger id="current_church_name">
-                      <SelectValue
-                        placeholder={
-                          !formData.association
-                            ? "Select Association first"
-                            : churchOptions.length > 0
-                              ? "Select Church"
-                              : "No churches found"
+                  <div className="space-y-2">
+                    <Select
+                      value={isCustomCurrentChurch ? OTHER_CHURCH_VALUE : formData.current_church_name}
+                      onValueChange={(value) => {
+                        if (value === OTHER_CHURCH_VALUE) {
+                          setUseCustomCurrentChurch(true);
+                          setFormData({ ...formData, current_church_name: "" });
+                          return;
                         }
+                        setUseCustomCurrentChurch(false);
+                        setFormData({ ...formData, current_church_name: value });
+                      }}
+                      disabled={loading || !formData.association}
+                    >
+                      <SelectTrigger id="current_church_name">
+                        <SelectValue
+                          placeholder={
+                            !formData.association
+                              ? "Select Association first"
+                              : "Select Church"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {churchOptions.map((church) => (
+                          <SelectItem key={church} value={church}>{church}</SelectItem>
+                        ))}
+                        <SelectItem value={OTHER_CHURCH_VALUE}>Other (Type manually)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {isCustomCurrentChurch && (
+                      <Input
+                        value={formData.current_church_name}
+                        onChange={(e) => setFormData({ ...formData, current_church_name: e.target.value })}
+                        disabled={loading}
+                        placeholder="Type church name"
                       />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(formData.current_church_name && !churchOptions.includes(formData.current_church_name)
-                        ? [formData.current_church_name, ...churchOptions]
-                        : churchOptions
-                      ).map((church) => (
-                        <SelectItem key={church} value={church}>{church}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="zone">Zone</Label>
@@ -986,66 +1014,82 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                 <Label>History of Churches You Have Pastored</Label>
                 {history.map((hist, idx) => (
                   <div key={idx} className="grid grid-cols-[2fr_1fr_1fr_2fr_1fr_1fr_auto] gap-2 items-end border p-2 rounded">
-                    <Select
-                      value={hist.sector}
-                      onValueChange={(value) => updateHistoryRow(idx, {
-                        sector: value,
-                        association: "",
-                        church_name: "",
-                      })}
-                      disabled={loading}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Sector" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SECTORS.map((sector) => (
-                          <SelectItem key={sector} value={sector}>{sector}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={hist.association}
-                      onValueChange={(value) => updateHistoryRow(idx, {
-                        association: value,
-                        church_name: "",
-                      })}
-                      disabled={loading || !hist.sector}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={hist.sector ? "Select Association" : "Select Sector first"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getAssociationsForSector(hist.sector).map((association) => (
-                          <SelectItem key={association} value={association}>{association}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={hist.church_name}
-                      onValueChange={(value) => updateHistoryRow(idx, { church_name: value })}
-                      disabled={loading || !hist.association || getChurchesForAssociation(hist.association).length === 0}
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={
-                            !hist.association
-                              ? "Select Association first"
-                              : getChurchesForAssociation(hist.association).length > 0
-                                ? "Select Church"
-                                : "No churches found"
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(hist.church_name && !getChurchesForAssociation(hist.association).includes(hist.church_name)
-                          ? [hist.church_name, ...getChurchesForAssociation(hist.association)]
-                          : getChurchesForAssociation(hist.association)
-                        ).map((church) => (
-                          <SelectItem key={church} value={church}>{church}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {(() => {
+                      const historyChurchOptions = getChurchesForAssociation(hist.association);
+                      const isCustomHistoryChurch = customHistoryChurchRows[idx] || (!!hist.church_name && !historyChurchOptions.includes(hist.church_name));
+                      return (
+                        <>
+                          <Select
+                            value={hist.sector}
+                            onValueChange={(value) => updateHistoryRow(idx, {
+                              sector: value,
+                              association: "",
+                              church_name: "",
+                            })}
+                            disabled={loading}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Sector" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SECTORS.map((sector) => (
+                                <SelectItem key={sector} value={sector}>{sector}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select
+                            value={hist.association}
+                            onValueChange={(value) => updateHistoryRow(idx, {
+                              association: value,
+                              church_name: "",
+                            })}
+                            disabled={loading || !hist.sector}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={hist.sector ? "Select Association" : "Select Sector first"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {getAssociationsForSector(hist.sector).map((association) => (
+                                <SelectItem key={association} value={association}>{association}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <div className="space-y-2">
+                            <Select
+                              value={isCustomHistoryChurch ? OTHER_CHURCH_VALUE : hist.church_name}
+                              onValueChange={(value) => {
+                                if (value === OTHER_CHURCH_VALUE) {
+                                  setCustomHistoryChurchRows((prev) => ({ ...prev, [idx]: true }));
+                                  updateHistoryRow(idx, { church_name: "" });
+                                  return;
+                                }
+                                setCustomHistoryChurchRows((prev) => ({ ...prev, [idx]: false }));
+                                updateHistoryRow(idx, { church_name: value });
+                              }}
+                              disabled={loading || !hist.association}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={!hist.association ? "Select Association first" : "Select Church"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {historyChurchOptions.map((church) => (
+                                  <SelectItem key={church} value={church}>{church}</SelectItem>
+                                ))}
+                                <SelectItem value={OTHER_CHURCH_VALUE}>Other (Type manually)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {isCustomHistoryChurch && (
+                              <Input
+                                value={hist.church_name}
+                                onChange={(e) => updateHistoryRow(idx, { church_name: e.target.value })}
+                                disabled={loading}
+                                placeholder="Type church name"
+                              />
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()}
                     <Input
                       placeholder="Position"
                       value={hist.position}
@@ -1070,7 +1114,18 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                       type="button"
                       variant="ghost"
                       size="icon"
-                      onClick={() => setHistory(history.filter((_, i) => i !== idx))}
+                      onClick={() => {
+                        setHistory(history.filter((_, i) => i !== idx));
+                        setCustomHistoryChurchRows((prev) => {
+                          const next: Record<number, boolean> = {};
+                          Object.entries(prev).forEach(([key, value]) => {
+                            const rowIndex = Number(key);
+                            if (rowIndex < idx) next[rowIndex] = value;
+                            if (rowIndex > idx) next[rowIndex - 1] = value;
+                          });
+                          return next;
+                        });
+                      }}
                       disabled={loading}
                     >
                       <Trash2 className="h-4 w-4" />
