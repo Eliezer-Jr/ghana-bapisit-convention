@@ -11,7 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Plus, Trash2, Upload, User } from "lucide-react";
-import { SECTORS, TITLE_OPTIONS, ZONES, getAssociationsForSector, getChurchesForAssociation } from "@/config/ministerOptions";
+import { MINISTRY_ENGAGEMENT_OPTIONS, SECTORS, TITLE_OPTIONS, ZONES, getAssociationsForSector, getChurchesForAssociation } from "@/config/ministerOptions";
 
 const ministerSchema = z.object({
   full_name: z.string().trim().min(1, "Name is required").max(100),
@@ -32,6 +32,7 @@ const ministerSchema = z.object({
   spouse_occupation: z.string().trim().max(100).optional(),
   marriage_type: z.string().max(20).optional(),
   number_of_children: z.number().min(0).default(0),
+  ministry_engagement: z.string().trim().max(20).optional(),
   current_church_name: z.string().trim().max(200).optional(),
   position_at_church: z.string().trim().max(100).optional(),
   church_address: z.string().trim().max(300).optional(),
@@ -75,6 +76,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
     spouse_occupation: "",
     marriage_type: "",
     number_of_children: 0,
+    ministry_engagement: "",
     current_church_name: "",
     position_at_church: "",
     church_address: "",
@@ -150,6 +152,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           spouse_occupation: minister.spouse_occupation || "",
           marriage_type: minister.marriage_type || "",
           number_of_children: minister.number_of_children || 0,
+          ministry_engagement: minister.ministry_engagement || "",
           current_church_name: minister.current_church_name || "",
           position_at_church: minister.position_at_church || "",
           church_address: minister.church_address || "",
@@ -206,6 +209,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           spouse_occupation: "",
           marriage_type: "",
           number_of_children: 0,
+          ministry_engagement: "",
           current_church_name: "",
           position_at_church: "",
           church_address: "",
@@ -274,6 +278,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         spouse_occupation: isValidatedSingle ? null : validated.spouse_occupation?.trim() || null,
         marriage_type: isValidatedSingle ? null : validated.marriage_type?.trim() || null,
         number_of_children: isValidatedSingle ? 0 : validated.number_of_children,
+        ministry_engagement: validated.ministry_engagement?.trim() || null,
         current_church_name: validated.current_church_name?.trim() || null,
         position_at_church: validated.position_at_church?.trim() || null,
         church_address: validated.church_address?.trim() || null,
@@ -807,6 +812,23 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                     placeholder="e.g., Head Pastor"
                     disabled={loading}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ministry_engagement">Ministry Engagement</Label>
+                  <Select
+                    value={formData.ministry_engagement}
+                    onValueChange={(value) => setFormData({ ...formData, ministry_engagement: value })}
+                    disabled={loading}
+                  >
+                    <SelectTrigger id="ministry_engagement">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MINISTRY_ENGAGEMENT_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="church_address">Church Address</Label>

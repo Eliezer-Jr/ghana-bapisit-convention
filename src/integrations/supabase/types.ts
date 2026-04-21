@@ -785,6 +785,7 @@ export type Database = {
           location: string | null
           marital_status: string | null
           marriage_type: string | null
+          ministry_engagement: string | null
           minister_id: string | null
           notes: string | null
           number_of_children: number | null
@@ -824,6 +825,7 @@ export type Database = {
           location?: string | null
           marital_status?: string | null
           marriage_type?: string | null
+          ministry_engagement?: string | null
           minister_id?: string | null
           notes?: string | null
           number_of_children?: number | null
@@ -863,6 +865,7 @@ export type Database = {
           location?: string | null
           marital_status?: string | null
           marriage_type?: string | null
+          ministry_engagement?: string | null
           minister_id?: string | null
           notes?: string | null
           number_of_children?: number | null

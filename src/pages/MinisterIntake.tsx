@@ -65,6 +65,7 @@ function getMissingRequiredFields(payload: Record<string, any>): MissingField[] 
     { key: "association", label: "Association", tab: "ministerial" },
     { key: "zone", label: "Zone", tab: "ministerial" },
     { key: "role", label: "Role/Position", tab: "ministerial" },
+    { key: "ministry_engagement", label: "Ministry Engagement", tab: "ministerial" },
     { key: "current_church_name", label: "Current Church Name", tab: "ministerial" },
     { key: "position_at_church", label: "Position at Church", tab: "ministerial" },
     { key: "church_address", label: "Church Address", tab: "ministerial" },

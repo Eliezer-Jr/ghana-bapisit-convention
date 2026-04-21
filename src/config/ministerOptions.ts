@@ -1725,6 +1725,11 @@ export const TITLE_OPTIONS = [
   "Pastor",
 ];
 
+export const MINISTRY_ENGAGEMENT_OPTIONS = [
+  { value: "full_time", label: "Full-Time" },
+  { value: "part_time", label: "Part-Time" },
+];
+
 export const MINISTER_STATUSES = [
   { value: "active", label: "Active" },
   { value: "inactive", label: "Inactive" },

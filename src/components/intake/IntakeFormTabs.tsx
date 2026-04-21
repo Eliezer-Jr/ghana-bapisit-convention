@@ -11,7 +11,7 @@ import { Plus, Trash2, Upload, User, Camera, ClipboardCheck } from "lucide-react
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import IntakeReviewSummary from "./IntakeReviewSummary";
-import { ZONES, SECTORS, TITLE_OPTIONS, getAssociationsForSector, getSectorForAssociation, getChurchesForAssociation } from "@/config/ministerOptions";
+import { MINISTRY_ENGAGEMENT_OPTIONS, ZONES, SECTORS, TITLE_OPTIONS, getAssociationsForSector, getSectorForAssociation, getChurchesForAssociation } from "@/config/ministerOptions";
 
 interface IntakeFormTabsProps {
   payload: Record<string, any>;
@@ -558,6 +558,24 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                 placeholder="e.g., Pastor, Evangelist"
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Ministry Engagement <span className="text-destructive">*</span></Label>
+              <Select
+                value={payload.ministry_engagement || ""}
+                onValueChange={(value) => updateField("ministry_engagement", value)}
+                disabled={disabled}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MINISTRY_ENGAGEMENT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Current Church Name <span className="text-destructive">*</span></Label>

@@ -41,6 +41,7 @@ type Minister = {
   email: string | null;
   association: string | null;
   sector: string | null;
+  ministry_engagement: string | null;
   fellowship: string | null;
   location: string | null;
   role: string;
@@ -73,6 +74,7 @@ const FIELD_LABELS: Record<string, string> = {
   gps_address: "GPS Address",
   date_of_birth: "Date of Birth",
   current_church_name: "Current Church",
+  ministry_engagement: "Ministry Engagement",
   position_at_church: "Position at Church",
   church_address: "Church Address",
   ordination_year: "Ordination Year",
@@ -203,6 +205,7 @@ export function SubmissionReviewDialog({
         whatsapp: payload.whatsapp || null,
         gps_address: payload.gps_address || null,
         date_of_birth: payload.date_of_birth || null,
+        ministry_engagement: payload.ministry_engagement || null,
         current_church_name: payload.current_church_name || null,
         position_at_church: payload.position_at_church || null,
         church_address: payload.church_address || null,

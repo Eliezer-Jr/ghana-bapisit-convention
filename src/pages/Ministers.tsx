@@ -769,6 +769,16 @@ const Ministers = () => {
                     <h3 className="text-lg font-semibold text-primary border-b pb-2">Ministry Information</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <InfoField label="Current Church" value={ministerToView.current_church_name || "-"} />
+                      <InfoField
+                        label="Ministry Engagement"
+                        value={
+                          ministerToView.ministry_engagement === "full_time"
+                            ? "Full-Time"
+                            : ministerToView.ministry_engagement === "part_time"
+                              ? "Part-Time"
+                              : ministerToView.ministry_engagement || "-"
+                        }
+                      />
                       <InfoField label="Position at Church" value={ministerToView.position_at_church || "-"} />
                       <InfoField label="Association" value={ministerToView.association || "-"} />
                       <InfoField label="Sector" value={ministerToView.sector || "-"} />
