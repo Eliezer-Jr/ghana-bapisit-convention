@@ -814,7 +814,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="ministry_engagement">Ministry Engagement</Label>
+                  <Label htmlFor="ministry_engagement">Type of Ministry</Label>
                   <Select
                     value={formData.ministry_engagement}
                     onValueChange={(value) => setFormData({ ...formData, ministry_engagement: value })}

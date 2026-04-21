@@ -770,7 +770,7 @@ const Ministers = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <InfoField label="Current Church" value={ministerToView.current_church_name || "-"} />
                       <InfoField
-                        label="Ministry Engagement"
+                        label="Type of Ministry"
                         value={
                           ministerToView.ministry_engagement === "full_time"
                             ? "Full-Time"

@@ -169,7 +169,7 @@ export default function IntakeReviewSummary({ payload }: IntakeReviewSummaryProp
         <SectionCard title="Current Ministry" icon={Church}>
           <InfoRow label="Role/Position" value={payload.role} />
           <InfoRow
-            label="Ministry Engagement"
+            label="Type of Ministry"
             value={
               payload.ministry_engagement === "full_time"
                 ? "Full-Time"

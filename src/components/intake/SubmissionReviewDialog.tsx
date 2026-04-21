@@ -74,7 +74,7 @@ const FIELD_LABELS: Record<string, string> = {
   gps_address: "GPS Address",
   date_of_birth: "Date of Birth",
   current_church_name: "Current Church",
-  ministry_engagement: "Ministry Engagement",
+  ministry_engagement: "Type of Ministry",
   position_at_church: "Position at Church",
   church_address: "Church Address",
   ordination_year: "Ordination Year",

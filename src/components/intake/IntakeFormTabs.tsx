@@ -560,7 +560,7 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
               />
             </div>
             <div className="space-y-2">
-              <Label>Ministry Engagement <span className="text-destructive">*</span></Label>
+              <Label>Type of Ministry <span className="text-destructive">*</span></Label>
               <Select
                 value={payload.ministry_engagement || ""}
                 onValueChange={(value) => updateField("ministry_engagement", value)}
