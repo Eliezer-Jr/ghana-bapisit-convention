@@ -91,7 +91,7 @@ export default function ChurchInformationStep({
           <Label htmlFor="association">Association *</Label>
           <Select
             value={data.association}
-            onValueChange={(value) => handleChange("association", value)}
+            onValueChange={(value) => setData({ ...data, association: value, fellowship: "" })}
             disabled={isSubmitted || !data.sector}
           >
             <SelectTrigger>
