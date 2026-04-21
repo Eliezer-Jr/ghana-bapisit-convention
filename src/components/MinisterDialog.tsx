@@ -11,7 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Plus, Trash2, Upload, User } from "lucide-react";
-import { SECTORS, ZONES, FELLOWSHIPS, getAssociationsForSector } from "@/config/ministerOptions";
+import { SECTORS, ZONES, getAssociationsForSector, getFellowshipsForAssociation } from "@/config/ministerOptions";
 
 const ministerSchema = z.object({
   full_name: z.string().trim().min(1, "Name is required").max(100),
@@ -805,7 +805,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   <Label htmlFor="association">Association</Label>
                   <Select
                     value={formData.association}
-                    onValueChange={(value) => setFormData({ ...formData, association: value })}
+                    onValueChange={(value) => setFormData({ ...formData, association: value, fellowship: "" })}
                     disabled={loading || !formData.sector}
                   >
                     <SelectTrigger>
@@ -840,13 +840,13 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   <Select
                     value={formData.fellowship}
                     onValueChange={(value) => setFormData({ ...formData, fellowship: value })}
-                    disabled={loading}
+                    disabled={loading || !formData.association}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select Fellowship" />
+                      <SelectValue placeholder={formData.association ? "Select Fellowship" : "Select Association first"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {FELLOWSHIPS.map((f) => (
+                      {getFellowshipsForAssociation(formData.association).map((f) => (
                         <SelectItem key={f} value={f}>{f}</SelectItem>
                       ))}
                     </SelectContent>

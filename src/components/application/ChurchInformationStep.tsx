@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, ArrowLeft, Save } from "lucide-react";
-import { SECTORS, FELLOWSHIPS, getAssociationsForSector } from "@/config/ministerOptions";
+import { SECTORS, getAssociationsForSector, getFellowshipsForAssociation } from "@/config/ministerOptions";
 
 interface ChurchInformationStepProps {
   formData: any;
@@ -33,7 +33,7 @@ export default function ChurchInformationStep({
   };
 
   const handleSectorChange = (value: string) => {
-    setData({ ...data, sector: value, association: "" });
+    setData({ ...data, sector: value, association: "", fellowship: "" });
   };
 
   const handleSave = () => {
@@ -91,7 +91,7 @@ export default function ChurchInformationStep({
           <Label htmlFor="association">Association *</Label>
           <Select
             value={data.association}
-            onValueChange={(value) => handleChange("association", value)}
+            onValueChange={(value) => setData({ ...data, association: value, fellowship: "" })}
             disabled={isSubmitted || !data.sector}
           >
             <SelectTrigger>
@@ -110,13 +110,13 @@ export default function ChurchInformationStep({
           <Select
             value={data.fellowship}
             onValueChange={(value) => handleChange("fellowship", value)}
-            disabled={isSubmitted}
+            disabled={isSubmitted || !data.association}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select fellowship" />
+              <SelectValue placeholder={data.association ? "Select fellowship" : "Select association first"} />
             </SelectTrigger>
             <SelectContent>
-              {FELLOWSHIPS.map((f) => (
+              {getFellowshipsForAssociation(data.association).map((f) => (
                 <SelectItem key={f} value={f}>{f}</SelectItem>
               ))}
             </SelectContent>

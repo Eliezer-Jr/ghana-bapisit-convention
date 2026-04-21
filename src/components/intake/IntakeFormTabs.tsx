@@ -11,7 +11,7 @@ import { Plus, Trash2, Upload, User, Camera, ClipboardCheck } from "lucide-react
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import IntakeReviewSummary from "./IntakeReviewSummary";
-import { ZONES, SECTORS, FELLOWSHIPS, getAssociationsForSector, getSectorForAssociation } from "@/config/ministerOptions";
+import { ZONES, SECTORS, FELLOWSHIPS, getAssociationsForSector, getSectorForAssociation, getFellowshipsForAssociation } from "@/config/ministerOptions";
 
 interface IntakeFormTabsProps {
   payload: Record<string, any>;
@@ -503,7 +503,7 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
                 value={payload.association || ""}
                 onValueChange={(value) => {
                   updateField("association", value);
-                  // Auto-set sector if not already set
+                  updateField("fellowship", "");
                   if (!payload.sector) {
                     const sector = getSectorForAssociation(value);
                     if (sector) updateField("sector", sector);
@@ -545,14 +545,14 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
               <Select
                 value={payload.fellowship || ""}
                 onValueChange={(value) => updateField("fellowship", value)}
-                disabled={disabled}
+                disabled={disabled || !payload.association}
                 required
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select fellowship" />
+                  <SelectValue placeholder={payload.association ? "Select fellowship" : "Select association first"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {FELLOWSHIPS.map((f) => (
+                  {getFellowshipsForAssociation(payload.association || "").map((f) => (
                     <SelectItem key={f} value={f}>{f}</SelectItem>
                   ))}
                 </SelectContent>
