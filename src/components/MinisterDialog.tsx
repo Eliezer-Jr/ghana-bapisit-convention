@@ -121,6 +121,12 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
     setFormData({ ...formData, marital_status: value });
   };
 
+  const updateHistoryRow = (index: number, values: Partial<{ church_name: string; association: string; sector: string; position: string; period_start: number | null; period_end: number | null }>) => {
+    const newHistory = [...history];
+    newHistory[index] = { ...newHistory[index], ...values };
+    setHistory(newHistory);
+  };
+
   useEffect(() => {
     const loadMinisterData = async () => {
       if (minister) {
@@ -958,66 +964,84 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                 <Label>History of Churches You Have Pastored</Label>
                 {history.map((hist, idx) => (
                   <div key={idx} className="grid grid-cols-[2fr_1fr_1fr_2fr_1fr_1fr_auto] gap-2 items-end border p-2 rounded">
-                    <Input
-                      placeholder="Church Name"
-                      value={hist.church_name}
-                      onChange={(e) => {
-                        const newHist = [...history];
-                        newHist[idx].church_name = e.target.value;
-                        setHistory(newHist);
-                      }}
-                      disabled={loading}
-                    />
-                    <Input
-                      placeholder="Association"
-                      value={hist.association}
-                      onChange={(e) => {
-                        const newHist = [...history];
-                        newHist[idx].association = e.target.value;
-                        setHistory(newHist);
-                      }}
-                      disabled={loading}
-                    />
-                    <Input
-                      placeholder="Sector"
+                    <Select
                       value={hist.sector}
-                      onChange={(e) => {
-                        const newHist = [...history];
-                        newHist[idx].sector = e.target.value;
-                        setHistory(newHist);
-                      }}
+                      onValueChange={(value) => updateHistoryRow(idx, {
+                        sector: value,
+                        association: "",
+                        church_name: "",
+                      })}
                       disabled={loading}
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Sector" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SECTORS.map((sector) => (
+                          <SelectItem key={sector} value={sector}>{sector}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={hist.association}
+                      onValueChange={(value) => updateHistoryRow(idx, {
+                        association: value,
+                        church_name: "",
+                      })}
+                      disabled={loading || !hist.sector}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={hist.sector ? "Select Association" : "Select Sector first"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAssociationsForSector(hist.sector).map((association) => (
+                          <SelectItem key={association} value={association}>{association}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={hist.church_name}
+                      onValueChange={(value) => updateHistoryRow(idx, { church_name: value })}
+                      disabled={loading || !hist.association || getChurchesForAssociation(hist.association).length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={
+                            !hist.association
+                              ? "Select Association first"
+                              : getChurchesForAssociation(hist.association).length > 0
+                                ? "Select Church"
+                                : "No churches found"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(hist.church_name && !getChurchesForAssociation(hist.association).includes(hist.church_name)
+                          ? [hist.church_name, ...getChurchesForAssociation(hist.association)]
+                          : getChurchesForAssociation(hist.association)
+                        ).map((church) => (
+                          <SelectItem key={church} value={church}>{church}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Input
                       placeholder="Position"
                       value={hist.position}
-                      onChange={(e) => {
-                        const newHist = [...history];
-                        newHist[idx].position = e.target.value;
-                        setHistory(newHist);
-                      }}
+                      onChange={(e) => updateHistoryRow(idx, { position: e.target.value })}
                       disabled={loading}
                     />
                     <Input
                       type="number"
                       placeholder="Start Year"
                       value={hist.period_start || ""}
-                      onChange={(e) => {
-                        const newHist = [...history];
-                        newHist[idx].period_start = parseInt(e.target.value) || null;
-                        setHistory(newHist);
-                      }}
+                      onChange={(e) => updateHistoryRow(idx, { period_start: parseInt(e.target.value) || null })}
                       disabled={loading}
                     />
                     <Input
                       type="number"
                       placeholder="End Year"
                       value={hist.period_end || ""}
-                      onChange={(e) => {
-                        const newHist = [...history];
-                        newHist[idx].period_end = parseInt(e.target.value) || null;
-                        setHistory(newHist);
-                      }}
+                      onChange={(e) => updateHistoryRow(idx, { period_end: parseInt(e.target.value) || null })}
                       disabled={loading}
                     />
                     <Button

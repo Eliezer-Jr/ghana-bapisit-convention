@@ -42,6 +42,12 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
     onChange({ ...payload, [field]: arr });
   };
 
+  const updateArrayFields = (field: string, index: number, values: Record<string, any>) => {
+    const arr = [...(payload[field] || [])];
+    arr[index] = { ...arr[index], ...values };
+    onChange({ ...payload, [field]: arr });
+  };
+
   const addArrayItem = (field: string, defaultItem: Record<string, any>) => {
     const arr = [...(payload[field] || []), defaultItem];
     onChange({ ...payload, [field]: arr });
@@ -659,28 +665,70 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
             {(payload.ministerial_history || []).map((hist: any, idx: number) => (
               <Card key={idx} className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Input
-                    placeholder="Church Name"
-                    value={hist.church_name || ""}
-                    onChange={(e) => updateArrayField("ministerial_history", idx, "church_name", e.target.value)}
+                  <Select
+                    value={hist.sector || ""}
+                    onValueChange={(value) => updateArrayFields("ministerial_history", idx, {
+                      sector: value,
+                      association: "",
+                      church_name: "",
+                    })}
                     disabled={disabled}
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select sector" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SECTORS.map((sector) => (
+                        <SelectItem key={sector} value={sector}>{sector}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={hist.association || ""}
+                    onValueChange={(value) => updateArrayFields("ministerial_history", idx, {
+                      association: value,
+                      church_name: "",
+                    })}
+                    disabled={disabled || !hist.sector}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={hist.sector ? "Select association" : "Select sector first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAssociationsForSector(hist.sector || "").map((association) => (
+                        <SelectItem key={association} value={association}>{association}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={hist.church_name || ""}
+                    onValueChange={(value) => updateArrayField("ministerial_history", idx, "church_name", value)}
+                    disabled={disabled || !hist.association || getChurchesForAssociation(hist.association || "").length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          !hist.association
+                            ? "Select association first"
+                            : getChurchesForAssociation(hist.association || "").length > 0
+                              ? "Select church"
+                              : "No churches found"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(hist.church_name && !getChurchesForAssociation(hist.association || "").includes(hist.church_name)
+                        ? [hist.church_name, ...getChurchesForAssociation(hist.association || "")]
+                        : getChurchesForAssociation(hist.association || "")
+                      ).map((church) => (
+                        <SelectItem key={church} value={church}>{church}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Input
                     placeholder="Position"
                     value={hist.position || ""}
                     onChange={(e) => updateArrayField("ministerial_history", idx, "position", e.target.value)}
-                    disabled={disabled}
-                  />
-                  <Input
-                    placeholder="Association"
-                    value={hist.association || ""}
-                    onChange={(e) => updateArrayField("ministerial_history", idx, "association", e.target.value)}
-                    disabled={disabled}
-                  />
-                  <Input
-                    placeholder="Sector"
-                    value={hist.sector || ""}
-                    onChange={(e) => updateArrayField("ministerial_history", idx, "sector", e.target.value)}
                     disabled={disabled}
                   />
                   <div className="flex gap-2">
