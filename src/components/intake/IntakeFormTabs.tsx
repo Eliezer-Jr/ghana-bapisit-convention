@@ -923,10 +923,12 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                 value={payload.emergency_contact?.phone_number || ""}
                 onChange={(e) => updateField("emergency_contact", { 
                   ...payload.emergency_contact, 
-                  phone_number: e.target.value 
+                  phone_number: e.target.value.replace(/\D/g, "")
                 })}
                 disabled={disabled}
-                placeholder="+233..."
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="233..."
                 required
               />
             </div>

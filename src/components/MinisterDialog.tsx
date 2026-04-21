@@ -1222,7 +1222,9 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                       <Input
                         id="emergency_phone"
                         value={emergencyContact.phone_number}
-                        onChange={(e) => setEmergencyContact({ ...emergencyContact, phone_number: e.target.value })}
+                        onChange={(e) => setEmergencyContact({ ...emergencyContact, phone_number: e.target.value.replace(/\D/g, "") })}
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         disabled={loading}
                       />
                     </div>
