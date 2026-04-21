@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, ArrowLeft, Save } from "lucide-react";
+import { SECTORS, FELLOWSHIPS, getAssociationsForSector } from "@/config/ministerOptions";
 
 interface ChurchInformationStepProps {
   formData: any;
@@ -30,6 +32,10 @@ export default function ChurchInformationStep({
     setData({ ...data, [field]: value });
   };
 
+  const handleSectorChange = (value: string) => {
+    setData({ ...data, sector: value, association: "" });
+  };
+
   const handleSave = () => {
     onSave(data);
   };
@@ -41,6 +47,8 @@ export default function ChurchInformationStep({
     }
     onNext(data);
   };
+
+  const filteredAssociations = getAssociationsForSector(data.sector);
 
   return (
     <div className="space-y-6">
@@ -62,36 +70,57 @@ export default function ChurchInformationStep({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="fellowship">Fellowship *</Label>
-          <Input
-            id="fellowship"
-            value={data.fellowship}
-            onChange={(e) => handleChange("fellowship", e.target.value)}
+          <Label htmlFor="sector">Sector *</Label>
+          <Select
+            value={data.sector}
+            onValueChange={handleSectorChange}
             disabled={isSubmitted}
-            placeholder="Enter fellowship"
-          />
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select sector" />
+            </SelectTrigger>
+            <SelectContent>
+              {SECTORS.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="association">Association *</Label>
-          <Input
-            id="association"
+          <Select
             value={data.association}
-            onChange={(e) => handleChange("association", e.target.value)}
-            disabled={isSubmitted}
-            placeholder="Enter association"
-          />
+            onValueChange={(value) => handleChange("association", value)}
+            disabled={isSubmitted || !data.sector}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={data.sector ? "Select association" : "Select sector first"} />
+            </SelectTrigger>
+            <SelectContent>
+              {filteredAssociations.map((a) => (
+                <SelectItem key={a} value={a}>{a}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="sector">Sector *</Label>
-          <Input
-            id="sector"
-            value={data.sector}
-            onChange={(e) => handleChange("sector", e.target.value)}
+          <Label htmlFor="fellowship">Fellowship *</Label>
+          <Select
+            value={data.fellowship}
+            onValueChange={(value) => handleChange("fellowship", value)}
             disabled={isSubmitted}
-            placeholder="Enter sector"
-          />
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select fellowship" />
+            </SelectTrigger>
+            <SelectContent>
+              {FELLOWSHIPS.map((f) => (
+                <SelectItem key={f} value={f}>{f}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

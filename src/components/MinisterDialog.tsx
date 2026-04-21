@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Plus, Trash2, Upload, User } from "lucide-react";
+import { SECTORS, ZONES, FELLOWSHIPS, getAssociationsForSector } from "@/config/ministerOptions";
 
 const ministerSchema = z.object({
   full_name: z.string().trim().min(1, "Name is required").max(100),
@@ -787,46 +788,33 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   <Label htmlFor="association">Association</Label>
                   <Select
                     value={formData.association}
-                    onValueChange={(value) => setFormData({ ...formData, association: value })}
+                    onValueChange={(value) => setFormData({ ...formData, sector: value, association: "" })}
                     disabled={loading}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select Association" />
+                      <SelectValue placeholder="Select Sector" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Tahima">Tahima</SelectItem>
-                      <SelectItem value="Tamale">Tamale</SelectItem>
-                      <SelectItem value="Nalerigu">Nalerigu</SelectItem>
-                      <SelectItem value="Liberty">Liberty</SelectItem>
-                      <SelectItem value="Wa">Wa</SelectItem>
-                      <SelectItem value="Nakpanduri">Nakpanduri</SelectItem>
-                      <SelectItem value="Bolgatanga">Bolgatanga</SelectItem>
-                      <SelectItem value="North Eastern">North Eastern</SelectItem>
-                      <SelectItem value="ADANSI">ADANSI</SelectItem>
-                      <SelectItem value="ADOM">ADOM</SelectItem>
-                      <SelectItem value="BETHEL">BETHEL</SelectItem>
-                      <SelectItem value="GOLDEN GATE">GOLDEN GATE</SelectItem>
-                      <SelectItem value="KUMASI NORTH">KUMASI NORTH</SelectItem>
-                      <SelectItem value="KUMASI SOUTH EAST">KUMASI SOUTH EAST</SelectItem>
-                      <SelectItem value="KUMASI SOUTH WEST">KUMASI SOUTH WEST</SelectItem>
-                      <SelectItem value="KUMASI WEST">KUMASI WEST</SelectItem>
-                      <SelectItem value="SUNYANI">SUNYANI</SelectItem>
-                      <SelectItem value="ACCRA NORTH">ACCRA NORTH</SelectItem>
-                      <SelectItem value="ACCRA SOUTH">ACCRA SOUTH</SelectItem>
-                      <SelectItem value="EASTERN">EASTERN</SelectItem>
-                      <SelectItem value="TEMA CENTRAL">TEMA CENTRAL</SelectItem>
-                      <SelectItem value="UNITY PLAIN">UNITY PLAIN</SelectItem>
-                      <SelectItem value="KEKELI">KEKELI</SelectItem>
-                      <SelectItem value="NORTH VOLTA">NORTH VOLTA</SelectItem>
-                      <SelectItem value="DANGME WEST">DANGME WEST</SelectItem>
-                      <SelectItem value="DANGME EAST">DANGME EAST</SelectItem>
-                      <SelectItem value="WINNEBA">WINNEBA</SelectItem>
-                      <SelectItem value="SWEDRU">SWEDRU</SelectItem>
-                      <SelectItem value="SKD/TDI">SKD/TDI</SelectItem>
-                      <SelectItem value="NZEMA">NZEMA</SelectItem>
-                      <SelectItem value="HOPE">HOPE</SelectItem>
-                      <SelectItem value="CAPE COAST">CAPE COAST</SelectItem>
-                      
+                      {SECTORS.map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="association">Association</Label>
+                  <Select
+                    value={formData.association}
+                    onValueChange={(value) => setFormData({ ...formData, association: value })}
+                    disabled={loading || !formData.sector}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={formData.sector ? "Select Association" : "Select Sector first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAssociationsForSector(formData.sector).map((a) => (
+                        <SelectItem key={a} value={a}>{a}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -841,29 +829,9 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                       <SelectValue placeholder="Select Zone" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Zone 1">Zone 1</SelectItem>
-                      <SelectItem value="Zone 2">Zone 2</SelectItem>
-                      <SelectItem value="Zone 3">Zone 3</SelectItem>
-                      <SelectItem value="Zone 4">Zone 4</SelectItem>
-                      <SelectItem value="Zone 5">Zone 5</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sector">Sector</Label>
-                  <Select
-                    value={formData.sector}
-                    onValueChange={(value) => setFormData({ ...formData, sector: value })}
-                    disabled={loading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Sector" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="NORTHERN GHANA SECTOR">NORTHERN GHANA SECTOR</SelectItem>
-                      <SelectItem value="MID-GHANA SECTOR">MID-GHANA SECTOR</SelectItem>
-                      <SelectItem value="SOUTH-EAST GHANA SECTOR">SOUTH-EAST GHANA SECTOR</SelectItem>
-                      <SelectItem value="SOUTH-WEST GHANA SECTOR">SOUTH-WEST GHANA SECTOR</SelectItem>
+                      {ZONES.map((z) => (
+                        <SelectItem key={z} value={z}>{z}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -878,10 +846,9 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                       <SelectValue placeholder="Select Fellowship" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Fellowship 1">Fellowship 1</SelectItem>
-                      <SelectItem value="Fellowship 2">Fellowship 2</SelectItem>
-                      <SelectItem value="Fellowship 3">Fellowship 3</SelectItem>
-                      <SelectItem value="Fellowship 4">Fellowship 4</SelectItem>
+                      {FELLOWSHIPS.map((f) => (
+                        <SelectItem key={f} value={f}>{f}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
