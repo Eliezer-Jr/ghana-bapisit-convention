@@ -477,18 +477,46 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
           <h3 className="font-semibold text-lg border-b pb-2">Convention Structure</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Association <span className="text-destructive">*</span></Label>
+              <Label>Sector <span className="text-destructive">*</span></Label>
               <Select
-                value={payload.association || ""}
-                onValueChange={(value) => updateField("association", value)}
+                value={payload.sector || ""}
+                onValueChange={(value) => {
+                  updateField("sector", value);
+                  updateField("association", "");
+                }}
                 disabled={disabled}
                 required
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select association" />
+                  <SelectValue placeholder="Select sector" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ASSOCIATIONS.map((a) => (
+                  {SECTORS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Association <span className="text-destructive">*</span></Label>
+              <Select
+                value={payload.association || ""}
+                onValueChange={(value) => {
+                  updateField("association", value);
+                  // Auto-set sector if not already set
+                  if (!payload.sector) {
+                    const sector = getSectorForAssociation(value);
+                    if (sector) updateField("sector", sector);
+                  }
+                }}
+                disabled={disabled || !payload.sector}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={payload.sector ? "Select association" : "Select sector first"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAssociationsForSector(payload.sector || "").map((a) => (
                     <SelectItem key={a} value={a}>{a}</SelectItem>
                   ))}
                 </SelectContent>
@@ -508,24 +536,6 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
                 <SelectContent>
                   {ZONES.map((z) => (
                     <SelectItem key={z} value={z}>{z}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Sector <span className="text-destructive">*</span></Label>
-              <Select
-                value={payload.sector || ""}
-                onValueChange={(value) => updateField("sector", value)}
-                disabled={disabled}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select sector" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SECTORS.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
