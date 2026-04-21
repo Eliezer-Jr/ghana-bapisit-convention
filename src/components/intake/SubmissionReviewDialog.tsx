@@ -172,6 +172,7 @@ export function SubmissionReviewDialog({
   });
 
   const payload = submission?.payload || {};
+  const isSingle = payload.marital_status === "single";
   const targetMinister = existingMinister || (selectedMinisterId ? searchResults?.find(m => m.id === selectedMinisterId) : null);
 
   const handleApprove = async () => {
@@ -194,10 +195,11 @@ export function SubmissionReviewDialog({
         status: payload.status || "active",
         notes: payload.notes || null,
         marital_status: payload.marital_status || null,
-        spouse_name: payload.spouse_name || null,
-        spouse_phone_number: payload.spouse_phone_number || null,
-        spouse_occupation: payload.spouse_occupation || null,
-        number_of_children: payload.number_of_children ? parseInt(payload.number_of_children) : null,
+        marriage_type: isSingle ? null : payload.marriage_type || null,
+        spouse_name: isSingle ? null : payload.spouse_name || null,
+        spouse_phone_number: isSingle ? null : payload.spouse_phone_number || null,
+        spouse_occupation: isSingle ? null : payload.spouse_occupation || null,
+        number_of_children: isSingle ? 0 : payload.number_of_children ? parseInt(payload.number_of_children) : null,
         whatsapp: payload.whatsapp || null,
         gps_address: payload.gps_address || null,
         date_of_birth: payload.date_of_birth || null,
@@ -270,7 +272,7 @@ export function SubmissionReviewDialog({
       }
 
       // Handle children if present
-      if (payload.children && Array.isArray(payload.children)) {
+      if (!isSingle && payload.children && Array.isArray(payload.children)) {
         for (const child of payload.children) {
           if (child.child_name) {
             await supabase.from("minister_children").insert({

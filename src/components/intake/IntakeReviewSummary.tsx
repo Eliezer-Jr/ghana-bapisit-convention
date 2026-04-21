@@ -52,8 +52,9 @@ function SectionCard({
 }
 
 export default function IntakeReviewSummary({ payload }: IntakeReviewSummaryProps) {
+  const isSingle = payload.marital_status === "single";
   const hasQualifications = payload.qualifications?.length > 0;
-  const hasChildren = payload.children?.length > 0;
+  const hasChildren = !isSingle && payload.children?.length > 0;
   const hasMinisterialHistory = payload.ministerial_history?.length > 0;
   const hasConventionPositions = payload.convention_positions?.length > 0;
   const hasNonChurchWork = payload.non_church_work?.length > 0;
@@ -146,11 +147,15 @@ export default function IntakeReviewSummary({ payload }: IntakeReviewSummaryProp
         {/* Marital Information */}
         <SectionCard title="Marital Information" icon={Heart}>
           <InfoRow label="Marital Status" value={payload.marital_status} />
-          <InfoRow label="Marriage Type" value={payload.marriage_type} />
-          <InfoRow label="Spouse Name" value={payload.spouse_name} />
-          <InfoRow label="Spouse Phone" value={payload.spouse_phone_number} />
-          <InfoRow label="Spouse Occupation" value={payload.spouse_occupation} />
-          <InfoRow label="Number of Children" value={payload.number_of_children} />
+          {!isSingle && (
+            <>
+              <InfoRow label="Marriage Type" value={payload.marriage_type} />
+              <InfoRow label="Spouse Name" value={payload.spouse_name} />
+              <InfoRow label="Spouse Phone" value={payload.spouse_phone_number} />
+              <InfoRow label="Spouse Occupation" value={payload.spouse_occupation} />
+              <InfoRow label="Number of Children" value={payload.number_of_children} />
+            </>
+          )}
         </SectionCard>
 
         {/* Convention Structure */}

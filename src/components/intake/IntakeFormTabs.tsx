@@ -11,19 +11,22 @@ import { Plus, Trash2, Upload, User, Camera, ClipboardCheck } from "lucide-react
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import IntakeReviewSummary from "./IntakeReviewSummary";
-import { ZONES, SECTORS, getAssociationsForSector, getSectorForAssociation, getChurchesForAssociation } from "@/config/ministerOptions";
+import { ZONES, SECTORS, TITLE_OPTIONS, getAssociationsForSector, getSectorForAssociation, getChurchesForAssociation } from "@/config/ministerOptions";
 
 interface IntakeFormTabsProps {
   payload: Record<string, any>;
   onChange: (payload: Record<string, any>) => void;
+  activeTab: string;
+  onTabChange: (tab: string) => void;
   disabled?: boolean;
   submissionId?: string;
 }
 
-export default function IntakeFormTabs({ payload, onChange, disabled, submissionId }: IntakeFormTabsProps) {
+export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChange, disabled, submissionId }: IntakeFormTabsProps) {
   const [uploading, setUploading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string>(payload.photo_url || "");
   const churchOptions = getChurchesForAssociation(payload.association || "");
+  const isSingle = payload.marital_status === "single";
 
   const updateField = (field: string, value: any) => {
     onChange({ ...payload, [field]: value });
@@ -47,6 +50,23 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
   const removeArrayItem = (field: string, index: number) => {
     const arr = (payload[field] || []).filter((_: any, i: number) => i !== index);
     onChange({ ...payload, [field]: arr });
+  };
+
+  const handleMaritalStatusChange = (value: string) => {
+    if (value === "single") {
+      updateFields({
+        marital_status: value,
+        marriage_type: "",
+        spouse_name: "",
+        spouse_phone_number: "",
+        spouse_occupation: "",
+        number_of_children: 0,
+        children: [],
+      });
+      return;
+    }
+
+    updateField("marital_status", value);
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,7 +117,7 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
   };
 
   return (
-    <Tabs defaultValue="bio" className="w-full">
+    <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
       <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto p-1 gap-1">
         <TabsTrigger value="bio" className="text-xs sm:text-sm py-2">Bio</TabsTrigger>
         <TabsTrigger value="education" className="text-xs sm:text-sm py-2">Education</TabsTrigger>
@@ -166,13 +186,21 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
             </div>
             <div className="space-y-2">
               <Label>Title(s) <span className="text-destructive">*</span></Label>
-              <Input
+              <Select
                 value={payload.titles || ""}
-                onChange={(e) => updateField("titles", e.target.value)}
+                onValueChange={(value) => updateField("titles", value)}
                 disabled={disabled}
-                placeholder="e.g., Rev., Dr., Pastor"
                 required
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select title" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TITLE_OPTIONS.map((title) => (
+                    <SelectItem key={title} value={title}>{title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Date of Birth <span className="text-destructive">*</span></Label>
@@ -246,7 +274,7 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
               <Label>Marital Status <span className="text-destructive">*</span></Label>
               <Select
                 value={payload.marital_status || ""}
-                onValueChange={(value) => updateField("marital_status", value)}
+                onValueChange={handleMaritalStatusChange}
                 disabled={disabled}
                 required
               >
@@ -261,69 +289,73 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Marriage Type <span className="text-destructive">*</span></Label>
-              <Select
-                value={payload.marriage_type || ""}
-                onValueChange={(value) => updateField("marriage_type", value)}
-                disabled={disabled}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ordinance">Ordinance</SelectItem>
-                  <SelectItem value="customary">Customary</SelectItem>
-                  <SelectItem value="n/a">N/A</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Spouse Name <span className="text-destructive">*</span></Label>
-              <Input
-                value={payload.spouse_name || ""}
-                onChange={(e) => updateField("spouse_name", e.target.value)}
-                disabled={disabled}
-                placeholder="Enter spouse name (or N/A)"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Spouse Phone Number <span className="text-destructive">*</span></Label>
-              <Input
-                value={payload.spouse_phone_number || ""}
-                onChange={(e) => updateField("spouse_phone_number", e.target.value)}
-                disabled={disabled}
-                placeholder="+233... (or N/A)"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Spouse Occupation <span className="text-destructive">*</span></Label>
-              <Input
-                value={payload.spouse_occupation || ""}
-                onChange={(e) => updateField("spouse_occupation", e.target.value)}
-                disabled={disabled}
-                placeholder="Enter occupation (or N/A)"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Number of Children <span className="text-destructive">*</span></Label>
-              <Input
-                type="number"
-                min="0"
-                value={payload.number_of_children ?? ""}
-                onChange={(e) => updateField("number_of_children", parseInt(e.target.value) || 0)}
-                disabled={disabled}
-                required
-              />
-            </div>
+            {!isSingle && (
+              <>
+                <div className="space-y-2">
+                  <Label>Marriage Type <span className="text-destructive">*</span></Label>
+                  <Select
+                    value={payload.marriage_type || ""}
+                    onValueChange={(value) => updateField("marriage_type", value)}
+                    disabled={disabled}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ordinance">Ordinance</SelectItem>
+                      <SelectItem value="customary">Customary</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Spouse Name <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={payload.spouse_name || ""}
+                    onChange={(e) => updateField("spouse_name", e.target.value)}
+                    disabled={disabled}
+                    placeholder="Enter spouse name"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Spouse Phone Number <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={payload.spouse_phone_number || ""}
+                    onChange={(e) => updateField("spouse_phone_number", e.target.value)}
+                    disabled={disabled}
+                    placeholder="+233..."
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Spouse Occupation <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={payload.spouse_occupation || ""}
+                    onChange={(e) => updateField("spouse_occupation", e.target.value)}
+                    disabled={disabled}
+                    placeholder="Enter occupation"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Number of Children <span className="text-destructive">*</span></Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={payload.number_of_children ?? ""}
+                    onChange={(e) => updateField("number_of_children", parseInt(e.target.value) || 0)}
+                    disabled={disabled}
+                    required
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* Children */}
+        {!isSingle && (
         <div className="space-y-4">
           <h3 className="font-semibold text-lg border-b pb-2">Children Details</h3>
           <div className="space-y-3">
@@ -370,6 +402,7 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
             </Button>
           </div>
         </div>
+        )}
       </TabsContent>
 
       {/* Education Tab */}

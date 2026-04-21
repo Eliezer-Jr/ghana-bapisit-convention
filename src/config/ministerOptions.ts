@@ -1715,6 +1715,16 @@ export const MARRIAGE_TYPES = [
   { value: "customary", label: "Customary" },
 ];
 
+export const TITLE_OPTIONS = [
+  "Rev",
+  "Rev Dr.",
+  "Rev Mrs.",
+  "Mr.",
+  "Mrs.",
+  "Miss",
+  "Pastor",
+];
+
 export const MINISTER_STATUSES = [
   { value: "active", label: "Active" },
   { value: "inactive", label: "Inactive" },

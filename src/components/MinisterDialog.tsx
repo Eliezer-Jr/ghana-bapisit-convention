@@ -11,7 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Plus, Trash2, Upload, User } from "lucide-react";
-import { SECTORS, ZONES, getAssociationsForSector, getChurchesForAssociation } from "@/config/ministerOptions";
+import { SECTORS, TITLE_OPTIONS, ZONES, getAssociationsForSector, getChurchesForAssociation } from "@/config/ministerOptions";
 
 const ministerSchema = z.object({
   full_name: z.string().trim().min(1, "Name is required").max(100),
@@ -101,6 +101,25 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
   });
 
   const churchOptions = getChurchesForAssociation(formData.association);
+  const isSingle = formData.marital_status === "single";
+
+  const handleMaritalStatusChange = (value: string) => {
+    if (value === "single") {
+      setFormData({
+        ...formData,
+        marital_status: value,
+        marriage_type: "",
+        spouse_name: "",
+        spouse_phone_number: "",
+        spouse_occupation: "",
+        number_of_children: 0,
+      });
+      setChildren([]);
+      return;
+    }
+
+    setFormData({ ...formData, marital_status: value });
+  };
 
   useEffect(() => {
     const loadMinisterData = async () => {
@@ -230,6 +249,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
 
       // Validate data
       const validated = ministerSchema.parse(formData);
+      const isValidatedSingle = validated.marital_status === "single";
 
       // Convert empty strings to null for optional fields
       const dataToSubmit = {
@@ -243,10 +263,11 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         date_of_birth: validated.date_of_birth?.trim() || null,
         gps_address: validated.gps_address?.trim() || null,
         marital_status: validated.marital_status?.trim() || null,
-        spouse_name: validated.spouse_name?.trim() || null,
-        spouse_phone_number: validated.spouse_phone_number?.trim() || null,
-        spouse_occupation: validated.spouse_occupation?.trim() || null,
-        marriage_type: validated.marriage_type?.trim() || null,
+        spouse_name: isValidatedSingle ? null : validated.spouse_name?.trim() || null,
+        spouse_phone_number: isValidatedSingle ? null : validated.spouse_phone_number?.trim() || null,
+        spouse_occupation: isValidatedSingle ? null : validated.spouse_occupation?.trim() || null,
+        marriage_type: isValidatedSingle ? null : validated.marriage_type?.trim() || null,
+        number_of_children: isValidatedSingle ? 0 : validated.number_of_children,
         current_church_name: validated.current_church_name?.trim() || null,
         position_at_church: validated.position_at_church?.trim() || null,
         church_address: validated.church_address?.trim() || null,
@@ -365,7 +386,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           );
         }
 
-        if (children.length > 0) {
+        if (!isValidatedSingle && children.length > 0) {
           insertPromises.push(
             supabase.from("minister_children").insert(
               children.filter(c => c.child_name).map(c => ({ ...c, minister_id: ministerId }))
@@ -482,13 +503,20 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="titles">Title(s)</Label>
-                  <Input
-                    id="titles"
+                  <Select
                     value={formData.titles}
-                    onChange={(e) => setFormData({ ...formData, titles: e.target.value })}
-                    placeholder="e.g., Rev., Dr."
                     disabled={loading}
-                  />
+                    onValueChange={(value) => setFormData({ ...formData, titles: value })}
+                  >
+                    <SelectTrigger id="titles">
+                      <SelectValue placeholder="Select title" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TITLE_OPTIONS.map((title) => (
+                        <SelectItem key={title} value={title}>{title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="date_of_birth">Date of Birth</Label>
@@ -550,7 +578,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   <Label htmlFor="marital_status">Marital Status</Label>
                   <Select
                     value={formData.marital_status}
-                    onValueChange={(value) => setFormData({ ...formData, marital_status: value })}
+                    onValueChange={handleMaritalStatusChange}
                     disabled={loading}
                   >
                     <SelectTrigger>
@@ -564,62 +592,67 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="spouse_name">Name of Spouse</Label>
-                  <Input
-                    id="spouse_name"
-                    value={formData.spouse_name}
-                    onChange={(e) => setFormData({ ...formData, spouse_name: e.target.value })}
-                    disabled={loading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="spouse_phone_number">Spouse's Phone Number</Label>
-                  <Input
-                    id="spouse_phone_number"
-                    value={formData.spouse_phone_number}
-                    onChange={(e) => setFormData({ ...formData, spouse_phone_number: e.target.value })}
-                    disabled={loading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="spouse_occupation">Occupation of Spouse</Label>
-                  <Input
-                    id="spouse_occupation"
-                    value={formData.spouse_occupation}
-                    onChange={(e) => setFormData({ ...formData, spouse_occupation: e.target.value })}
-                    disabled={loading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="marriage_type">Marriage Type</Label>
-                  <Select
-                    value={formData.marriage_type}
-                    onValueChange={(value) => setFormData({ ...formData, marriage_type: value })}
-                    disabled={loading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ordinance">Ordinance</SelectItem>
-                      <SelectItem value="customary">Customary</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="number_of_children">Number of Children</Label>
-                  <Input
-                    id="number_of_children"
-                    type="number"
-                    min="0"
-                    value={formData.number_of_children}
-                    onChange={(e) => setFormData({ ...formData, number_of_children: parseInt(e.target.value) || 0 })}
-                    disabled={loading}
-                  />
-                </div>
+                {!isSingle && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="spouse_name">Name of Spouse</Label>
+                      <Input
+                        id="spouse_name"
+                        value={formData.spouse_name}
+                        onChange={(e) => setFormData({ ...formData, spouse_name: e.target.value })}
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="spouse_phone_number">Spouse's Phone Number</Label>
+                      <Input
+                        id="spouse_phone_number"
+                        value={formData.spouse_phone_number}
+                        onChange={(e) => setFormData({ ...formData, spouse_phone_number: e.target.value })}
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="spouse_occupation">Occupation of Spouse</Label>
+                      <Input
+                        id="spouse_occupation"
+                        value={formData.spouse_occupation}
+                        onChange={(e) => setFormData({ ...formData, spouse_occupation: e.target.value })}
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="marriage_type">Marriage Type</Label>
+                      <Select
+                        value={formData.marriage_type}
+                        onValueChange={(value) => setFormData({ ...formData, marriage_type: value })}
+                        disabled={loading}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ordinance">Ordinance</SelectItem>
+                          <SelectItem value="customary">Customary</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="number_of_children">Number of Children</Label>
+                      <Input
+                        id="number_of_children"
+                        type="number"
+                        min="0"
+                        value={formData.number_of_children}
+                        onChange={(e) => setFormData({ ...formData, number_of_children: parseInt(e.target.value) || 0 })}
+                        disabled={loading}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
+              {!isSingle && (
               <div className="space-y-2">
                 <Label>Names of Biological Children</Label>
                 {children.map((child, idx) => (
@@ -666,6 +699,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   <Plus className="h-4 w-4 mr-2" /> Add Child
                 </Button>
               </div>
+              )}
             </TabsContent>
 
             <TabsContent value="education" className="space-y-4 mt-4">

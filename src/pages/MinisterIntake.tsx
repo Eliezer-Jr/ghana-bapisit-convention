@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, Clock, FileText, Loader2, Lock, LogOut, Save, Send, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Clock, FileText, Loader2, Lock, LogOut, Save, Send, ShieldCheck } from "lucide-react";
 import logoGbcc from "@/assets/logo-gbcc.png";
 import IntakeFormTabs from "@/components/intake/IntakeFormTabs";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
@@ -40,6 +40,64 @@ type IntakeSubmission = {
   payload: Record<string, any>;
 };
 
+type IntakeTab = "bio" | "education" | "ministerial" | "history" | "other" | "review";
+
+type MissingField = {
+  key: string;
+  label: string;
+  tab: IntakeTab;
+};
+
+const INTAKE_TABS: IntakeTab[] = ["bio", "education", "ministerial", "history", "other", "review"];
+
+function getMissingRequiredFields(payload: Record<string, any>): MissingField[] {
+  const requiredFields: MissingField[] = [
+    { key: "full_name", label: "Full Name", tab: "bio" },
+    { key: "titles", label: "Title(s)", tab: "bio" },
+    { key: "date_of_birth", label: "Date of Birth", tab: "bio" },
+    { key: "phone", label: "Phone Number", tab: "bio" },
+    { key: "whatsapp", label: "WhatsApp Number", tab: "bio" },
+    { key: "email", label: "Email Address", tab: "bio" },
+    { key: "gps_address", label: "GPS Address", tab: "bio" },
+    { key: "location", label: "Location/Area", tab: "bio" },
+    { key: "marital_status", label: "Marital Status", tab: "bio" },
+    { key: "sector", label: "Sector", tab: "ministerial" },
+    { key: "association", label: "Association", tab: "ministerial" },
+    { key: "zone", label: "Zone", tab: "ministerial" },
+    { key: "role", label: "Role/Position", tab: "ministerial" },
+    { key: "current_church_name", label: "Current Church Name", tab: "ministerial" },
+    { key: "position_at_church", label: "Position at Church", tab: "ministerial" },
+    { key: "church_address", label: "Church Address", tab: "ministerial" },
+  ];
+
+  if (payload.marital_status !== "single") {
+    requiredFields.push(
+      { key: "marriage_type", label: "Marriage Type", tab: "bio" },
+      { key: "spouse_name", label: "Spouse Name", tab: "bio" },
+      { key: "spouse_phone_number", label: "Spouse Phone Number", tab: "bio" },
+      { key: "spouse_occupation", label: "Spouse Occupation", tab: "bio" },
+      { key: "number_of_children", label: "Number of Children", tab: "bio" },
+    );
+  }
+
+  const missingFields = requiredFields.filter((field) => {
+    const value = payload[field.key];
+    return value === undefined || value === null || value === "" || (typeof value === "string" && !value.trim());
+  });
+
+  if (!payload.emergency_contact?.contact_name?.trim()) {
+    missingFields.push({ key: "emergency_contact.contact_name", label: "Emergency Contact Name", tab: "other" });
+  }
+  if (!payload.emergency_contact?.relationship?.trim()) {
+    missingFields.push({ key: "emergency_contact.relationship", label: "Emergency Contact Relationship", tab: "other" });
+  }
+  if (!payload.emergency_contact?.phone_number?.trim()) {
+    missingFields.push({ key: "emergency_contact.phone_number", label: "Emergency Contact Phone Number", tab: "other" });
+  }
+
+  return missingFields;
+}
+
 function formatGhanaPhone(input: string) {
   const digits = input.replace(/\D/g, "");
   if (digits.startsWith("233")) return `+${digits}`;
@@ -65,6 +123,7 @@ export default function MinisterIntake() {
   const [payload, setPayload] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<IntakeTab>("bio");
 
   // Enable inactivity logout only when on the form step (authenticated)
   const { handleLogout } = useInactivityLogout(authStep === "form");
@@ -254,13 +313,26 @@ export default function MinisterIntake() {
   }, [session]);
 
   const isSubmitted = submission?.status === "submitted" || submission?.status === "approved";
+  const missingRequiredFields = useMemo(() => getMissingRequiredFields(payload), [payload]);
+  const isReadyForSubmission = missingRequiredFields.length === 0;
 
   const saveDraft = async () => {
     if (!submission) return;
+    const payloadToSave = payload.marital_status === "single"
+      ? {
+          ...payload,
+          marriage_type: "",
+          spouse_name: "",
+          spouse_phone_number: "",
+          spouse_occupation: "",
+          number_of_children: 0,
+          children: [],
+        }
+      : payload;
     setSaving(true);
     const { error } = await supabase
       .from("intake_submissions")
-      .update({ payload })
+      .update({ payload: payloadToSave })
       .eq("id", submission.id);
     setSaving(false);
     if (error) {
@@ -273,68 +345,35 @@ export default function MinisterIntake() {
 
   const submit = async () => {
     if (!submission) return;
-    
-    // Comprehensive validation for all required fields
-    const requiredFields = [
-      { key: "full_name", label: "Full Name" },
-      { key: "titles", label: "Title(s)" },
-      { key: "date_of_birth", label: "Date of Birth" },
-      { key: "phone", label: "Phone Number" },
-      { key: "whatsapp", label: "WhatsApp Number" },
-      { key: "email", label: "Email Address" },
-      { key: "gps_address", label: "GPS Address" },
-      { key: "location", label: "Location/Area" },
-      { key: "marital_status", label: "Marital Status" },
-      { key: "marriage_type", label: "Marriage Type" },
-      { key: "spouse_name", label: "Spouse Name" },
-      { key: "spouse_phone_number", label: "Spouse Phone Number" },
-      { key: "spouse_occupation", label: "Spouse Occupation" },
-      { key: "role", label: "Role/Position" },
-      { key: "current_church_name", label: "Current Church Name" },
-      { key: "position_at_church", label: "Position at Church" },
-      { key: "church_address", label: "Church Address" },
-      { key: "association", label: "Association" },
-      { key: "zone", label: "Zone" },
-      { key: "sector", label: "Sector" },
-    ];
-
-    const missingFields: string[] = [];
-    for (const field of requiredFields) {
-      const value = payload[field.key];
-      if (value === undefined || value === null || (typeof value === "string" && !value.trim())) {
-        missingFields.push(field.label);
-      }
-    }
-
-    // Validate number of children is set (including 0)
-    if (payload.number_of_children === undefined || payload.number_of_children === null || payload.number_of_children === "") {
-      missingFields.push("Number of Children");
-    }
-
-    // Validate emergency contact
-    if (!payload.emergency_contact?.contact_name?.trim()) {
-      missingFields.push("Emergency Contact Name");
-    }
-    if (!payload.emergency_contact?.relationship?.trim()) {
-      missingFields.push("Emergency Contact Relationship");
-    }
-    if (!payload.emergency_contact?.phone_number?.trim()) {
-      missingFields.push("Emergency Contact Phone Number");
-    }
+    const missingFields = getMissingRequiredFields(payload);
 
     if (missingFields.length > 0) {
+      const labels = missingFields.map((field) => field.label);
       if (missingFields.length <= 3) {
-        toast.error(`Please fill in: ${missingFields.join(", ")}`);
+        toast.error(`Please fill in: ${labels.join(", ")}`);
       } else {
         toast.error(`Please fill in all required fields. Missing ${missingFields.length} fields.`);
       }
+      setActiveTab(missingFields[0].tab);
       return;
     }
+
+    const payloadToSubmit = payload.marital_status === "single"
+      ? {
+          ...payload,
+          marriage_type: "",
+          spouse_name: "",
+          spouse_phone_number: "",
+          spouse_occupation: "",
+          number_of_children: 0,
+          children: [],
+        }
+      : payload;
 
     setSubmitting(true);
     const { error } = await supabase
       .from("intake_submissions")
-      .update({ payload, status: "submitted", submitted_at: new Date().toISOString() })
+      .update({ payload: payloadToSubmit, status: "submitted", submitted_at: new Date().toISOString() })
       .eq("id", submission.id);
     setSubmitting(false);
     if (error) {
@@ -342,8 +381,29 @@ export default function MinisterIntake() {
       toast.error("Unable to submit (session may be closed)");
       return;
     }
-    setSubmission({ ...submission, status: "submitted" });
+    setSubmission({ ...submission, payload: payloadToSubmit, status: "submitted" });
     toast.success("Submitted successfully! An administrator will review your information.");
+  };
+
+  const handlePrimaryAction = () => {
+    if (isReadyForSubmission) {
+      submit();
+      return;
+    }
+
+    const currentIndex = INTAKE_TABS.indexOf(activeTab);
+    if (activeTab === "review") {
+      if (missingRequiredFields.length <= 3) {
+        toast.error(`Please fill in: ${missingRequiredFields.map((field) => field.label).join(", ")}`);
+      } else {
+        toast.error(`Please complete all required fields. Missing ${missingRequiredFields.length} fields.`);
+      }
+      setActiveTab(missingRequiredFields[0]?.tab || "bio");
+      return;
+    }
+
+    const nextTab = INTAKE_TABS[Math.min(currentIndex + 1, INTAKE_TABS.length - 1)];
+    setActiveTab(nextTab);
   };
 
   // Format session dates
@@ -540,6 +600,8 @@ export default function MinisterIntake() {
                 <IntakeFormTabs
                   payload={payload}
                   onChange={setPayload}
+                  activeTab={activeTab}
+                  onTabChange={(tab) => setActiveTab(tab as IntakeTab)}
                   disabled={sessionClosed || isSubmitted}
                   submissionId={submission?.id}
                 />
@@ -569,7 +631,7 @@ export default function MinisterIntake() {
                     )}
                   </Button>
                   <Button 
-                    onClick={submit} 
+                    onClick={handlePrimaryAction}
                     disabled={submitting || sessionClosed}
                     className="flex-1"
                   >
@@ -580,8 +642,17 @@ export default function MinisterIntake() {
                       </>
                     ) : (
                       <>
-                        <Send className="h-4 w-4 mr-2" />
-                        Submit for Review
+                        {isReadyForSubmission ? (
+                          <>
+                            <Send className="h-4 w-4 mr-2" />
+                            Submit for Review
+                          </>
+                        ) : (
+                          <>
+                            <ArrowRight className="h-4 w-4 mr-2" />
+                            Next
+                          </>
+                        )}
                       </>
                     )}
                   </Button>
