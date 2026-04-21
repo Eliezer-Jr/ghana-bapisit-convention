@@ -1719,10 +1719,12 @@ export const TITLE_OPTIONS = [
   "Rev",
   "Rev Dr.",
   "Rev Mrs.",
+  "Rev Prof",
   "Mr.",
   "Mrs.",
   "Miss",
   "Pastor",
+  "Pastor Mrs.",
 ];
 
 export const MINISTRY_ENGAGEMENT_OPTIONS = [
