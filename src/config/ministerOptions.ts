@@ -49,13 +49,19 @@ export const SECTORS = Object.keys(SECTOR_ASSOCIATION_MAP);
 // All associations (flat list, for backward compat / reports)
 export const ASSOCIATIONS = Object.values(SECTOR_ASSOCIATION_MAP).flat();
 
-// Fellowships are the same for every association
-export const FELLOWSHIPS = [
-  "Fellowship 1",
-  "Fellowship 2",
-  "Fellowship 3",
-  "Fellowship 4",
-];
+// Fellowships per association (default: all 4 for every association)
+// Update this map when real fellowship data is available
+export const ASSOCIATION_FELLOWSHIP_MAP: Record<string, string[]> = Object.fromEntries(
+  ASSOCIATIONS.map((a) => [a, ["Fellowship 1", "Fellowship 2", "Fellowship 3", "Fellowship 4"]])
+);
+
+// All fellowships (flat list)
+export const FELLOWSHIPS = ["Fellowship 1", "Fellowship 2", "Fellowship 3", "Fellowship 4"];
+
+// Helper: get fellowships for a given association
+export function getFellowshipsForAssociation(association: string): string[] {
+  return ASSOCIATION_FELLOWSHIP_MAP[association] || [];
+}
 
 export const ZONES = [
   "Zone 1",
