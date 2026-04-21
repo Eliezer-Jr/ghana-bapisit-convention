@@ -11,8 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Plus, Trash2, Upload, User } from "lucide-react";
-import { SECTORS, ZONES, getAssociationsForSector } from "@/config/ministerOptions";
-import { getChurchNamesForAssociation } from "@/lib/churchOptions";
+import { SECTORS, ZONES, getAssociationsForSector, getChurchesForAssociation } from "@/config/ministerOptions";
 
 const ministerSchema = z.object({
   full_name: z.string().trim().min(1, "Name is required").max(100),
@@ -57,8 +56,6 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
   const [loading, setLoading] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>("");
-  const [churchOptions, setChurchOptions] = useState<string[]>([]);
-  const [churchOptionsLoading, setChurchOptionsLoading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -103,39 +100,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
     phone_number: "",
   });
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadChurchOptions = async () => {
-      if (!formData.association) {
-        setChurchOptions([]);
-        return;
-      }
-
-      try {
-        setChurchOptionsLoading(true);
-        const names = await getChurchNamesForAssociation(formData.association);
-        if (!cancelled) {
-          setChurchOptions(names);
-        }
-      } catch (error) {
-        console.error("Error loading church names:", error);
-        if (!cancelled) {
-          setChurchOptions([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setChurchOptionsLoading(false);
-        }
-      }
-    };
-
-    loadChurchOptions();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [formData.association]);
+  const churchOptions = getChurchesForAssociation(formData.association);
 
   useEffect(() => {
     const loadMinisterData = async () => {
@@ -851,18 +816,16 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   <Select
                     value={formData.current_church_name}
                     onValueChange={(value) => setFormData({ ...formData, current_church_name: value })}
-                    disabled={loading || churchOptionsLoading || !formData.association || churchOptions.length === 0}
+                    disabled={loading || !formData.association || churchOptions.length === 0}
                   >
                     <SelectTrigger id="current_church_name">
                       <SelectValue
                         placeholder={
                           !formData.association
                             ? "Select Association first"
-                            : churchOptionsLoading
-                              ? "Loading churches..."
-                              : churchOptions.length > 0
-                                ? "Select Church"
-                                : "No churches found"
+                            : churchOptions.length > 0
+                              ? "Select Church"
+                              : "No churches found"
                         }
                       />
                     </SelectTrigger>

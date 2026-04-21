@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,8 +11,7 @@ import { Plus, Trash2, Upload, User, Camera, ClipboardCheck } from "lucide-react
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import IntakeReviewSummary from "./IntakeReviewSummary";
-import { ZONES, SECTORS, getAssociationsForSector, getSectorForAssociation } from "@/config/ministerOptions";
-import { getChurchNamesForAssociation } from "@/lib/churchOptions";
+import { ZONES, SECTORS, getAssociationsForSector, getSectorForAssociation, getChurchesForAssociation } from "@/config/ministerOptions";
 
 interface IntakeFormTabsProps {
   payload: Record<string, any>;
@@ -24,8 +23,7 @@ interface IntakeFormTabsProps {
 export default function IntakeFormTabs({ payload, onChange, disabled, submissionId }: IntakeFormTabsProps) {
   const [uploading, setUploading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string>(payload.photo_url || "");
-  const [churchOptions, setChurchOptions] = useState<string[]>([]);
-  const [churchOptionsLoading, setChurchOptionsLoading] = useState(false);
+  const churchOptions = getChurchesForAssociation(payload.association || "");
 
   const updateField = (field: string, value: any) => {
     onChange({ ...payload, [field]: value });
@@ -50,40 +48,6 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
     const arr = (payload[field] || []).filter((_: any, i: number) => i !== index);
     onChange({ ...payload, [field]: arr });
   };
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadChurchOptions = async () => {
-      if (!payload.association) {
-        setChurchOptions([]);
-        return;
-      }
-
-      try {
-        setChurchOptionsLoading(true);
-        const names = await getChurchNamesForAssociation(payload.association);
-        if (!cancelled) {
-          setChurchOptions(names);
-        }
-      } catch (error) {
-        console.error("Error loading church names:", error);
-        if (!cancelled) {
-          setChurchOptions([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setChurchOptionsLoading(false);
-        }
-      }
-    };
-
-    loadChurchOptions();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [payload.association]);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -561,7 +525,7 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
               <Select
                 value={payload.current_church_name || ""}
                 onValueChange={(value) => updateField("current_church_name", value)}
-                disabled={disabled || churchOptionsLoading || !payload.association || churchOptions.length === 0}
+                disabled={disabled || !payload.association || churchOptions.length === 0}
                 required
               >
                 <SelectTrigger>
@@ -569,11 +533,9 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
                     placeholder={
                       !payload.association
                         ? "Select association first"
-                        : churchOptionsLoading
-                          ? "Loading churches..."
-                          : churchOptions.length > 0
-                            ? "Select church"
-                            : "No churches found"
+                        : churchOptions.length > 0
+                          ? "Select church"
+                          : "No churches found"
                     }
                   />
                 </SelectTrigger>
