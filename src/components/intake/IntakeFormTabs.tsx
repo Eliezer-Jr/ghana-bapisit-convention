@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,8 @@ import { Plus, Trash2, Upload, User, Camera, ClipboardCheck } from "lucide-react
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import IntakeReviewSummary from "./IntakeReviewSummary";
-import { ZONES, SECTORS, FELLOWSHIPS, getAssociationsForSector, getSectorForAssociation, getFellowshipsForAssociation } from "@/config/ministerOptions";
+import { ZONES, SECTORS, getAssociationsForSector, getSectorForAssociation } from "@/config/ministerOptions";
+import { getChurchNamesForAssociation } from "@/lib/churchOptions";
 
 interface IntakeFormTabsProps {
   payload: Record<string, any>;
@@ -23,9 +24,15 @@ interface IntakeFormTabsProps {
 export default function IntakeFormTabs({ payload, onChange, disabled, submissionId }: IntakeFormTabsProps) {
   const [uploading, setUploading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string>(payload.photo_url || "");
+  const [churchOptions, setChurchOptions] = useState<string[]>([]);
+  const [churchOptionsLoading, setChurchOptionsLoading] = useState(false);
 
   const updateField = (field: string, value: any) => {
     onChange({ ...payload, [field]: value });
+  };
+
+  const updateFields = (fields: Record<string, any>) => {
+    onChange({ ...payload, ...fields });
   };
 
   const updateArrayField = (field: string, index: number, key: string, value: any) => {
@@ -43,6 +50,40 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
     const arr = (payload[field] || []).filter((_: any, i: number) => i !== index);
     onChange({ ...payload, [field]: arr });
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadChurchOptions = async () => {
+      if (!payload.association) {
+        setChurchOptions([]);
+        return;
+      }
+
+      try {
+        setChurchOptionsLoading(true);
+        const names = await getChurchNamesForAssociation(payload.association);
+        if (!cancelled) {
+          setChurchOptions(names);
+        }
+      } catch (error) {
+        console.error("Error loading church names:", error);
+        if (!cancelled) {
+          setChurchOptions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setChurchOptionsLoading(false);
+        }
+      }
+    };
+
+    loadChurchOptions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [payload.association]);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -425,53 +466,6 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
 
       {/* Ministerial Tab */}
       <TabsContent value="ministerial" className="mt-6 space-y-6">
-        {/* Current Ministry */}
-        <div className="space-y-4">
-          <h3 className="font-semibold text-lg border-b pb-2">Current Ministry</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Role/Position <span className="text-destructive">*</span></Label>
-              <Input
-                value={payload.role || ""}
-                onChange={(e) => updateField("role", e.target.value)}
-                disabled={disabled}
-                placeholder="e.g., Pastor, Evangelist"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Current Church Name <span className="text-destructive">*</span></Label>
-              <Input
-                value={payload.current_church_name || ""}
-                onChange={(e) => updateField("current_church_name", e.target.value)}
-                disabled={disabled}
-                placeholder="Church name"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Position at Church <span className="text-destructive">*</span></Label>
-              <Input
-                value={payload.position_at_church || ""}
-                onChange={(e) => updateField("position_at_church", e.target.value)}
-                disabled={disabled}
-                placeholder="e.g., Senior Pastor"
-                required
-              />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label>Church Address <span className="text-destructive">*</span></Label>
-              <Input
-                value={payload.church_address || ""}
-                onChange={(e) => updateField("church_address", e.target.value)}
-                disabled={disabled}
-                placeholder="Full address"
-                required
-              />
-            </div>
-          </div>
-        </div>
-
         {/* Convention Structure */}
         <div className="space-y-4">
           <h3 className="font-semibold text-lg border-b pb-2">Convention Structure</h3>
@@ -481,8 +475,12 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
               <Select
                 value={payload.sector || ""}
                 onValueChange={(value) => {
-                  updateField("sector", value);
-                  updateField("association", "");
+                  updateFields({
+                    sector: value,
+                    association: "",
+                    fellowship: "",
+                    current_church_name: "",
+                  });
                 }}
                 disabled={disabled}
                 required
@@ -502,12 +500,13 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
               <Select
                 value={payload.association || ""}
                 onValueChange={(value) => {
-                  updateField("association", value);
-                  updateField("fellowship", "");
-                  if (!payload.sector) {
-                    const sector = getSectorForAssociation(value);
-                    if (sector) updateField("sector", sector);
-                  }
+                  const sector = !payload.sector ? getSectorForAssociation(value) : undefined;
+                  updateFields({
+                    association: value,
+                    fellowship: "",
+                    current_church_name: "",
+                    ...(sector ? { sector } : {}),
+                  });
                 }}
                 disabled={disabled || !payload.sector}
                 required
@@ -540,23 +539,73 @@ export default function IntakeFormTabs({ payload, onChange, disabled, submission
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </div>
+
+        {/* Current Ministry */}
+        <div className="space-y-4">
+          <h3 className="font-semibold text-lg border-b pb-2">Current Ministry</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Fellowship <span className="text-destructive">*</span></Label>
+              <Label>Role/Position <span className="text-destructive">*</span></Label>
+              <Input
+                value={payload.role || ""}
+                onChange={(e) => updateField("role", e.target.value)}
+                disabled={disabled}
+                placeholder="e.g., Pastor, Evangelist"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Current Church Name <span className="text-destructive">*</span></Label>
               <Select
-                value={payload.fellowship || ""}
-                onValueChange={(value) => updateField("fellowship", value)}
-                disabled={disabled || !payload.association}
+                value={payload.current_church_name || ""}
+                onValueChange={(value) => updateField("current_church_name", value)}
+                disabled={disabled || churchOptionsLoading || !payload.association || churchOptions.length === 0}
                 required
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={payload.association ? "Select fellowship" : "Select association first"} />
+                  <SelectValue
+                    placeholder={
+                      !payload.association
+                        ? "Select association first"
+                        : churchOptionsLoading
+                          ? "Loading churches..."
+                          : churchOptions.length > 0
+                            ? "Select church"
+                            : "No churches found"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  {getFellowshipsForAssociation(payload.association || "").map((f) => (
-                    <SelectItem key={f} value={f}>{f}</SelectItem>
+                  {(payload.current_church_name && !churchOptions.includes(payload.current_church_name)
+                    ? [payload.current_church_name, ...churchOptions]
+                    : churchOptions
+                  ).map((church) => (
+                    <SelectItem key={church} value={church}>{church}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Position at Church <span className="text-destructive">*</span></Label>
+              <Input
+                value={payload.position_at_church || ""}
+                onChange={(e) => updateField("position_at_church", e.target.value)}
+                disabled={disabled}
+                placeholder="e.g., Senior Pastor"
+                required
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Church Address <span className="text-destructive">*</span></Label>
+              <Input
+                value={payload.church_address || ""}
+                onChange={(e) => updateField("church_address", e.target.value)}
+                disabled={disabled}
+                placeholder="Full address"
+                required
+              />
             </div>
           </div>
         </div>

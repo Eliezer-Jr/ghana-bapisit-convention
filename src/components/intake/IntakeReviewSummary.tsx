@@ -153,16 +153,19 @@ export default function IntakeReviewSummary({ payload }: IntakeReviewSummaryProp
           <InfoRow label="Number of Children" value={payload.number_of_children} />
         </SectionCard>
 
+        {/* Convention Structure */}
+        <SectionCard title="Convention Structure" icon={Church}>
+          <InfoRow label="Association" value={payload.association} />
+          <InfoRow label="Sector" value={payload.sector} />
+          <InfoRow label="Zone" value={payload.zone} />
+        </SectionCard>
+
         {/* Current Ministry */}
         <SectionCard title="Current Ministry" icon={Church}>
           <InfoRow label="Role/Position" value={payload.role} />
-          <InfoRow label="Church Name" value={payload.current_church_name} />
+          <InfoRow label="Current Church Name" value={payload.current_church_name} />
           <InfoRow label="Position at Church" value={payload.position_at_church} />
           <InfoRow label="Church Address" value={payload.church_address} />
-          <InfoRow label="Association" value={payload.association} />
-          <InfoRow label="Sector" value={payload.sector} />
-          <InfoRow label="Fellowship" value={payload.fellowship} />
-          <InfoRow label="Zone" value={payload.zone} />
         </SectionCard>
 
         {/* Ministerial Milestones */}

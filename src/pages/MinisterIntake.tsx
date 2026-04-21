@@ -296,7 +296,6 @@ export default function MinisterIntake() {
       { key: "association", label: "Association" },
       { key: "zone", label: "Zone" },
       { key: "sector", label: "Sector" },
-      { key: "fellowship", label: "Fellowship" },
     ];
 
     const missingFields: string[] = [];

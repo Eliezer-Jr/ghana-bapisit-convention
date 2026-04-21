@@ -162,7 +162,6 @@ const Ministers = () => {
         church_address: "123 Main St, Accra",
         association: "Greater Accra",
         sector: "Central",
-        fellowship: "Morning Fellowship",
         ordination_year: "2010",
         recognition_year: "2008",
         licensing_year: "2006",
@@ -220,7 +219,6 @@ const Ministers = () => {
         church_address: minister.church_address || "",
         association: minister.association || "",
         sector: minister.sector || "",
-        fellowship: minister.fellowship || "",
         ordination_year: minister.ordination_year || "",
         recognition_year: minister.recognition_year || "",
         licensing_year: minister.licensing_year || "",
@@ -376,7 +374,6 @@ const Ministers = () => {
             church_address: row.church_address || "",
             association: row.association || "",
             sector: row.sector || "",
-            fellowship: row.fellowship || "",
             ordination_year: row.ordination_year || "",
             recognition_year: row.recognition_year || "",
             licensing_year: row.licensing_year || "",
@@ -775,7 +772,6 @@ const Ministers = () => {
                       <InfoField label="Position at Church" value={ministerToView.position_at_church || "-"} />
                       <InfoField label="Association" value={ministerToView.association || "-"} />
                       <InfoField label="Sector" value={ministerToView.sector || "-"} />
-                      <InfoField label="Fellowship" value={ministerToView.fellowship || "-"} />
                       <InfoField label="Date Joined" value={new Date(ministerToView.date_joined).toLocaleDateString()} />
                     </div>
                   </div>
@@ -858,7 +854,6 @@ const Ministers = () => {
                   <TableHead className="min-w-[120px]">Position</TableHead>
                   <TableHead className="min-w-[120px]">Association</TableHead>
                   <TableHead className="min-w-[120px]">Sector</TableHead>
-                  <TableHead className="min-w-[120px]">Fellowship</TableHead>
                   <TableHead className="min-w-[100px]">EC 1 Name</TableHead>
                   <TableHead className="min-w-[100px]">EC 1 Relation</TableHead>
                   <TableHead className="min-w-[120px]">EC 1 Phone</TableHead>
@@ -950,7 +945,6 @@ const Ministers = () => {
                     <TableCell><Input value={row.position_at_church} onChange={(e) => updatePreviewCell(row._rowId, 'position_at_church', e.target.value)} /></TableCell>
                     <TableCell><Input value={row.association} onChange={(e) => updatePreviewCell(row._rowId, 'association', e.target.value)} /></TableCell>
                     <TableCell><Input value={row.sector} onChange={(e) => updatePreviewCell(row._rowId, 'sector', e.target.value)} /></TableCell>
-                    <TableCell><Input value={row.fellowship} onChange={(e) => updatePreviewCell(row._rowId, 'fellowship', e.target.value)} /></TableCell>
                     <TableCell><Input value={row.emergency_contact_1_name} onChange={(e) => updatePreviewCell(row._rowId, 'emergency_contact_1_name', e.target.value)} /></TableCell>
                     <TableCell><Input value={row.emergency_contact_1_relationship} onChange={(e) => updatePreviewCell(row._rowId, 'emergency_contact_1_relationship', e.target.value)} /></TableCell>
                     <TableCell><Input value={row.emergency_contact_1_phone} onChange={(e) => updatePreviewCell(row._rowId, 'emergency_contact_1_phone', e.target.value)} /></TableCell>

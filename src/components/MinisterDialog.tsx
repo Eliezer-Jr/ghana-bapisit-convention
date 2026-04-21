@@ -11,7 +11,8 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Plus, Trash2, Upload, User } from "lucide-react";
-import { SECTORS, ZONES, getAssociationsForSector, getFellowshipsForAssociation } from "@/config/ministerOptions";
+import { SECTORS, ZONES, getAssociationsForSector } from "@/config/ministerOptions";
+import { getChurchNamesForAssociation } from "@/lib/churchOptions";
 
 const ministerSchema = z.object({
   full_name: z.string().trim().min(1, "Name is required").max(100),
@@ -56,6 +57,8 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
   const [loading, setLoading] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>("");
+  const [churchOptions, setChurchOptions] = useState<string[]>([]);
+  const [churchOptionsLoading, setChurchOptionsLoading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -99,6 +102,40 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
     relationship: "",
     phone_number: "",
   });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadChurchOptions = async () => {
+      if (!formData.association) {
+        setChurchOptions([]);
+        return;
+      }
+
+      try {
+        setChurchOptionsLoading(true);
+        const names = await getChurchNamesForAssociation(formData.association);
+        if (!cancelled) {
+          setChurchOptions(names);
+        }
+      } catch (error) {
+        console.error("Error loading church names:", error);
+        if (!cancelled) {
+          setChurchOptions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setChurchOptionsLoading(false);
+        }
+      }
+    };
+
+    loadChurchOptions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.association]);
 
   useEffect(() => {
     const loadMinisterData = async () => {
@@ -757,15 +794,6 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="current_church_name">Name of Current Church</Label>
-                  <Input
-                    id="current_church_name"
-                    value={formData.current_church_name}
-                    onChange={(e) => setFormData({ ...formData, current_church_name: e.target.value })}
-                    disabled={loading}
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="position_at_church">Position at Church</Label>
                   <Input
                     id="position_at_church"
@@ -785,10 +813,10 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="association">Sector</Label>
+                  <Label htmlFor="sector">Sector</Label>
                   <Select
-                    value={formData.association}
-                    onValueChange={(value) => setFormData({ ...formData, sector: value, association: "" })}
+                    value={formData.sector}
+                    onValueChange={(value) => setFormData({ ...formData, sector: value, association: "", fellowship: "", current_church_name: "" })}
                     disabled={loading}
                   >
                     <SelectTrigger>
@@ -805,7 +833,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   <Label htmlFor="association">Association</Label>
                   <Select
                     value={formData.association}
-                    onValueChange={(value) => setFormData({ ...formData, association: value, fellowship: "" })}
+                    onValueChange={(value) => setFormData({ ...formData, association: value, fellowship: "", current_church_name: "" })}
                     disabled={loading || !formData.sector}
                   >
                     <SelectTrigger>
@@ -814,6 +842,36 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                     <SelectContent>
                       {getAssociationsForSector(formData.sector).map((a) => (
                         <SelectItem key={a} value={a}>{a}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="current_church_name">Current Church Name</Label>
+                  <Select
+                    value={formData.current_church_name}
+                    onValueChange={(value) => setFormData({ ...formData, current_church_name: value })}
+                    disabled={loading || churchOptionsLoading || !formData.association || churchOptions.length === 0}
+                  >
+                    <SelectTrigger id="current_church_name">
+                      <SelectValue
+                        placeholder={
+                          !formData.association
+                            ? "Select Association first"
+                            : churchOptionsLoading
+                              ? "Loading churches..."
+                              : churchOptions.length > 0
+                                ? "Select Church"
+                                : "No churches found"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(formData.current_church_name && !churchOptions.includes(formData.current_church_name)
+                        ? [formData.current_church_name, ...churchOptions]
+                        : churchOptions
+                      ).map((church) => (
+                        <SelectItem key={church} value={church}>{church}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -831,23 +889,6 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                     <SelectContent>
                       {ZONES.map((z) => (
                         <SelectItem key={z} value={z}>{z}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="fellowship">Fellowship</Label>
-                  <Select
-                    value={formData.fellowship}
-                    onValueChange={(value) => setFormData({ ...formData, fellowship: value })}
-                    disabled={loading || !formData.association}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={formData.association ? "Select Fellowship" : "Select Association first"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getFellowshipsForAssociation(formData.association).map((f) => (
-                        <SelectItem key={f} value={f}>{f}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
