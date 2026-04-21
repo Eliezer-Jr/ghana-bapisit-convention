@@ -11,7 +11,7 @@ import { Plus, Trash2, Upload, User, Camera, ClipboardCheck } from "lucide-react
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import IntakeReviewSummary from "./IntakeReviewSummary";
-import { ZONES, SECTORS, FELLOWSHIPS, getAssociationsForSector, getSectorForAssociation } from "@/config/ministerOptions";
+import { ZONES, SECTORS, FELLOWSHIPS, getAssociationsForSector, getSectorForAssociation, getFellowshipsForAssociation } from "@/config/ministerOptions";
 
 interface IntakeFormTabsProps {
   payload: Record<string, any>;
