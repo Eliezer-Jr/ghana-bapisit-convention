@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import IntakeReviewSummary from "./IntakeReviewSummary";
 import { MINISTRY_ENGAGEMENT_OPTIONS, ZONES, SECTORS, TITLE_OPTIONS, getAssociationsForSector, getSectorForAssociation, getChurchesForAssociation } from "@/config/ministerOptions";
 import ImageCropDialog from "@/components/application/ImageCropDialog";
+import GhanaCardUploadCard from "@/components/GhanaCardUploadCard";
 
 interface IntakeFormTabsProps {
   payload: Record<string, any>;
@@ -405,87 +406,38 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                 required
               />
             </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label>Ghana Card Copy - Front</Label>
-              <div className="flex flex-wrap gap-2">
-                <Label htmlFor="ghana-card-front-upload" className="cursor-pointer">
-                  <div className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
-                    <Upload className="h-4 w-4" />
-                    <span>{payload.ghana_card_front_url ? "Replace front copy" : "Upload front copy"}</span>
-                  </div>
-                </Label>
-                <Input
+            <div className="space-y-3 sm:col-span-2">
+              <Label>Ghana Card Upload</Label>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <GhanaCardUploadCard
                   id="ghana-card-front-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
+                  title="Ghana Card Front"
+                  sideLabel="Front side"
+                  imageUrl={payload.ghana_card_front_url}
+                  imageName={payload.ghana_card_front_name}
                   disabled={disabled}
-                  onChange={(e) => {
-                    void handleGhanaCardUpload("front", e.target.files?.[0] || null);
-                    e.target.value = "";
-                  }}
+                  onUpload={(file) => handleGhanaCardUpload("front", file)}
+                  onRemove={() => updateFields({
+                    ghana_card_front_name: null,
+                    ghana_card_front_type: null,
+                    ghana_card_front_url: null,
+                  })}
                 />
-                {payload.ghana_card_front_url && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => updateFields({
-                      ghana_card_front_name: null,
-                      ghana_card_front_type: null,
-                      ghana_card_front_url: null,
-                    })}
-                    disabled={disabled}
-                  >
-                    Remove
-                  </Button>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">Accepted: images only, up to 2MB.</p>
-              {payload.ghana_card_front_name && (
-                <p className="text-sm text-muted-foreground">{payload.ghana_card_front_name}</p>
-              )}
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label>Ghana Card Copy - Back</Label>
-              <div className="flex flex-wrap gap-2">
-                <Label htmlFor="ghana-card-back-upload" className="cursor-pointer">
-                  <div className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
-                    <Upload className="h-4 w-4" />
-                    <span>{payload.ghana_card_back_url ? "Replace back copy" : "Upload back copy"}</span>
-                  </div>
-                </Label>
-                <Input
+                <GhanaCardUploadCard
                   id="ghana-card-back-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
+                  title="Ghana Card Back"
+                  sideLabel="Back side"
+                  imageUrl={payload.ghana_card_back_url}
+                  imageName={payload.ghana_card_back_name}
                   disabled={disabled}
-                  onChange={(e) => {
-                    void handleGhanaCardUpload("back", e.target.files?.[0] || null);
-                    e.target.value = "";
-                  }}
+                  onUpload={(file) => handleGhanaCardUpload("back", file)}
+                  onRemove={() => updateFields({
+                    ghana_card_back_name: null,
+                    ghana_card_back_type: null,
+                    ghana_card_back_url: null,
+                  })}
                 />
-                {payload.ghana_card_back_url && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => updateFields({
-                      ghana_card_back_name: null,
-                      ghana_card_back_type: null,
-                      ghana_card_back_url: null,
-                    })}
-                    disabled={disabled}
-                  >
-                    Remove
-                  </Button>
-                )}
               </div>
-              <p className="text-xs text-muted-foreground">Accepted: images only, up to 2MB.</p>
-              {payload.ghana_card_back_name && (
-                <p className="text-sm text-muted-foreground">{payload.ghana_card_back_name}</p>
-              )}
             </div>
           </div>
         </div>

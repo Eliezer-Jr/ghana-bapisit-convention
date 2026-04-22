@@ -13,6 +13,7 @@ import { z } from "zod";
 import { Plus, Trash2, Upload, User } from "lucide-react";
 import { MINISTRY_ENGAGEMENT_OPTIONS, SECTORS, TITLE_OPTIONS, ZONES, getAssociationsForSector, getChurchesForAssociation } from "@/config/ministerOptions";
 import ImageCropDialog from "@/components/application/ImageCropDialog";
+import GhanaCardUploadCard from "@/components/GhanaCardUploadCard";
 
 const ministerSchema = z.object({
   full_name: z.string().trim().min(1, "Name is required").max(100),
@@ -783,89 +784,40 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                     disabled={loading}
                   />
                 </div>
-                <div className="space-y-2 col-span-2">
-                  <Label>Ghana Card Copy - Front</Label>
-                  <div className="flex flex-wrap gap-2">
-                    <Label htmlFor="ghana-card-front-admin-upload" className="cursor-pointer">
-                      <div className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
-                        <Upload className="h-4 w-4" />
-                        <span>{formData.ghana_card_front_url ? "Replace front copy" : "Upload front copy"}</span>
-                      </div>
-                    </Label>
-                    <Input
+                <div className="space-y-3 col-span-2">
+                  <Label>Ghana Card Upload</Label>
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <GhanaCardUploadCard
                       id="ghana-card-front-admin-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
+                      title="Ghana Card Front"
+                      sideLabel="Front side"
+                      imageUrl={formData.ghana_card_front_url}
+                      imageName={formData.ghana_card_front_name}
                       disabled={loading}
-                      onChange={(e) => {
-                        void handleGhanaCardUpload("front", e.target.files?.[0] || null);
-                        e.target.value = "";
-                      }}
+                      onUpload={(file) => handleGhanaCardUpload("front", file)}
+                      onRemove={() => setFormData({
+                        ...formData,
+                        ghana_card_front_name: "",
+                        ghana_card_front_type: "",
+                        ghana_card_front_url: "",
+                      })}
                     />
-                    {formData.ghana_card_front_url && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setFormData({
-                          ...formData,
-                          ghana_card_front_name: "",
-                          ghana_card_front_type: "",
-                          ghana_card_front_url: "",
-                        })}
-                        disabled={loading}
-                      >
-                        Remove
-                      </Button>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">Accepted: images only, up to 2MB.</p>
-                  {formData.ghana_card_front_name && (
-                    <p className="text-sm text-muted-foreground">{formData.ghana_card_front_name}</p>
-                  )}
-                </div>
-                <div className="space-y-2 col-span-2">
-                  <Label>Ghana Card Copy - Back</Label>
-                  <div className="flex flex-wrap gap-2">
-                    <Label htmlFor="ghana-card-back-admin-upload" className="cursor-pointer">
-                      <div className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
-                        <Upload className="h-4 w-4" />
-                        <span>{formData.ghana_card_back_url ? "Replace back copy" : "Upload back copy"}</span>
-                      </div>
-                    </Label>
-                    <Input
+                    <GhanaCardUploadCard
                       id="ghana-card-back-admin-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
+                      title="Ghana Card Back"
+                      sideLabel="Back side"
+                      imageUrl={formData.ghana_card_back_url}
+                      imageName={formData.ghana_card_back_name}
                       disabled={loading}
-                      onChange={(e) => {
-                        void handleGhanaCardUpload("back", e.target.files?.[0] || null);
-                        e.target.value = "";
-                      }}
+                      onUpload={(file) => handleGhanaCardUpload("back", file)}
+                      onRemove={() => setFormData({
+                        ...formData,
+                        ghana_card_back_name: "",
+                        ghana_card_back_type: "",
+                        ghana_card_back_url: "",
+                      })}
                     />
-                    {formData.ghana_card_back_url && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setFormData({
-                          ...formData,
-                          ghana_card_back_name: "",
-                          ghana_card_back_type: "",
-                          ghana_card_back_url: "",
-                        })}
-                        disabled={loading}
-                      >
-                        Remove
-                      </Button>
-                    )}
                   </div>
-                  <p className="text-xs text-muted-foreground">Accepted: images only, up to 2MB.</p>
-                  {formData.ghana_card_back_name && (
-                    <p className="text-sm text-muted-foreground">{formData.ghana_card_back_name}</p>
-                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="marital_status">Marital Status</Label>
