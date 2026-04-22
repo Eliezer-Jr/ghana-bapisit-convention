@@ -123,6 +123,46 @@ function DiffRow({
   );
 }
 
+function QualificationDocumentPreview({
+  documentUrl,
+  documentName,
+  documentType,
+}: {
+  documentUrl?: string | null;
+  documentName?: string | null;
+  documentType?: string | null;
+}) {
+  if (!documentUrl) return null;
+
+  const isImage = documentType?.startsWith("image/");
+  const isPdf = documentType === "application/pdf" || documentUrl.toLowerCase().includes(".pdf");
+
+  return (
+    <div className="mt-2 space-y-2">
+      {documentName && (
+        <p className="text-xs text-muted-foreground">{documentName}</p>
+      )}
+      {isImage ? (
+        <img
+          src={documentUrl}
+          alt={documentName || "Qualification document"}
+          className="max-h-56 w-full rounded-md border object-contain bg-muted/30"
+        />
+      ) : isPdf ? (
+        <iframe
+          src={documentUrl}
+          title={documentName || "Qualification PDF preview"}
+          className="h-64 w-full rounded-md border bg-background"
+        />
+      ) : (
+        <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
+          Preview not available for this file type
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SubmissionReviewDialog({ 
   submission, 
   open, 
@@ -525,6 +565,38 @@ export function SubmissionReviewDialog({
                   />
                 ))}
               </div>
+
+              {Array.isArray(payload.qualifications) && payload.qualifications.length > 0 && (
+                <div className="mt-6 space-y-3">
+                  <Separator />
+                  <div>
+                    <h4 className="text-sm font-semibold">Educational Qualification Documents</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Supporting files submitted with educational qualifications.
+                    </p>
+                  </div>
+                  <div className="space-y-3">
+                    {payload.qualifications.map((qual: any, idx: number) => (
+                      <div key={`${qual.qualification || "qualification"}-${idx}`} className="rounded-md border p-3">
+                        <div className="text-sm font-medium">{qual.qualification || `Qualification ${idx + 1}`}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {qual.institution || "No institution provided"}
+                          {qual.year_obtained ? ` (${qual.year_obtained})` : ""}
+                        </div>
+                        {qual.document_url ? (
+                          <QualificationDocumentPreview
+                            documentUrl={qual.document_url}
+                            documentName={qual.document_name}
+                            documentType={qual.document_type}
+                          />
+                        ) : (
+                          <p className="mt-2 text-sm text-muted-foreground">No supporting document attached</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </ScrollArea>
           </TabsContent>
         </Tabs>

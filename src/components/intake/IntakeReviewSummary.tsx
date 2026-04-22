@@ -51,6 +51,46 @@ function SectionCard({
   );
 }
 
+function QualificationDocumentPreview({
+  documentUrl,
+  documentName,
+  documentType,
+}: {
+  documentUrl?: string | null;
+  documentName?: string | null;
+  documentType?: string | null;
+}) {
+  if (!documentUrl) return null;
+
+  const isImage = documentType?.startsWith("image/");
+  const isPdf = documentType === "application/pdf" || documentUrl.toLowerCase().includes(".pdf");
+
+  return (
+    <div className="mt-2 space-y-2">
+      {documentName && (
+        <p className="text-xs text-muted-foreground">{documentName}</p>
+      )}
+      {isImage ? (
+        <img
+          src={documentUrl}
+          alt={documentName || "Qualification document"}
+          className="max-h-56 w-full rounded-md border object-contain bg-muted/30"
+        />
+      ) : isPdf ? (
+        <iframe
+          src={documentUrl}
+          title={documentName || "Qualification PDF preview"}
+          className="h-64 w-full rounded-md border bg-background"
+        />
+      ) : (
+        <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
+          Preview not available for this file type
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function IntakeReviewSummary({ payload }: IntakeReviewSummaryProps) {
   const isSingle = payload.marital_status === "single";
   const hasQualifications = payload.qualifications?.length > 0;
@@ -216,16 +256,11 @@ export default function IntakeReviewSummary({ payload }: IntakeReviewSummaryProp
                 <p className="text-sm text-muted-foreground">
                   {qual.institution} {qual.year_obtained && `(${qual.year_obtained})`}
                 </p>
-                {qual.document_url && (
-                  <a
-                    href={qual.document_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-primary hover:underline"
-                  >
-                    {qual.document_name || "View supporting document"}
-                  </a>
-                )}
+                <QualificationDocumentPreview
+                  documentUrl={qual.document_url}
+                  documentName={qual.document_name}
+                  documentType={qual.document_type}
+                />
               </div>
             ))}
           </div>
