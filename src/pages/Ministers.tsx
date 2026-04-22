@@ -750,11 +750,52 @@ const Ministers = () => {
                     <h3 className="text-lg font-semibold text-primary border-b pb-2">Personal Information</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <InfoField label="Date of Birth" value={ministerToView.date_of_birth ? new Date(ministerToView.date_of_birth).toLocaleDateString() : "-"} />
+                      <InfoField label="Ghana Card Number" value={ministerToView.ghana_card_number || "-"} />
                       <InfoField label="Marital Status" value={ministerToView.marital_status || "-"} />
                       <InfoField label="Spouse Name" value={ministerToView.spouse_name || "-"} />
                       <InfoField label="Marriage Type" value={ministerToView.marriage_type || "-"} />
                       <InfoField label="Number of Children" value={ministerToView.number_of_children || "0"} />
                     </div>
+                    {(ministerToView.ghana_card_front_url || ministerToView.ghana_card_back_url) && (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {ministerToView.ghana_card_front_url && (
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">Ghana Card Front</p>
+                            {ministerToView.ghana_card_front_type?.startsWith("image/") ? (
+                              <img
+                                src={ministerToView.ghana_card_front_url}
+                                alt={ministerToView.ghana_card_front_name || "Ghana Card Front"}
+                                className="max-h-64 w-full rounded-md border object-contain bg-muted/30"
+                              />
+                            ) : (
+                              <iframe
+                                src={ministerToView.ghana_card_front_url}
+                                title={ministerToView.ghana_card_front_name || "Ghana Card Front"}
+                                className="h-64 w-full rounded-md border bg-background"
+                              />
+                            )}
+                          </div>
+                        )}
+                        {ministerToView.ghana_card_back_url && (
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">Ghana Card Back</p>
+                            {ministerToView.ghana_card_back_type?.startsWith("image/") ? (
+                              <img
+                                src={ministerToView.ghana_card_back_url}
+                                alt={ministerToView.ghana_card_back_name || "Ghana Card Back"}
+                                className="max-h-64 w-full rounded-md border object-contain bg-muted/30"
+                              />
+                            ) : (
+                              <iframe
+                                src={ministerToView.ghana_card_back_url}
+                                title={ministerToView.ghana_card_back_name || "Ghana Card Back"}
+                                className="h-64 w-full rounded-md border bg-background"
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Location Information */}

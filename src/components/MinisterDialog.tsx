@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { Plus, Trash2, Upload, User } from "lucide-react";
 import { MINISTRY_ENGAGEMENT_OPTIONS, SECTORS, TITLE_OPTIONS, ZONES, getAssociationsForSector, getChurchesForAssociation } from "@/config/ministerOptions";
+import ImageCropDialog from "@/components/application/ImageCropDialog";
 
 const ministerSchema = z.object({
   full_name: z.string().trim().min(1, "Name is required").max(100),
@@ -26,6 +27,13 @@ const ministerSchema = z.object({
   titles: z.string().trim().max(200).optional(),
   date_of_birth: z.string().optional(),
   gps_address: z.string().trim().max(200).optional(),
+  ghana_card_number: z.string().trim().max(50).optional(),
+  ghana_card_front_name: z.string().trim().max(255).optional(),
+  ghana_card_front_type: z.string().trim().max(100).optional(),
+  ghana_card_front_url: z.string().trim().max(500).optional(),
+  ghana_card_back_name: z.string().trim().max(255).optional(),
+  ghana_card_back_type: z.string().trim().max(100).optional(),
+  ghana_card_back_url: z.string().trim().max(500).optional(),
   marital_status: z.string().max(20).optional(),
   spouse_name: z.string().trim().max(100).optional(),
   spouse_phone_number: z.string().trim().max(20).optional(),
@@ -57,10 +65,13 @@ interface MinisterDialogProps {
 const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDialogProps) => {
   const OTHER_CHURCH_VALUE = "__other__";
   const QUALIFICATION_DOCUMENT_BUCKET = "qualification-documents";
+  const GHANA_CARD_DOCUMENT_BUCKET = "ghana-card-documents";
   const QUALIFICATION_DOCUMENT_MAX_SIZE = 2 * 1024 * 1024;
   const [loading, setLoading] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>("");
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState("");
   const [uploadingQualificationIndex, setUploadingQualificationIndex] = useState<number | null>(null);
   const [useCustomCurrentChurch, setUseCustomCurrentChurch] = useState(false);
   const [customHistoryChurchRows, setCustomHistoryChurchRows] = useState<Record<number, boolean>>({});
@@ -77,6 +88,13 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
     titles: "",
     date_of_birth: "",
     gps_address: "",
+    ghana_card_number: "",
+    ghana_card_front_name: "",
+    ghana_card_front_type: "",
+    ghana_card_front_url: "",
+    ghana_card_back_name: "",
+    ghana_card_back_type: "",
+    ghana_card_back_url: "",
     marital_status: "",
     spouse_name: "",
     spouse_phone_number: "",
@@ -162,6 +180,13 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           titles: minister.titles || "",
           date_of_birth: minister.date_of_birth || "",
           gps_address: minister.gps_address || "",
+          ghana_card_number: minister.ghana_card_number || "",
+          ghana_card_front_name: minister.ghana_card_front_name || "",
+          ghana_card_front_type: minister.ghana_card_front_type || "",
+          ghana_card_front_url: minister.ghana_card_front_url || "",
+          ghana_card_back_name: minister.ghana_card_back_name || "",
+          ghana_card_back_type: minister.ghana_card_back_type || "",
+          ghana_card_back_url: minister.ghana_card_back_url || "",
           marital_status: minister.marital_status || "",
           spouse_name: minister.spouse_name || "",
           spouse_phone_number: minister.spouse_phone_number || "",
@@ -222,6 +247,13 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           titles: "",
           date_of_birth: "",
           gps_address: "",
+          ghana_card_number: "",
+          ghana_card_front_name: "",
+          ghana_card_front_type: "",
+          ghana_card_front_url: "",
+          ghana_card_back_name: "",
+          ghana_card_back_type: "",
+          ghana_card_back_url: "",
           marital_status: "",
           spouse_name: "",
           spouse_phone_number: "",
@@ -263,22 +295,45 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
     }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Photo size must be less than 2MB");
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setImageToCrop(objectUrl);
+    setCropDialogOpen(true);
+  };
+
+  const handlePhotoCropComplete = (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], `minister-photo-${Date.now()}.jpg`, {
+      type: "image/jpeg",
+    });
+    const objectUrl = URL.createObjectURL(croppedBlob);
+    setPhotoFile(croppedFile);
+    setPhotoPreview(objectUrl);
+    setCropDialogOpen(false);
+    setImageToCrop("");
+  };
+
+  const handlePhotoCropCancel = () => {
+    setCropDialogOpen(false);
+    setImageToCrop("");
   };
 
   const handleQualificationDocumentUpload = async (index: number, file: File | null) => {
     if (!file) return;
 
-    const isAcceptedType = file.type === "application/pdf" || file.type.startsWith("image/");
+    const isAcceptedType = file.type.startsWith("image/");
     if (!isAcceptedType) {
-      toast.error("Only PDF files and images are allowed");
+      toast.error("Only image files are allowed");
       return;
     }
 
@@ -320,6 +375,57 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
     }
   };
 
+  const handleGhanaCardUpload = async (side: "front" | "back", file: File | null) => {
+    if (!file) return;
+
+    const isAcceptedType = file.type === "application/pdf" || file.type.startsWith("image/");
+    if (!isAcceptedType) {
+      toast.error("Only PDF files and images are allowed");
+      return;
+    }
+
+    if (file.size > QUALIFICATION_DOCUMENT_MAX_SIZE) {
+      toast.error("Document size must be 2MB or less");
+      return;
+    }
+
+    const fileExt = file.name.split(".").pop() || "file";
+    const baseName = file.name.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9._-]/g, "_");
+    const filePath = `admin/${minister?.id || "draft"}/ghana-card-${side}-${Date.now()}-${baseName}.${fileExt}`;
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from(GHANA_CARD_DOCUMENT_BUCKET)
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from(GHANA_CARD_DOCUMENT_BUCKET)
+        .getPublicUrl(filePath);
+
+      if (side === "front") {
+        setFormData({
+          ...formData,
+          ghana_card_front_name: file.name,
+          ghana_card_front_type: file.type,
+          ghana_card_front_url: urlData.publicUrl,
+        });
+      } else {
+        setFormData({
+          ...formData,
+          ghana_card_back_name: file.name,
+          ghana_card_back_type: file.type,
+          ghana_card_back_url: urlData.publicUrl,
+        });
+      }
+      toast.success(`Ghana Card ${side} uploaded`);
+    } catch (error: any) {
+      console.error(`Ghana Card ${side} upload error:`, error);
+      toast.error(error.message || `Failed to upload Ghana Card ${side}`);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -341,6 +447,13 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         titles: validated.titles?.trim() || null,
         date_of_birth: validated.date_of_birth?.trim() || null,
         gps_address: validated.gps_address?.trim() || null,
+        ghana_card_number: validated.ghana_card_number?.trim() || null,
+        ghana_card_front_name: validated.ghana_card_front_name?.trim() || null,
+        ghana_card_front_type: validated.ghana_card_front_type?.trim() || null,
+        ghana_card_front_url: validated.ghana_card_front_url?.trim() || null,
+        ghana_card_back_name: validated.ghana_card_back_name?.trim() || null,
+        ghana_card_back_type: validated.ghana_card_back_type?.trim() || null,
+        ghana_card_back_url: validated.ghana_card_back_url?.trim() || null,
         marital_status: validated.marital_status?.trim() || null,
         spouse_name: isValidatedSingle ? null : validated.spouse_name?.trim() || null,
         spouse_phone_number: isValidatedSingle ? null : validated.spouse_phone_number?.trim() || null,
@@ -499,6 +612,12 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      <ImageCropDialog
+        open={cropDialogOpen}
+        imageSrc={imageToCrop}
+        onCropComplete={handlePhotoCropComplete}
+        onCancel={handlePhotoCropCancel}
+      />
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{minister ? "Edit Minister" : "Add New Minister"}</DialogTitle>
@@ -540,7 +659,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                     className="hidden"
                     disabled={loading}
                   />
-                  <p className="text-xs text-muted-foreground">Recommended: Square image, max 5MB</p>
+                  <p className="text-xs text-muted-foreground">Crop before upload. Recommended: square image, max 2MB.</p>
                 </div>
               </div>
 
@@ -609,6 +728,16 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="ghana_card_number">Ghana Card Number</Label>
+                  <Input
+                    id="ghana_card_number"
+                    value={formData.ghana_card_number}
+                    onChange={(e) => setFormData({ ...formData, ghana_card_number: e.target.value })}
+                    disabled={loading}
+                    placeholder="e.g., GHA-123456789-0"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
                   <Input
                     id="phone"
@@ -653,6 +782,90 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     disabled={loading}
                   />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label>Ghana Card Copy - Front</Label>
+                  <div className="flex flex-wrap gap-2">
+                    <Label htmlFor="ghana-card-front-admin-upload" className="cursor-pointer">
+                      <div className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
+                        <Upload className="h-4 w-4" />
+                        <span>{formData.ghana_card_front_url ? "Replace front copy" : "Upload front copy"}</span>
+                      </div>
+                    </Label>
+                    <Input
+                      id="ghana-card-front-admin-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={loading}
+                      onChange={(e) => {
+                        void handleGhanaCardUpload("front", e.target.files?.[0] || null);
+                        e.target.value = "";
+                      }}
+                    />
+                    {formData.ghana_card_front_url && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFormData({
+                          ...formData,
+                          ghana_card_front_name: "",
+                          ghana_card_front_type: "",
+                          ghana_card_front_url: "",
+                        })}
+                        disabled={loading}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Accepted: images only, up to 2MB.</p>
+                  {formData.ghana_card_front_name && (
+                    <p className="text-sm text-muted-foreground">{formData.ghana_card_front_name}</p>
+                  )}
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label>Ghana Card Copy - Back</Label>
+                  <div className="flex flex-wrap gap-2">
+                    <Label htmlFor="ghana-card-back-admin-upload" className="cursor-pointer">
+                      <div className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
+                        <Upload className="h-4 w-4" />
+                        <span>{formData.ghana_card_back_url ? "Replace back copy" : "Upload back copy"}</span>
+                      </div>
+                    </Label>
+                    <Input
+                      id="ghana-card-back-admin-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={loading}
+                      onChange={(e) => {
+                        void handleGhanaCardUpload("back", e.target.files?.[0] || null);
+                        e.target.value = "";
+                      }}
+                    />
+                    {formData.ghana_card_back_url && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFormData({
+                          ...formData,
+                          ghana_card_back_name: "",
+                          ghana_card_back_type: "",
+                          ghana_card_back_url: "",
+                        })}
+                        disabled={loading}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Accepted: images only, up to 2MB.</p>
+                  {formData.ghana_card_back_name && (
+                    <p className="text-sm text-muted-foreground">{formData.ghana_card_back_name}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="marital_status">Marital Status</Label>

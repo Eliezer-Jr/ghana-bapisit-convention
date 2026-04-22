@@ -48,6 +48,13 @@ type Minister = {
   role: string;
   status: string;
   notes: string | null;
+  ghana_card_number?: string | null;
+  ghana_card_front_name?: string | null;
+  ghana_card_front_type?: string | null;
+  ghana_card_front_url?: string | null;
+  ghana_card_back_name?: string | null;
+  ghana_card_back_type?: string | null;
+  ghana_card_back_url?: string | null;
 };
 
 type Props = {
@@ -74,6 +81,7 @@ const FIELD_LABELS: Record<string, string> = {
   whatsapp: "WhatsApp",
   gps_address: "GPS Address",
   date_of_birth: "Date of Birth",
+  ghana_card_number: "Ghana Card Number",
   current_church_name: "Current Church",
   ministry_engagement: "Type of Ministry",
   position_at_church: "Position at Church",
@@ -152,6 +160,46 @@ function QualificationDocumentPreview({
         <iframe
           src={documentUrl}
           title={documentName || "Qualification PDF preview"}
+          className="h-64 w-full rounded-md border bg-background"
+        />
+      ) : (
+        <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
+          Preview not available for this file type
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GhanaCardDocumentPreview({
+  documentUrl,
+  documentName,
+  documentType,
+}: {
+  documentUrl?: string | null;
+  documentName?: string | null;
+  documentType?: string | null;
+}) {
+  if (!documentUrl) return null;
+
+  const isImage = documentType?.startsWith("image/");
+  const isPdf = documentType === "application/pdf" || documentUrl.toLowerCase().includes(".pdf");
+
+  return (
+    <div className="mt-2 space-y-2">
+      {documentName && (
+        <p className="text-xs text-muted-foreground">{documentName}</p>
+      )}
+      {isImage ? (
+        <img
+          src={documentUrl}
+          alt={documentName || "Ghana Card document"}
+          className="max-h-56 w-full rounded-md border object-contain bg-muted/30"
+        />
+      ) : isPdf ? (
+        <iframe
+          src={documentUrl}
+          title={documentName || "Ghana Card PDF preview"}
           className="h-64 w-full rounded-md border bg-background"
         />
       ) : (
@@ -247,6 +295,13 @@ export function SubmissionReviewDialog({
         whatsapp: payload.whatsapp || null,
         gps_address: payload.gps_address || null,
         date_of_birth: payload.date_of_birth || null,
+        ghana_card_number: payload.ghana_card_number || null,
+        ghana_card_front_name: payload.ghana_card_front_name || null,
+        ghana_card_front_type: payload.ghana_card_front_type || null,
+        ghana_card_front_url: payload.ghana_card_front_url || null,
+        ghana_card_back_name: payload.ghana_card_back_name || null,
+        ghana_card_back_type: payload.ghana_card_back_type || null,
+        ghana_card_back_url: payload.ghana_card_back_url || null,
         ministry_engagement: payload.ministry_engagement || null,
         current_church_name: payload.current_church_name || null,
         position_at_church: payload.position_at_church || null,
@@ -595,6 +650,38 @@ export function SubmissionReviewDialog({
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {(payload.ghana_card_number || payload.ghana_card_front_url || payload.ghana_card_back_url) && (
+                <div className="mt-6 space-y-3">
+                  <Separator />
+                  <div>
+                    <h4 className="text-sm font-semibold">Ghana Card</h4>
+                    {payload.ghana_card_number && (
+                      <p className="text-sm text-muted-foreground">{payload.ghana_card_number}</p>
+                    )}
+                  </div>
+                  {payload.ghana_card_front_url && (
+                    <div className="rounded-md border p-3">
+                      <div className="text-sm font-medium">Front Copy</div>
+                      <GhanaCardDocumentPreview
+                        documentUrl={payload.ghana_card_front_url}
+                        documentName={payload.ghana_card_front_name || "Ghana Card Front"}
+                        documentType={payload.ghana_card_front_type}
+                      />
+                    </div>
+                  )}
+                  {payload.ghana_card_back_url && (
+                    <div className="rounded-md border p-3">
+                      <div className="text-sm font-medium">Back Copy</div>
+                      <GhanaCardDocumentPreview
+                        documentUrl={payload.ghana_card_back_url}
+                        documentName={payload.ghana_card_back_name || "Ghana Card Back"}
+                        documentType={payload.ghana_card_back_type}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </ScrollArea>

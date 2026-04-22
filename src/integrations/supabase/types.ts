@@ -789,6 +789,13 @@ export type Database = {
           email: string | null
           fellowship: string | null
           full_name: string
+          ghana_card_back_name: string | null
+          ghana_card_back_type: string | null
+          ghana_card_back_url: string | null
+          ghana_card_front_name: string | null
+          ghana_card_front_type: string | null
+          ghana_card_front_url: string | null
+          ghana_card_number: string | null
           gps_address: string | null
           id: string
           licensing_year: number | null
@@ -830,6 +837,13 @@ export type Database = {
           email?: string | null
           fellowship?: string | null
           full_name: string
+          ghana_card_back_name?: string | null
+          ghana_card_back_type?: string | null
+          ghana_card_back_url?: string | null
+          ghana_card_front_name?: string | null
+          ghana_card_front_type?: string | null
+          ghana_card_front_url?: string | null
+          ghana_card_number?: string | null
           gps_address?: string | null
           id?: string
           licensing_year?: number | null
@@ -871,6 +885,13 @@ export type Database = {
           email?: string | null
           fellowship?: string | null
           full_name?: string
+          ghana_card_back_name?: string | null
+          ghana_card_back_type?: string | null
+          ghana_card_back_url?: string | null
+          ghana_card_front_name?: string | null
+          ghana_card_front_type?: string | null
+          ghana_card_front_url?: string | null
+          ghana_card_number?: string | null
           gps_address?: string | null
           id?: string
           licensing_year?: number | null

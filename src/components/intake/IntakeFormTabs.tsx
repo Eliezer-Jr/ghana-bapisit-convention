@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import IntakeReviewSummary from "./IntakeReviewSummary";
 import { MINISTRY_ENGAGEMENT_OPTIONS, ZONES, SECTORS, TITLE_OPTIONS, getAssociationsForSector, getSectorForAssociation, getChurchesForAssociation } from "@/config/ministerOptions";
+import ImageCropDialog from "@/components/application/ImageCropDialog";
 
 interface IntakeFormTabsProps {
   payload: Record<string, any>;
@@ -25,10 +26,13 @@ interface IntakeFormTabsProps {
 export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChange, disabled, submissionId }: IntakeFormTabsProps) {
   const OTHER_CHURCH_VALUE = "__other__";
   const QUALIFICATION_DOCUMENT_BUCKET = "qualification-documents";
+  const GHANA_CARD_DOCUMENT_BUCKET = "ghana-card-documents";
   const QUALIFICATION_DOCUMENT_MAX_SIZE = 2 * 1024 * 1024;
   const [uploading, setUploading] = useState(false);
   const [uploadingQualificationIndex, setUploadingQualificationIndex] = useState<number | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>(payload.photo_url || "");
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState("");
   const [useCustomCurrentChurch, setUseCustomCurrentChurch] = useState(false);
   const [customHistoryChurchRows, setCustomHistoryChurchRows] = useState<Record<number, boolean>>({});
   const churchOptions = getChurchesForAssociation(payload.association || "");
@@ -109,19 +113,27 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
       return;
     }
 
-    // Create preview immediately
     const objectUrl = URL.createObjectURL(file);
-    setPhotoPreview(objectUrl);
+    setImageToCrop(objectUrl);
+    setCropDialogOpen(true);
+  };
 
-    // Upload to storage
+  const handlePhotoCropComplete = async (croppedBlob: Blob) => {
+    const objectUrl = URL.createObjectURL(croppedBlob);
+    setPhotoPreview(objectUrl);
+    setCropDialogOpen(false);
+    setImageToCrop("");
+
     setUploading(true);
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `intake/${submissionId || "temp"}-${Date.now()}.${fileExt}`;
+      const fileName = `intake/${submissionId || "temp"}-${Date.now()}.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from("minister-photos")
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, croppedBlob, {
+          upsert: true,
+          contentType: "image/jpeg",
+        });
 
       if (uploadError) throw uploadError;
 
@@ -140,12 +152,17 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
     }
   };
 
+  const handlePhotoCropCancel = () => {
+    setCropDialogOpen(false);
+    setImageToCrop("");
+  };
+
   const handleQualificationDocumentUpload = async (index: number, file: File | null) => {
     if (!file) return;
 
-    const isAcceptedType = file.type === "application/pdf" || file.type.startsWith("image/");
+    const isAcceptedType = file.type.startsWith("image/");
     if (!isAcceptedType) {
-      toast.error("Only PDF files and images are allowed");
+      toast.error("Only image files are allowed");
       return;
     }
 
@@ -184,8 +201,56 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
     }
   };
 
+  const handleGhanaCardUpload = async (side: "front" | "back", file: File | null) => {
+    if (!file) return;
+
+    const isAcceptedType = file.type === "application/pdf" || file.type.startsWith("image/");
+    if (!isAcceptedType) {
+      toast.error("Only PDF files and images are allowed");
+      return;
+    }
+
+    if (file.size > QUALIFICATION_DOCUMENT_MAX_SIZE) {
+      toast.error("Document size must be 2MB or less");
+      return;
+    }
+
+    const fileExt = file.name.split(".").pop() || "file";
+    const baseName = file.name.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9._-]/g, "_");
+    const filePath = `intake/${submissionId || "temp"}/ghana-card-${side}-${Date.now()}-${baseName}.${fileExt}`;
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from(GHANA_CARD_DOCUMENT_BUCKET)
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from(GHANA_CARD_DOCUMENT_BUCKET)
+        .getPublicUrl(filePath);
+
+      updateFields({
+        [`ghana_card_${side}_name`]: file.name,
+        [`ghana_card_${side}_type`]: file.type,
+        [`ghana_card_${side}_url`]: urlData.publicUrl,
+      });
+      toast.success(`Ghana Card ${side} uploaded`);
+    } catch (error: any) {
+      console.error(`Ghana Card ${side} upload error:`, error);
+      toast.error(error.message || `Failed to upload Ghana Card ${side}`);
+    }
+  };
+
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+      <ImageCropDialog
+        open={cropDialogOpen}
+        imageSrc={imageToCrop}
+        onCropComplete={handlePhotoCropComplete}
+        onCancel={handlePhotoCropCancel}
+      />
+
       <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto p-1 gap-1">
         <TabsTrigger value="bio" className="text-xs sm:text-sm py-2">Bio</TabsTrigger>
         <TabsTrigger value="education" className="text-xs sm:text-sm py-2">Education</TabsTrigger>
@@ -232,7 +297,7 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                 disabled={disabled || uploading}
               />
               <p className="text-xs text-muted-foreground text-center">
-                Square image recommended • Max 2MB
+                Crop before upload. Square image recommended. Max 2MB.
               </p>
             </div>
           </CardContent>
@@ -278,6 +343,15 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                 onChange={(e) => updateField("date_of_birth", e.target.value)}
                 disabled={disabled}
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Ghana Card Number</Label>
+              <Input
+                value={payload.ghana_card_number || ""}
+                onChange={(e) => updateField("ghana_card_number", e.target.value)}
+                disabled={disabled}
+                placeholder="e.g., GHA-123456789-0"
               />
             </div>
             <div className="space-y-2">
@@ -330,6 +404,88 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                 placeholder="City or town"
                 required
               />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Ghana Card Copy - Front</Label>
+              <div className="flex flex-wrap gap-2">
+                <Label htmlFor="ghana-card-front-upload" className="cursor-pointer">
+                  <div className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
+                    <Upload className="h-4 w-4" />
+                    <span>{payload.ghana_card_front_url ? "Replace front copy" : "Upload front copy"}</span>
+                  </div>
+                </Label>
+                <Input
+                  id="ghana-card-front-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={disabled}
+                  onChange={(e) => {
+                    void handleGhanaCardUpload("front", e.target.files?.[0] || null);
+                    e.target.value = "";
+                  }}
+                />
+                {payload.ghana_card_front_url && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => updateFields({
+                      ghana_card_front_name: null,
+                      ghana_card_front_type: null,
+                      ghana_card_front_url: null,
+                    })}
+                    disabled={disabled}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Accepted: images only, up to 2MB.</p>
+              {payload.ghana_card_front_name && (
+                <p className="text-sm text-muted-foreground">{payload.ghana_card_front_name}</p>
+              )}
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Ghana Card Copy - Back</Label>
+              <div className="flex flex-wrap gap-2">
+                <Label htmlFor="ghana-card-back-upload" className="cursor-pointer">
+                  <div className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
+                    <Upload className="h-4 w-4" />
+                    <span>{payload.ghana_card_back_url ? "Replace back copy" : "Upload back copy"}</span>
+                  </div>
+                </Label>
+                <Input
+                  id="ghana-card-back-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={disabled}
+                  onChange={(e) => {
+                    void handleGhanaCardUpload("back", e.target.files?.[0] || null);
+                    e.target.value = "";
+                  }}
+                />
+                {payload.ghana_card_back_url && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => updateFields({
+                      ghana_card_back_name: null,
+                      ghana_card_back_type: null,
+                      ghana_card_back_url: null,
+                    })}
+                    disabled={disabled}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Accepted: images only, up to 2MB.</p>
+              {payload.ghana_card_back_name && (
+                <p className="text-sm text-muted-foreground">{payload.ghana_card_back_name}</p>
+              )}
             </div>
           </div>
         </div>

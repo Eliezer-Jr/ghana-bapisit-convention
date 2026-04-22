@@ -91,6 +91,46 @@ function QualificationDocumentPreview({
   );
 }
 
+function GhanaCardDocumentPreview({
+  documentUrl,
+  documentName,
+  documentType,
+}: {
+  documentUrl?: string | null;
+  documentName?: string | null;
+  documentType?: string | null;
+}) {
+  if (!documentUrl) return null;
+
+  const isImage = documentType?.startsWith("image/");
+  const isPdf = documentType === "application/pdf" || documentUrl.toLowerCase().includes(".pdf");
+
+  return (
+    <div className="mt-2 space-y-2">
+      {documentName && (
+        <p className="text-xs text-muted-foreground">{documentName}</p>
+      )}
+      {isImage ? (
+        <img
+          src={documentUrl}
+          alt={documentName || "Ghana Card document"}
+          className="max-h-56 w-full rounded-md border object-contain bg-muted/30"
+        />
+      ) : isPdf ? (
+        <iframe
+          src={documentUrl}
+          title={documentName || "Ghana Card PDF preview"}
+          className="h-64 w-full rounded-md border bg-background"
+        />
+      ) : (
+        <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
+          Preview not available for this file type
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function IntakeReviewSummary({ payload }: IntakeReviewSummaryProps) {
   const isSingle = payload.marital_status === "single";
   const hasQualifications = payload.qualifications?.length > 0;
@@ -179,9 +219,20 @@ export default function IntakeReviewSummary({ payload }: IntakeReviewSummaryProp
         {/* Personal Information */}
         <SectionCard title="Personal Information" icon={User}>
           <InfoRow label="Date of Birth" value={payload.date_of_birth} />
+          <InfoRow label="Ghana Card Number" value={payload.ghana_card_number} />
           <InfoRow label="WhatsApp" value={payload.whatsapp} />
           <InfoRow label="GPS Address" value={payload.gps_address} />
           <InfoRow label="Location" value={payload.location} />
+          <GhanaCardDocumentPreview
+            documentUrl={payload.ghana_card_front_url}
+            documentName={payload.ghana_card_front_name || "Ghana Card Front"}
+            documentType={payload.ghana_card_front_type}
+          />
+          <GhanaCardDocumentPreview
+            documentUrl={payload.ghana_card_back_url}
+            documentName={payload.ghana_card_back_name || "Ghana Card Back"}
+            documentType={payload.ghana_card_back_type}
+          />
         </SectionCard>
 
         {/* Marital Information */}
