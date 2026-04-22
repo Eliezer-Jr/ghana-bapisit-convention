@@ -43,6 +43,7 @@ const ministerSchema = z.object({
   ordination_year: z.number().min(1900).max(2100).nullable().optional(),
   recognition_year: z.number().min(1900).max(2100).nullable().optional(),
   licensing_year: z.number().min(1900).max(2100).nullable().optional(),
+  commissioning_year: z.number().min(1900).max(2100).nullable().optional(),
   physical_folder_number: z.string().trim().max(50).optional(),
 });
 
@@ -55,9 +56,12 @@ interface MinisterDialogProps {
 
 const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDialogProps) => {
   const OTHER_CHURCH_VALUE = "__other__";
+  const QUALIFICATION_DOCUMENT_BUCKET = "qualification-documents";
+  const QUALIFICATION_DOCUMENT_MAX_SIZE = 2 * 1024 * 1024;
   const [loading, setLoading] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>("");
+  const [uploadingQualificationIndex, setUploadingQualificationIndex] = useState<number | null>(null);
   const [useCustomCurrentChurch, setUseCustomCurrentChurch] = useState(false);
   const [customHistoryChurchRows, setCustomHistoryChurchRows] = useState<Record<number, boolean>>({});
   const [formData, setFormData] = useState({
@@ -90,10 +94,18 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
     ordination_year: null as number | null,
     recognition_year: null as number | null,
     licensing_year: null as number | null,
+    commissioning_year: null as number | null,
     physical_folder_number: "",
   });
 
-  const [qualifications, setQualifications] = useState<Array<{ qualification: string; institution: string; year_obtained: number | null }>>([]);
+  const [qualifications, setQualifications] = useState<Array<{
+    qualification: string;
+    institution: string;
+    year_obtained: number | null;
+    document_name?: string | null;
+    document_type?: string | null;
+    document_url?: string | null;
+  }>>([]);
   const [history, setHistory] = useState<Array<{ church_name: string; association: string; sector: string; position: string; period_start: number | null; period_end: number | null }>>([]);
   const [nonChurchWork, setNonChurchWork] = useState<Array<{ organization: string; job_title: string; period_start: number | null; period_end: number | null }>>([]);
   const [conventionPositions, setConventionPositions] = useState<Array<{ position: string; period_start: number | null; period_end: number | null }>>([]);
@@ -167,6 +179,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           ordination_year: minister.ordination_year || null,
           recognition_year: minister.recognition_year || null,
           licensing_year: minister.licensing_year || null,
+          commissioning_year: minister.commissioning_year || null,
           physical_folder_number: minister.physical_folder_number || "",
         });
         setAreasOfMinistry(minister.areas_of_ministry || []);
@@ -226,6 +239,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
           ordination_year: null,
           recognition_year: null,
           licensing_year: null,
+          commissioning_year: null,
           physical_folder_number: "",
         });
         setQualifications([]);
@@ -256,6 +270,53 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         setPhotoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleQualificationDocumentUpload = async (index: number, file: File | null) => {
+    if (!file) return;
+
+    const isAcceptedType = file.type === "application/pdf" || file.type.startsWith("image/");
+    if (!isAcceptedType) {
+      toast.error("Only PDF files and images are allowed");
+      return;
+    }
+
+    if (file.size > QUALIFICATION_DOCUMENT_MAX_SIZE) {
+      toast.error("Document size must be 2MB or less");
+      return;
+    }
+
+    const fileExt = file.name.split(".").pop() || "file";
+    const baseName = file.name.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9._-]/g, "_");
+    const filePath = `admin/${minister?.id || "draft"}/qualification-${index}-${Date.now()}-${baseName}.${fileExt}`;
+
+    setUploadingQualificationIndex(index);
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from(QUALIFICATION_DOCUMENT_BUCKET)
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from(QUALIFICATION_DOCUMENT_BUCKET)
+        .getPublicUrl(filePath);
+
+      const newQuals = [...qualifications];
+      newQuals[index] = {
+        ...newQuals[index],
+        document_name: file.name,
+        document_type: file.type,
+        document_url: urlData.publicUrl,
+      };
+      setQualifications(newQuals);
+      toast.success("Qualification document uploaded");
+    } catch (error: any) {
+      console.error("Qualification document upload error:", error);
+      toast.error(error.message || "Failed to upload qualification document");
+    } finally {
+      setUploadingQualificationIndex(null);
     }
   };
 
@@ -725,54 +786,124 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
               <div className="space-y-2">
                 <Label>Educational Qualifications (Starting with highest)</Label>
                 {qualifications.map((qual, idx) => (
-                  <div key={idx} className="grid grid-cols-[2fr_2fr_1fr_auto] gap-2 items-end">
-                    <Input
-                      placeholder="Qualification"
-                      value={qual.qualification}
-                      onChange={(e) => {
-                        const newQuals = [...qualifications];
-                        newQuals[idx].qualification = e.target.value;
-                        setQualifications(newQuals);
-                      }}
-                      disabled={loading}
-                    />
-                    <Input
-                      placeholder="Institution"
-                      value={qual.institution}
-                      onChange={(e) => {
-                        const newQuals = [...qualifications];
-                        newQuals[idx].institution = e.target.value;
-                        setQualifications(newQuals);
-                      }}
-                      disabled={loading}
-                    />
-                    <Input
-                      type="number"
-                      placeholder="Year"
-                      value={qual.year_obtained || ""}
-                      onChange={(e) => {
-                        const newQuals = [...qualifications];
-                        newQuals[idx].year_obtained = parseInt(e.target.value) || null;
-                        setQualifications(newQuals);
-                      }}
-                      disabled={loading}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setQualifications(qualifications.filter((_, i) => i !== idx))}
-                      disabled={loading}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div key={idx} className="rounded-md border p-3 space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-[2fr_2fr_1fr_auto] gap-2 items-end">
+                      <Input
+                        placeholder="Qualification"
+                        value={qual.qualification}
+                        onChange={(e) => {
+                          const newQuals = [...qualifications];
+                          newQuals[idx].qualification = e.target.value;
+                          setQualifications(newQuals);
+                        }}
+                        disabled={loading}
+                      />
+                      <Input
+                        placeholder="Institution"
+                        value={qual.institution}
+                        onChange={(e) => {
+                          const newQuals = [...qualifications];
+                          newQuals[idx].institution = e.target.value;
+                          setQualifications(newQuals);
+                        }}
+                        disabled={loading}
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Year"
+                        value={qual.year_obtained || ""}
+                        onChange={(e) => {
+                          const newQuals = [...qualifications];
+                          newQuals[idx].year_obtained = parseInt(e.target.value) || null;
+                          setQualifications(newQuals);
+                        }}
+                        disabled={loading}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setQualifications(qualifications.filter((_, i) => i !== idx))}
+                        disabled={loading}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Supporting Document</Label>
+                        <p className="text-xs text-muted-foreground">Accepted: PDF and images, up to 2MB.</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Label htmlFor={`admin-qualification-document-${idx}`} className="cursor-pointer">
+                          <div className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
+                            <Upload className="h-4 w-4" />
+                            <span>{uploadingQualificationIndex === idx ? "Uploading..." : "Upload document"}</span>
+                          </div>
+                        </Label>
+                        <Input
+                          id={`admin-qualification-document-${idx}`}
+                          type="file"
+                          accept="application/pdf,image/*"
+                          className="hidden"
+                          disabled={loading || uploadingQualificationIndex === idx}
+                          onChange={(e) => {
+                            void handleQualificationDocumentUpload(idx, e.target.files?.[0] || null);
+                            e.target.value = "";
+                          }}
+                        />
+                        {qual.document_url && (
+                          <>
+                            <a
+                              href={qual.document_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                            >
+                              View document
+                            </a>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const newQuals = [...qualifications];
+                                newQuals[idx] = {
+                                  ...newQuals[idx],
+                                  document_name: null,
+                                  document_type: null,
+                                  document_url: null,
+                                };
+                                setQualifications(newQuals);
+                              }}
+                              disabled={loading}
+                            >
+                              Remove document
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {qual.document_name && (
+                      <p className="text-sm text-muted-foreground">{qual.document_name}</p>
+                    )}
                   </div>
                 ))}
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setQualifications([...qualifications, { qualification: "", institution: "", year_obtained: null }])}
+                  onClick={() => setQualifications([
+                    ...qualifications,
+                    {
+                      qualification: "",
+                      institution: "",
+                      year_obtained: null,
+                      document_name: null,
+                      document_type: null,
+                      document_url: null,
+                    },
+                  ])}
                   disabled={loading}
                 >
                   <Plus className="h-4 w-4 mr-2" /> Add Qualification
@@ -971,7 +1102,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="licensing_year">Licensing / Commissioning Year</Label>
+                  <Label htmlFor="licensing_year">Licensing Year</Label>
                   <Input
                     id="licensing_year"
                     type="number"
@@ -979,6 +1110,18 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                     max="2100"
                     value={formData.licensing_year || ""}
                     onChange={(e) => setFormData({ ...formData, licensing_year: parseInt(e.target.value) || null })}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="commissioning_year">Commissioning Year</Label>
+                  <Input
+                    id="commissioning_year"
+                    type="number"
+                    min="1900"
+                    max="2100"
+                    value={formData.commissioning_year || ""}
+                    onChange={(e) => setFormData({ ...formData, commissioning_year: parseInt(e.target.value) || null })}
                     disabled={loading}
                   />
                 </div>

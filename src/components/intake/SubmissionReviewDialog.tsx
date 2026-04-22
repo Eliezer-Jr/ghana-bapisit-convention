@@ -42,6 +42,7 @@ type Minister = {
   association: string | null;
   sector: string | null;
   ministry_engagement: string | null;
+  commissioning_year: number | null;
   fellowship: string | null;
   location: string | null;
   role: string;
@@ -80,6 +81,7 @@ const FIELD_LABELS: Record<string, string> = {
   ordination_year: "Ordination Year",
   recognition_year: "Recognition Year",
   licensing_year: "Licensing Year",
+  commissioning_year: "Commissioning Year",
   titles: "Titles",
   zone: "Zone",
 };
@@ -212,6 +214,7 @@ export function SubmissionReviewDialog({
         ordination_year: payload.ordination_year ? parseInt(payload.ordination_year) : null,
         recognition_year: payload.recognition_year ? parseInt(payload.recognition_year) : null,
         licensing_year: payload.licensing_year ? parseInt(payload.licensing_year) : null,
+        commissioning_year: payload.commissioning_year ? parseInt(payload.commissioning_year) : null,
         titles: payload.titles || null,
         zone: payload.zone || null,
         photo_url: payload.photo_url || null,
@@ -269,6 +272,9 @@ export function SubmissionReviewDialog({
               qualification: qual.qualification,
               institution: qual.institution || null,
               year_obtained: qual.year_obtained || null,
+              document_name: qual.document_name || null,
+              document_type: qual.document_type || null,
+              document_url: qual.document_url || null,
             });
           }
         }

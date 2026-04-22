@@ -24,7 +24,10 @@ interface IntakeFormTabsProps {
 
 export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChange, disabled, submissionId }: IntakeFormTabsProps) {
   const OTHER_CHURCH_VALUE = "__other__";
+  const QUALIFICATION_DOCUMENT_BUCKET = "qualification-documents";
+  const QUALIFICATION_DOCUMENT_MAX_SIZE = 2 * 1024 * 1024;
   const [uploading, setUploading] = useState(false);
+  const [uploadingQualificationIndex, setUploadingQualificationIndex] = useState<number | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>(payload.photo_url || "");
   const [useCustomCurrentChurch, setUseCustomCurrentChurch] = useState(false);
   const [customHistoryChurchRows, setCustomHistoryChurchRows] = useState<Record<number, boolean>>({});
@@ -134,6 +137,50 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
       setPhotoPreview("");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleQualificationDocumentUpload = async (index: number, file: File | null) => {
+    if (!file) return;
+
+    const isAcceptedType = file.type === "application/pdf" || file.type.startsWith("image/");
+    if (!isAcceptedType) {
+      toast.error("Only PDF files and images are allowed");
+      return;
+    }
+
+    if (file.size > QUALIFICATION_DOCUMENT_MAX_SIZE) {
+      toast.error("Document size must be 2MB or less");
+      return;
+    }
+
+    const fileExt = file.name.split(".").pop() || "file";
+    const baseName = file.name.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9._-]/g, "_");
+    const filePath = `intake/${submissionId || "temp"}/qualification-${index}-${Date.now()}-${baseName}.${fileExt}`;
+
+    setUploadingQualificationIndex(index);
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from(QUALIFICATION_DOCUMENT_BUCKET)
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from(QUALIFICATION_DOCUMENT_BUCKET)
+        .getPublicUrl(filePath);
+
+      updateArrayFields("qualifications", index, {
+        document_name: file.name,
+        document_type: file.type,
+        document_url: urlData.publicUrl,
+      });
+      toast.success("Qualification document uploaded");
+    } catch (error: any) {
+      console.error("Qualification document upload error:", error);
+      toast.error(error.message || "Failed to upload qualification document");
+    } finally {
+      setUploadingQualificationIndex(null);
     }
   };
 
@@ -467,13 +514,73 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                     </Button>
                   </div>
                 </div>
+                <div className="mt-3 space-y-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <Label className="text-xs text-muted-foreground">Supporting Document</Label>
+                    <div className="flex flex-wrap gap-2">
+                      <Label htmlFor={`qualification-document-${idx}`} className="cursor-pointer">
+                        <div className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
+                          <Upload className="h-4 w-4" />
+                          <span>{uploadingQualificationIndex === idx ? "Uploading..." : "Upload document"}</span>
+                        </div>
+                      </Label>
+                      <Input
+                        id={`qualification-document-${idx}`}
+                        type="file"
+                        accept="application/pdf,image/*"
+                        className="hidden"
+                        disabled={disabled || uploadingQualificationIndex === idx}
+                        onChange={(e) => {
+                          void handleQualificationDocumentUpload(idx, e.target.files?.[0] || null);
+                          e.target.value = "";
+                        }}
+                      />
+                      {qual.document_url && (
+                        <>
+                          <a
+                            href={qual.document_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                          >
+                            View document
+                          </a>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => updateArrayFields("qualifications", idx, {
+                              document_name: null,
+                              document_type: null,
+                              document_url: null,
+                            })}
+                            disabled={disabled}
+                          >
+                            Remove document
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Accepted: PDF and images, up to 2MB.</p>
+                  {qual.document_name && (
+                    <p className="text-sm text-muted-foreground">{qual.document_name}</p>
+                  )}
+                </div>
               </Card>
             ))}
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => addArrayItem("qualifications", { qualification: "", institution: "", year_obtained: null })}
+              onClick={() => addArrayItem("qualifications", {
+                qualification: "",
+                institution: "",
+                year_obtained: null,
+                document_name: null,
+                document_type: null,
+                document_url: null,
+              })}
               disabled={disabled}
             >
               <Plus className="h-4 w-4 mr-2" /> Add Qualification
@@ -664,7 +771,7 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
         {/* Ministerial Milestones */}
         <div className="space-y-4">
           <h3 className="font-semibold text-lg border-b pb-2">Ministerial Milestones</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label>Licensing Year</Label>
               <Input
@@ -673,6 +780,18 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                 max="2100"
                 value={payload.licensing_year || ""}
                 onChange={(e) => updateField("licensing_year", parseInt(e.target.value) || null)}
+                disabled={disabled}
+                placeholder="Year"
+              />
+            </div>
+             <div className="space-y-2">
+              <Label>Recognition Year</Label>
+              <Input
+                type="number"
+                min="1900"
+                max="2100"
+                value={payload.recognition_year || ""}
+                onChange={(e) => updateField("recognition_year", parseInt(e.target.value) || null)}
                 disabled={disabled}
                 placeholder="Year"
               />
@@ -690,13 +809,13 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
               />
             </div>
             <div className="space-y-2">
-              <Label>Recognition Year</Label>
+              <Label>Commissioning Year</Label>
               <Input
                 type="number"
                 min="1900"
                 max="2100"
-                value={payload.recognition_year || ""}
-                onChange={(e) => updateField("recognition_year", parseInt(e.target.value) || null)}
+                value={payload.commissioning_year || ""}
+                onChange={(e) => updateField("commissioning_year", parseInt(e.target.value) || null)}
                 disabled={disabled}
                 placeholder="Year"
               />

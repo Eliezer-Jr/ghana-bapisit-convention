@@ -186,8 +186,9 @@ export default function IntakeReviewSummary({ payload }: IntakeReviewSummaryProp
         {/* Ministerial Milestones */}
         <SectionCard title="Ministerial Milestones" icon={Church}>
           <InfoRow label="Licensing Year" value={payload.licensing_year} />
-          <InfoRow label="Ordination Year" value={payload.ordination_year} />
           <InfoRow label="Recognition Year" value={payload.recognition_year} />
+          <InfoRow label="Ordination Year" value={payload.ordination_year} />
+          <InfoRow label="Commissioning Year" value={payload.commissioning_year} />
         </SectionCard>
       </div>
 
@@ -215,6 +216,16 @@ export default function IntakeReviewSummary({ payload }: IntakeReviewSummaryProp
                 <p className="text-sm text-muted-foreground">
                   {qual.institution} {qual.year_obtained && `(${qual.year_obtained})`}
                 </p>
+                {qual.document_url && (
+                  <a
+                    href={qual.document_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    {qual.document_name || "View supporting document"}
+                  </a>
+                )}
               </div>
             ))}
           </div>

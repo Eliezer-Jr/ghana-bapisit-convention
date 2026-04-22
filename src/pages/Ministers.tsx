@@ -165,6 +165,7 @@ const Ministers = () => {
         ordination_year: "2010",
         recognition_year: "2008",
         licensing_year: "2006",
+        commissioning_year: "2007",
         emergency_contact_1_name: "Jane Doe",
         emergency_contact_1_relationship: "Spouse",
         emergency_contact_1_phone: "+233987654321",
@@ -222,6 +223,7 @@ const Ministers = () => {
         ordination_year: minister.ordination_year || "",
         recognition_year: minister.recognition_year || "",
         licensing_year: minister.licensing_year || "",
+        commissioning_year: minister.commissioning_year || "",
         emergency_contact_1_name: contacts[0]?.contact_name || "",
         emergency_contact_1_relationship: contacts[0]?.relationship || "",
         emergency_contact_1_phone: contacts[0]?.phone_number || "",
@@ -377,6 +379,7 @@ const Ministers = () => {
             ordination_year: row.ordination_year || "",
             recognition_year: row.recognition_year || "",
             licensing_year: row.licensing_year || "",
+            commissioning_year: row.commissioning_year || "",
             emergency_contact_1_name: row.emergency_contact_1_name || "",
             emergency_contact_1_relationship: row.emergency_contact_1_relationship || "",
             emergency_contact_1_phone: row.emergency_contact_1_phone || "",
@@ -789,10 +792,11 @@ const Ministers = () => {
                   {/* Ordination Information */}
                   <div className="space-y-3">
                     <h3 className="text-lg font-semibold text-primary border-b pb-2">Ordination & Credentials</h3>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                       <InfoField label="Ordination Year" value={ministerToView.ordination_year || "-"} />
                       <InfoField label="Recognition Year" value={ministerToView.recognition_year || "-"} />
                       <InfoField label="Licensing Year" value={ministerToView.licensing_year || "-"} />
+                      <InfoField label="Commissioning Year" value={ministerToView.commissioning_year || "-"} />
                     </div>
                   </div>
 
@@ -864,6 +868,10 @@ const Ministers = () => {
                   <TableHead className="min-w-[120px]">Position</TableHead>
                   <TableHead className="min-w-[120px]">Association</TableHead>
                   <TableHead className="min-w-[120px]">Sector</TableHead>
+                  <TableHead className="min-w-[100px]">Licensing</TableHead>
+                  <TableHead className="min-w-[120px]">Commissioning</TableHead>
+                  <TableHead className="min-w-[100px]">Ordination</TableHead>
+                  <TableHead className="min-w-[110px]">Recognition</TableHead>
                   <TableHead className="min-w-[100px]">EC 1 Name</TableHead>
                   <TableHead className="min-w-[100px]">EC 1 Relation</TableHead>
                   <TableHead className="min-w-[120px]">EC 1 Phone</TableHead>
@@ -955,6 +963,10 @@ const Ministers = () => {
                     <TableCell><Input value={row.position_at_church} onChange={(e) => updatePreviewCell(row._rowId, 'position_at_church', e.target.value)} /></TableCell>
                     <TableCell><Input value={row.association} onChange={(e) => updatePreviewCell(row._rowId, 'association', e.target.value)} /></TableCell>
                     <TableCell><Input value={row.sector} onChange={(e) => updatePreviewCell(row._rowId, 'sector', e.target.value)} /></TableCell>
+                    <TableCell><Input type="number" value={row.licensing_year} onChange={(e) => updatePreviewCell(row._rowId, 'licensing_year', e.target.value)} /></TableCell>
+                    <TableCell><Input type="number" value={row.commissioning_year} onChange={(e) => updatePreviewCell(row._rowId, 'commissioning_year', e.target.value)} /></TableCell>
+                    <TableCell><Input type="number" value={row.ordination_year} onChange={(e) => updatePreviewCell(row._rowId, 'ordination_year', e.target.value)} /></TableCell>
+                    <TableCell><Input type="number" value={row.recognition_year} onChange={(e) => updatePreviewCell(row._rowId, 'recognition_year', e.target.value)} /></TableCell>
                     <TableCell><Input value={row.emergency_contact_1_name} onChange={(e) => updatePreviewCell(row._rowId, 'emergency_contact_1_name', e.target.value)} /></TableCell>
                     <TableCell><Input value={row.emergency_contact_1_relationship} onChange={(e) => updatePreviewCell(row._rowId, 'emergency_contact_1_relationship', e.target.value)} /></TableCell>
                     <TableCell><Input value={row.emergency_contact_1_phone} onChange={(e) => updatePreviewCell(row._rowId, 'emergency_contact_1_phone', e.target.value)} /></TableCell>

@@ -320,6 +320,9 @@ export type Database = {
       educational_qualifications: {
         Row: {
           created_at: string
+          document_name: string | null
+          document_type: string | null
+          document_url: string | null
           id: string
           institution: string | null
           minister_id: string
@@ -328,6 +331,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          document_name?: string | null
+          document_type?: string | null
+          document_url?: string | null
           id?: string
           institution?: string | null
           minister_id: string
@@ -336,6 +342,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          document_name?: string | null
+          document_type?: string | null
+          document_url?: string | null
           id?: string
           institution?: string | null
           minister_id?: string
@@ -771,6 +780,7 @@ export type Database = {
           areas_of_ministry: string[] | null
           association: string | null
           church_address: string | null
+          commissioning_year: number | null
           created_at: string
           created_by: string | null
           current_church_name: string | null
@@ -811,6 +821,7 @@ export type Database = {
           areas_of_ministry?: string[] | null
           association?: string | null
           church_address?: string | null
+          commissioning_year?: number | null
           created_at?: string
           created_by?: string | null
           current_church_name?: string | null
@@ -851,6 +862,7 @@ export type Database = {
           areas_of_ministry?: string[] | null
           association?: string | null
           church_address?: string | null
+          commissioning_year?: number | null
           created_at?: string
           created_by?: string | null
           current_church_name?: string | null
