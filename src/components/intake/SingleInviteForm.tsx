@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Plus, Loader2 } from "lucide-react";
-import { supabase, supabaseFunctions } from "@/lib/supabase";
-import { MESSAGING_CONFIG } from "@/config/messaging";
+import { supabase } from "@/lib/supabase";
+import { getIntakeInviteLink, sendIntakeInviteSms } from "@/services/intakeSms";
 
 interface Props {
   sessionId: string;
@@ -61,31 +61,28 @@ export function SingleInviteForm({ sessionId, isSessionOpen, onInviteCreated }: 
 
       if (error) throw error;
 
-      const link = `https://ghanabaptistministers.com/minister-intake/${data.id}`;
+      const link = getIntakeInviteLink(data.id);
       
       // Copy to clipboard
       await navigator.clipboard.writeText(link);
 
       // Send SMS if enabled
       if (sendSms) {
-        const message = `Dear ${inviteName.trim()}, please update your minister information using this link: ${link} - GBC Ministers' Conference`;
-        
-        const { error: smsError } = await supabaseFunctions.functions.invoke("frogapi-send-personalized", {
-          body: {
-            senderid: MESSAGING_CONFIG.SENDER_ID,
-            destinations: [{
-              destination: normalizedPhone,
-              message,
-              smstype: MESSAGING_CONFIG.SMS_TYPE,
-            }],
-          },
-        });
-
-        if (smsError) {
-          console.error("SMS Error:", smsError);
-          toast.warning("Invite created but SMS failed");
-        } else {
+        try {
+          const [smsResult] = await sendIntakeInviteSms([{ id: data.id, full_name: inviteName.trim(), phone: normalizedPhone }]);
+          await supabase
+            .from("intake_invites")
+            .update({
+              sms_sent_at: new Date().toISOString(),
+              sms_status: "sent",
+              sms_message_id: smsResult.messageId,
+            })
+            .eq("id", data.id);
           toast.success("Invite created, link copied & SMS sent");
+        } catch (smsError: unknown) {
+          const message = smsError instanceof Error ? smsError.message : "Unknown SMS error";
+          console.error("SMS Error:", smsError);
+          toast.warning(`Invite created but SMS failed: ${message}`);
         }
       } else {
         toast.success("Invite created (link copied)");
@@ -97,9 +94,10 @@ export function SingleInviteForm({ sessionId, isSessionOpen, onInviteCreated }: 
       setInviteEmail("");
       setInviteExpiresAt("");
       onInviteCreated();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unknown error";
       console.error(error);
-      toast.error(`Failed to create invite: ${error.message}`);
+      toast.error(`Failed to create invite: ${message}`);
     } finally {
       setIsCreating(false);
     }
