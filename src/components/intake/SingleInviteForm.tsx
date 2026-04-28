@@ -79,9 +79,10 @@ export function SingleInviteForm({ sessionId, isSessionOpen, onInviteCreated }: 
             })
             .eq("id", data.id);
           toast.success("Invite created, link copied & SMS sent");
-        } catch (smsError: any) {
+        } catch (smsError: unknown) {
+          const message = smsError instanceof Error ? smsError.message : "Unknown SMS error";
           console.error("SMS Error:", smsError);
-          toast.warning(`Invite created but SMS failed: ${smsError.message}`);
+          toast.warning(`Invite created but SMS failed: ${message}`);
         }
       } else {
         toast.success("Invite created (link copied)");
@@ -93,9 +94,10 @@ export function SingleInviteForm({ sessionId, isSessionOpen, onInviteCreated }: 
       setInviteEmail("");
       setInviteExpiresAt("");
       onInviteCreated();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unknown error";
       console.error(error);
-      toast.error(`Failed to create invite: ${error.message}`);
+      toast.error(`Failed to create invite: ${message}`);
     } finally {
       setIsCreating(false);
     }
