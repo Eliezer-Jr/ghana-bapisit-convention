@@ -200,9 +200,11 @@ serve(async (req) => {
 
       const smsPayload = {
         senderid: senderId,
-        destination: formattedPhone.replace('+', ''),
+        destinations: [{
+          destination: formattedPhone.replace('+', ''),
+          msgid: `approve-${Date.now()}`,
+        }],
         message: message,
-        msgid: `approve-${Date.now()}`,
         smstype: 'text',
       };
 

@@ -27,7 +27,7 @@ serve(async (req) => {
   try {
     const apiKey = Deno.env.get('FROGAPI_KEY');
     const username = Deno.env.get('FROGAPI_USERNAME');
-    const senderId = Deno.env.get('FROGAPI_OTP_SENDER_ID') || 'GBCC';
+    const fallbackSenderId = Deno.env.get('FROGAPI_OTP_SENDER_ID') || 'GBCC';
 
     if (!apiKey || !username) {
       throw new Error('FrogAPI credentials not configured');
@@ -35,32 +35,39 @@ serve(async (req) => {
 
     const body: SendPersonalizedRequest = await req.json();
     const destinations = (body.destinations || []).filter((dest) => dest.destination?.trim() && dest.message?.trim());
+    const senderId = body.senderid?.trim() || fallbackSenderId;
 
     if (destinations.length === 0) {
       throw new Error('At least one destination with a message is required');
     }
 
-    const results = await Promise.all(destinations.map(async (dest, idx) => {
-      const payload = {
+    const preparedDestinations = destinations.map((dest, idx) => ({
+      destination: normalizePhone(dest.destination),
+      msgid: dest.msgid || `pmsg-${Date.now()}-${idx}`,
+      message: dest.message,
+      smstype: dest.smstype || 'text',
+    }));
+
+    const response = await fetch(FROG_SMS_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'API-KEY': apiKey,
+        'USERNAME': username,
+      },
+      body: JSON.stringify({
         senderid: senderId,
-        destination: normalizePhone(dest.destination),
-        msgid: dest.msgid || `pmsg-${Date.now()}-${idx}`,
-        message: dest.message,
-        smstype: dest.smstype || 'text',
-      };
+        destinations: preparedDestinations,
+      }),
+    });
 
-      const response = await fetch(FROG_SMS_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'API-KEY': apiKey,
-          'USERNAME': username,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-      return { ok: response.ok, status: response.status, destination: payload.destination, data };
+    const data = await response.json();
+    const accepted = response.ok && ['ACCEPTD', 'ACCEPTED', 'SUCCESS'].includes(String(data?.status ?? '').toUpperCase());
+    const results = preparedDestinations.map((dest) => ({
+      ok: accepted,
+      status: response.status,
+      destination: dest.destination,
+      data: { ...data, msgid: dest.msgid },
     }));
 
     const failed = results.filter((result) => !result.ok || !['ACCEPTD', 'ACCEPTED', 'SUCCESS'].includes(String(result.data?.status ?? '').toUpperCase()));

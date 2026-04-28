@@ -68,9 +68,11 @@ serve(async (req) => {
 
     const postData = {
       senderid: senderId,
-      destination: formattedPhone.replace('+', ''),
+      destinations: [{
+        destination: formattedPhone.replace('+', ''),
+        msgid: `notify-${applicationId}-${Date.now()}`,
+      }],
       message: message,
-      msgid: `notify-${applicationId}-${Date.now()}`,
       smstype: 'text',
     };
 
