@@ -63,9 +63,10 @@ export function InvitesList({ invites, isLoading, onInviteUpdated }: Props) {
 
       toast.success(`SMS sent to ${invite.minister_phone}`);
       onInviteUpdated();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unknown SMS error";
       console.error("SMS Error:", error);
-      toast.error(`Failed to send SMS: ${error.message}`);
+      toast.error(`Failed to send SMS: ${message}`);
     } finally {
       setSendingId(null);
     }
