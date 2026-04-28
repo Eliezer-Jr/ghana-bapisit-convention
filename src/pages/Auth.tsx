@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseFunctions } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,13 +63,16 @@ const Auth = () => {
       }
 
       // Send OTP
-      const { data, error } = await supabase.functions.invoke('moolre-otp-generate', {
+      const { data, error } = await supabaseFunctions.functions.invoke('moolre-otp-generate', {
         body: { phoneNumber: validated.phoneNumber }
       });
 
       if (error) throw error;
       if (!data.success) {
         const errMsg = data.error || "Failed to send OTP";
+        if (errMsg.toLowerCase().includes('balance insufficient')) {
+          throw new Error("SMS bundle balance is insufficient. Please top up the SMS account, then try again.");
+        }
         if (errMsg.toLowerCase().includes('dbcrash') || errMsg.toLowerCase().includes('invalid response')) {
           throw new Error("Our SMS service is temporarily unavailable. Please try again in a few minutes.");
         }
