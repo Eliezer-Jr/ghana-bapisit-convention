@@ -802,8 +802,8 @@ export type Database = {
           location: string | null
           marital_status: string | null
           marriage_type: string | null
-          ministry_engagement: string | null
           minister_id: string | null
+          ministry_engagement: string | null
           notes: string | null
           number_of_children: number | null
           ordination_year: number | null
@@ -850,8 +850,8 @@ export type Database = {
           location?: string | null
           marital_status?: string | null
           marriage_type?: string | null
-          ministry_engagement?: string | null
           minister_id?: string | null
+          ministry_engagement?: string | null
           notes?: string | null
           number_of_children?: number | null
           ordination_year?: number | null
@@ -898,8 +898,8 @@ export type Database = {
           location?: string | null
           marital_status?: string | null
           marriage_type?: string | null
-          ministry_engagement?: string | null
           minister_id?: string | null
+          ministry_engagement?: string | null
           notes?: string | null
           number_of_children?: number | null
           ordination_year?: number | null
