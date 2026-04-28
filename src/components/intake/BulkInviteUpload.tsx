@@ -5,8 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, X, Send, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import * as XLSX from "xlsx";
-import { supabase, supabaseFunctions } from "@/lib/supabase";
-import { MESSAGING_CONFIG } from "@/config/messaging";
+import { supabase } from "@/lib/supabase";
+import { getIntakeInviteLink, sendIntakeInviteSms } from "@/services/intakeSms";
 
 interface MinisterContact {
   full_name: string;
@@ -50,14 +50,6 @@ interface Props {
   sessionId: string;
   onInvitesCreated: () => void;
 }
-
-// Use localhost for local testing
-const getBaseDomain = () => {
-  if (typeof window !== 'undefined') {
-    return window.location.origin;
-  }
-  return "https://ghanabaptistministers.com";
-};
 
 export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
   const [contacts, setContacts] = useState<MinisterContact[]>([]);
@@ -185,43 +177,34 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
           id: data.id,
           full_name: contact.full_name,
           phone: contact.phone,
-          link: `${getBaseDomain()}/minister-intake/${data.id}`,
+          link: getIntakeInviteLink(data.id),
         };
       });
 
       const createdInvites = await Promise.all(invitePromises);
       
-      // Prepare SMS messages with unique links
-      const smsDestinations = createdInvites.map((invite) => ({
-        destination: invite.phone,
-        message: `Dear ${invite.full_name}, please update your minister information using this link: ${invite.link} - GBC Ministers' Conference`,
-        smstype: MESSAGING_CONFIG.SMS_TYPE,
-      }));
+      try {
+        const smsResults = await sendIntakeInviteSms(createdInvites.map((invite) => ({
+          id: invite.id,
+          full_name: invite.full_name,
+          phone: invite.phone,
+        })));
 
-      // Send SMS via edge function
-      const { error: smsError } = await supabaseFunctions.functions.invoke("frogapi-send-personalized", {
-        body: {
-          senderid: MESSAGING_CONFIG.SENDER_ID,
-          destinations: smsDestinations,
-        },
-      });
-
-      if (smsError) {
-        console.error("SMS Error:", smsError);
-        toast.warning(`Invites created but SMS failed: ${smsError.message}`);
-      } else {
-        // Update SMS status for all created invites
-        const updatePromises = createdInvites.map((invite) =>
+        const updatePromises = smsResults.map((result) =>
           supabase
             .from("intake_invites")
             .update({
               sms_sent_at: new Date().toISOString(),
               sms_status: "sent",
+              sms_message_id: result.messageId,
             })
-            .eq("id", invite.id)
+            .eq("id", result.inviteId)
         );
         await Promise.all(updatePromises);
         toast.success(`Created ${createdInvites.length} invites and sent SMS`);
+      } catch (smsError: any) {
+        console.error("SMS Error:", smsError);
+        toast.warning(`Invites created but SMS failed: ${smsError.message}`);
       }
 
       setContacts([]);
