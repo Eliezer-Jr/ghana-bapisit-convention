@@ -74,9 +74,18 @@ serve(async (req) => {
       throw new Error(`Moolre API returned invalid response: ${responseText.substring(0, 200)}`);
     }
 
-    // Check if Moolre API returned an error
+    // Check if Moolre API returned an error. Return a normal JSON response so
+    // the app can show the actual SMS provider message instead of the generic
+    // "Edge Function returned a non-2xx status code" error.
     if (!response.ok || data.status === 0 || data.code === 'AIN01') {
-      throw new Error(`SMS delivery failed: ${data.message || responseText.substring(0, 200)}`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `SMS delivery failed: ${data.message || responseText.substring(0, 200)}`,
+          code: data.code,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Only store OTP if SMS was sent successfully
