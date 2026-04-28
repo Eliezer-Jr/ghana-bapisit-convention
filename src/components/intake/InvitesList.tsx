@@ -5,8 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Copy, Send, Loader2, Check } from "lucide-react";
-import { supabase, supabaseFunctions } from "@/lib/supabase";
-import { MESSAGING_CONFIG } from "@/config/messaging";
+import { supabase } from "@/lib/supabase";
+import { getIntakeInviteLink, sendIntakeInviteSms } from "@/services/intakeSms";
 
 type IntakeInvite = {
   id: string;
@@ -22,8 +22,6 @@ type IntakeInvite = {
   sms_message_id: string | null;
 };
 
-const BASE_DOMAIN = "https://ghanabaptistministers.com";
-
 interface Props {
   invites: IntakeInvite[];
   isLoading: boolean;
@@ -34,12 +32,8 @@ export function InvitesList({ invites, isLoading, onInviteUpdated }: Props) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
 
-  const getInviteLink = (inviteId: string) => {
-    return `${BASE_DOMAIN}/minister-intake/${inviteId}`;
-  };
-
   const copyLink = async (inviteId: string) => {
-    const link = getInviteLink(inviteId);
+    const link = getIntakeInviteLink(inviteId);
     await navigator.clipboard.writeText(link);
     setCopiedId(inviteId);
     toast.success("Link copied to clipboard");
@@ -54,31 +48,16 @@ export function InvitesList({ invites, isLoading, onInviteUpdated }: Props) {
 
     setSendingId(invite.id);
     try {
-      const link = getInviteLink(invite.id);
       const name = invite.minister_full_name || "Minister";
-      const message = `Dear ${name}, please update your minister information using this link: ${link} - GBC Ministers' Conference`;
-
-      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-send-personalized", {
-        body: {
-          senderid: MESSAGING_CONFIG.SENDER_ID,
-          destinations: [{
-            destination: invite.minister_phone,
-            message,
-            smstype: MESSAGING_CONFIG.SMS_TYPE,
-          }],
-        },
-      });
-
-      if (error) throw error;
+      const [smsResult] = await sendIntakeInviteSms([{ id: invite.id, full_name: name, phone: invite.minister_phone }]);
 
       // Update SMS status in database
-      const messageId = data?.messages?.[0]?.msgid || data?.msgid || null;
       await supabase
         .from("intake_invites")
         .update({
           sms_sent_at: new Date().toISOString(),
           sms_status: "sent",
-          sms_message_id: messageId,
+          sms_message_id: smsResult.messageId,
         })
         .eq("id", invite.id);
 
