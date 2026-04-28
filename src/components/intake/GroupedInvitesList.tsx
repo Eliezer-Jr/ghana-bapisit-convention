@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Copy, Send, Loader2, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, Search, X } from "lucide-react";
-import { supabase, supabaseFunctions } from "@/lib/supabase";
-import { MESSAGING_CONFIG } from "@/config/messaging";
+import { supabase } from "@/lib/supabase";
+import { getIntakeInviteLink, sendIntakeInviteSms } from "@/services/intakeSms";
 
 type IntakeInvite = {
   id: string;
@@ -23,8 +23,6 @@ type IntakeInvite = {
   sms_status: string | null;
   sms_message_id: string | null;
 };
-
-const BASE_DOMAIN = "https://ghanabaptistministers.com";
 
 interface Props {
   invites: IntakeInvite[];
@@ -146,10 +144,8 @@ export function GroupedInvitesList({ invites, isLoading, onInviteUpdated }: Prop
     setCurrentPage(1);
   };
 
-  const getInviteLink = (inviteId: string) => `${BASE_DOMAIN}/minister-intake/${inviteId}`;
-
   const copyLink = async (inviteId: string) => {
-    await navigator.clipboard.writeText(getInviteLink(inviteId));
+    await navigator.clipboard.writeText(getIntakeInviteLink(inviteId));
     setCopiedId(inviteId);
     toast.success("Link copied to clipboard");
     setTimeout(() => setCopiedId(null), 2000);
@@ -162,23 +158,13 @@ export function GroupedInvitesList({ invites, isLoading, onInviteUpdated }: Prop
     }
     setSendingId(invite.id);
     try {
-      const link = getInviteLink(invite.id);
       const name = invite.minister_full_name || "Minister";
-      const message = `Dear ${name}, please update your minister information using this link: ${link} - GBC Ministers' Conference`;
+      const [smsResult] = await sendIntakeInviteSms([{ id: invite.id, full_name: name, phone: invite.minister_phone }]);
 
-      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-send-personalized", {
-        body: {
-          senderid: MESSAGING_CONFIG.SENDER_ID,
-          destinations: [{ destination: invite.minister_phone, message, smstype: MESSAGING_CONFIG.SMS_TYPE }],
-        },
-      });
-      if (error) throw error;
-
-      const messageId = data?.messages?.[0]?.msgid || data?.msgid || null;
       await supabase.from("intake_invites").update({
         sms_sent_at: new Date().toISOString(),
         sms_status: "sent",
-        sms_message_id: messageId,
+        sms_message_id: smsResult.messageId,
       }).eq("id", invite.id);
 
       toast.success(`SMS sent to ${invite.minister_phone}`);
