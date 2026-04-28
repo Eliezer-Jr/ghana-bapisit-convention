@@ -202,16 +202,18 @@ export function BulkInviteUpload({ sessionId, onInvitesCreated }: Props) {
         );
         await Promise.all(updatePromises);
         toast.success(`Created ${createdInvites.length} invites and sent SMS`);
-      } catch (smsError: any) {
+      } catch (smsError: unknown) {
+        const message = smsError instanceof Error ? smsError.message : "Unknown SMS error";
         console.error("SMS Error:", smsError);
-        toast.warning(`Invites created but SMS failed: ${smsError.message}`);
+        toast.warning(`Invites created but SMS failed: ${message}`);
       }
 
       setContacts([]);
       onInvitesCreated();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unknown error";
       console.error("Error creating invites:", error);
-      toast.error(`Failed: ${error.message}`);
+      toast.error(`Failed: ${message}`);
     } finally {
       setIsSending(false);
     }
