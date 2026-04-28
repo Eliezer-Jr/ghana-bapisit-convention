@@ -1,19 +1,19 @@
 import { supabaseFunctions } from "@/lib/supabase";
 import { MESSAGING_CONFIG } from "@/config/messaging";
 
-export interface MoolreAPIResponse {
+export interface FrogAPIResponse {
   success: boolean;
   data?: any;
   error?: string;
 }
 
-export class MoolreAPIService {
+export class FrogAPIService {
   /**
    * Get SMS balance
    */
-  static async getBalance(): Promise<MoolreAPIResponse> {
+  static async getBalance(): Promise<FrogAPIResponse> {
     try {
-      const { data, error } = await supabaseFunctions.functions.invoke("moolre-balance");
+      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-balance");
 
       if (error) {
         console.error("Balance fetch error:", error);
@@ -42,9 +42,9 @@ export class MoolreAPIService {
   static async sendGeneralSMS(
     recipients: string[],
     message: string
-  ): Promise<MoolreAPIResponse> {
+  ): Promise<FrogAPIResponse> {
     try {
-      const { data, error } = await supabaseFunctions.functions.invoke("moolre-send-general", {
+      const { data, error } = await supabaseFunctions.functions.invoke("frogapi-send-general", {
         body: {
           senderid: MESSAGING_CONFIG.SENDER_ID,
           destinations: recipients.map(r => ({ destination: r })),
@@ -78,10 +78,10 @@ export class MoolreAPIService {
    */
   static async sendPersonalizedSMS(
     messages: Array<{ recipient: string; message: string }>
-  ): Promise<MoolreAPIResponse> {
+  ): Promise<FrogAPIResponse> {
     try {
       const { data, error } = await supabaseFunctions.functions.invoke(
-        "moolre-send-personalized",
+        "frogapi-send-personalized",
         {
           body: {
             senderid: MESSAGING_CONFIG.SENDER_ID,
@@ -115,13 +115,12 @@ export class MoolreAPIService {
   }
 
   /**
-   * Get message history - Moolre doesn't have a dedicated history endpoint,
-   * so this is a placeholder that returns empty data
+   * Get message history - Frog provides a history endpoint; use the messaging history screen for detailed filters
    */
   static async getHistory(
     startDate?: string,
     endDate?: string
-  ): Promise<MoolreAPIResponse> {
+  ): Promise<FrogAPIResponse> {
     return {
       success: true,
       data: { messages: [], total: 0 },

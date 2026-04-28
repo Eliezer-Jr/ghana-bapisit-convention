@@ -100,7 +100,7 @@ export const useEventMessages = () => {
         return;
       }
 
-      const { data, error } = await supabaseFunctions.functions.invoke('moolre-send-personalized', {
+      const { data, error } = await supabaseFunctions.functions.invoke('frogapi-send-personalized', {
         body: {
           senderid: MESSAGING_CONFIG.SENDER_ID,
           destinations: destinations.map(d => ({

@@ -251,7 +251,7 @@ export default function MinisterIntake() {
       return;
     }
     setOtpSending(true);
-    const { data, error } = await supabase.functions.invoke("moolre-otp-generate", {
+    const { data, error } = await supabase.functions.invoke("frogapi-otp-generate", {
       body: { phoneNumber: formatted.startsWith("+233") ? `0${formatted.slice(4)}` : formatted },
     });
     setOtpSending(false);
@@ -276,7 +276,7 @@ export default function MinisterIntake() {
       return;
     }
     setOtpVerifying(true);
-    const { data, error } = await supabase.functions.invoke("moolre-system-otp-verify", {
+    const { data, error } = await supabase.functions.invoke("system-otp-verify", {
       body: {
         phoneNumber: phone,
         otp,

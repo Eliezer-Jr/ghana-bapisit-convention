@@ -63,14 +63,14 @@ const Auth = () => {
       }
 
       // Send OTP
-      const { data, error } = await supabaseFunctions.functions.invoke('moolre-otp-generate', {
+      const { data, error } = await supabaseFunctions.functions.invoke('frogapi-otp-generate', {
         body: { phoneNumber: validated.phoneNumber }
       });
 
       if (error) throw error;
       if (!data.success) {
         const errMsg = data.error || "Failed to send OTP";
-        if (errMsg.toLowerCase().includes('balance insufficient')) {
+        if (errMsg.toLowerCase().includes('insufficient balance')) {
           throw new Error("SMS bundle balance is insufficient. Please top up the SMS account, then try again.");
         }
         if (errMsg.toLowerCase().includes('dbcrash') || errMsg.toLowerCase().includes('invalid response')) {
@@ -129,7 +129,7 @@ const Auth = () => {
       }
 
       // Verify OTP for system login
-      const { data, error } = await supabase.functions.invoke('moolre-system-otp-verify', {
+      const { data, error } = await supabase.functions.invoke('system-otp-verify', {
         body: { 
           phoneNumber, 
           otp,
