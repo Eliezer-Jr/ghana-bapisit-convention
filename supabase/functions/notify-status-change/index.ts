@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const MOOLRE_API_URL = 'https://api.moolre.com/open/sms/send';
+const FROG_SMS_URL = 'https://frogapi.wigal.com.gh/api/v3/sms/send';
 
 interface NotificationRequest {
   applicationId: string;
@@ -52,11 +52,12 @@ serve(async (req) => {
         message = `Dear ${recipientName}, your application status has been updated to: ${status.replace(/_/g, " ")}. Please check your portal for details. - Ghana Baptist Convention Conference`;
     }
 
-    const apiVasKey = Deno.env.get("MOOLRE_API_VASKEY");
-    const senderId = Deno.env.get("MOOLRE_SENDER_ID") || "GBCC";
+    const apiKey = Deno.env.get("FROGAPI_KEY");
+    const username = Deno.env.get("FROGAPI_USERNAME");
+    const senderId = Deno.env.get("FROGAPI_OTP_SENDER_ID") || "GBCC";
 
-    if (!apiVasKey) {
-      throw new Error("Moolre API VAS Key not configured");
+    if (!apiKey || !username) {
+      throw new Error("FrogAPI credentials not configured");
     }
 
     // Format phone number
@@ -66,28 +67,25 @@ serve(async (req) => {
     }
 
     const postData = {
-      type: 1,
       senderid: senderId,
-      messages: [
-        {
-          recipient: formattedPhone,
-          message: message,
-          ref: `notify-${applicationId}-${Date.now()}`,
-        },
-      ],
+      destination: formattedPhone.replace('+', ''),
+      message: message,
+      msgid: `notify-${applicationId}-${Date.now()}`,
+      smstype: 'text',
     };
 
-    const response = await fetch(MOOLRE_API_URL, {
+    const response = await fetch(FROG_SMS_URL, {
       method: 'POST',
       headers: {
-        'X-API-VASKEY': apiVasKey,
+        'API-KEY': apiKey,
+        'USERNAME': username,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(postData),
     });
 
     const data = await response.json();
-    console.log("SMS sent successfully via Moolre:", data);
+    console.log("SMS sent successfully via FrogAPI:", data);
 
     return new Response(JSON.stringify({ success: true, message: "Notification sent successfully" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
