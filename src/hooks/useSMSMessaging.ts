@@ -83,7 +83,7 @@ export const useSMSMessaging = () => {
       }
 
       if (excelContacts.length > 0 && (message.includes('[[name]]') || message.includes('[[phone_number]]'))) {
-        const { data, error } = await supabaseFunctions.functions.invoke('moolre-send-personalized', {
+        const { data, error } = await supabaseFunctions.functions.invoke('frogapi-send-personalized', {
           body: {
             senderid: MESSAGING_CONFIG.SENDER_ID,
             destinations: finalDestinations.map(d => ({
@@ -97,7 +97,7 @@ export const useSMSMessaging = () => {
         if (error) throw error;
         toast.success("Personalized SMS sent successfully");
       } else {
-        const { data, error } = await supabaseFunctions.functions.invoke('moolre-send-general', {
+        const { data, error } = await supabaseFunctions.functions.invoke('frogapi-send-general', {
           body: {
             senderid: MESSAGING_CONFIG.SENDER_ID,
             destinations: finalDestinations,
@@ -132,7 +132,7 @@ export const useSMSMessaging = () => {
         return;
       }
 
-      const { data, error } = await supabaseFunctions.functions.invoke('moolre-send-personalized', {
+      const { data, error } = await supabaseFunctions.functions.invoke('frogapi-send-personalized', {
         body: {
           senderid: MESSAGING_CONFIG.SENDER_ID,
           destinations: validDestinations.map(d => ({

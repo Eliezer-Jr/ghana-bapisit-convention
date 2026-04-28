@@ -31,10 +31,19 @@ export const useMessageHistory = () => {
         return;
       }
 
-      // Moolre doesn't have a dedicated history endpoint
-      // Return empty data with a notice
-      setHistoryData({ messages: [], total: 0 });
-      toast.info("Message history is available through the Moolre dashboard at app.moolre.com");
+      const { data, error } = await supabaseFunctions.functions.invoke('frogapi-history', {
+        body: {
+          datefrom: filters.datefrom,
+          dateto: filters.dateto,
+          senderid: filters.senderid || undefined,
+          status: filters.status || undefined,
+        },
+      });
+
+      if (error) throw error;
+
+      setHistoryData(data);
+      toast.success("Message history fetched successfully");
     } catch (error: any) {
       setError(error.message || "Failed to fetch history");
       toast.error(error.message || "Failed to fetch history");

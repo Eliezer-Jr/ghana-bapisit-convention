@@ -451,7 +451,7 @@ export function SubmissionReviewDialog({
         try {
           const smsMessage = `Ghana Baptist Convention: Your minister information has been approved. Your Minister ID is: ${ministerIdNumber}. Keep this for your records.`;
           
-          await supabaseFunctions.functions.invoke("moolre-send-general", {
+          await supabaseFunctions.functions.invoke("frogapi-send-general", {
             body: {
               senderid: MESSAGING_CONFIG.SENDER_ID,
               destinations: [{ destination: payload.phone }],

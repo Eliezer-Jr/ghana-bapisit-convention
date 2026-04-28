@@ -190,35 +190,35 @@ serve(async (req) => {
       approvedData = insertedData;
     }
 
-    // Send SMS notification using Moolre
-    const apiVasKey = Deno.env.get('MOOLRE_API_VASKEY');
-    const senderId = Deno.env.get('MOOLRE_SENDER_ID');
+    // Send SMS notification using Frog/Wigal
+    const apiKey = Deno.env.get('FROGAPI_KEY');
+    const username = Deno.env.get('FROGAPI_USERNAME');
+    const senderId = Deno.env.get('FROGAPI_OTP_SENDER_ID');
 
-    if (apiVasKey && senderId) {
+    if (apiKey && username && senderId) {
       const message = `Your phone number has been approved to apply for ministerial admission. Please visit the application portal and use OTP verification to proceed.`;
 
       const smsPayload = {
-        type: 1,
         senderid: senderId,
-        messages: [{
-          recipient: formattedPhone.replace('+', ''),
-          message: message,
-          ref: `approve-${Date.now()}`,
-        }],
+        destination: formattedPhone.replace('+', ''),
+        message: message,
+        msgid: `approve-${Date.now()}`,
+        smstype: 'text',
       };
 
       try {
-        const smsResponse = await fetch('https://api.moolre.com/open/sms/send', {
+        const smsResponse = await fetch('https://frogapi.wigal.com.gh/api/v3/sms/send', {
           method: 'POST',
           headers: {
-            'X-Api-VasKey': apiVasKey,
+            'API-KEY': apiKey,
+            'USERNAME': username,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(smsPayload),
         });
 
         const smsResult = await smsResponse.json();
-        console.log('SMS notification sent via Moolre:', smsResult);
+        console.log('SMS notification sent via FrogAPI:', smsResult);
       } catch (smsError) {
         console.error('Error sending SMS notification:', smsError);
       }

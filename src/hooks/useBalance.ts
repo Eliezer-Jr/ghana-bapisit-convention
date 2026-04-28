@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MoolreAPIService } from "@/services/frogapi";
+import { FrogAPIService } from "@/services/frogapi";
 import { toast } from "sonner";
 
 export const useBalance = () => {
@@ -12,10 +12,10 @@ export const useBalance = () => {
       setLoading(true);
       setError(null);
       
-      const result = await MoolreAPIService.getBalance();
+      const result = await FrogAPIService.getBalance();
       
       if (result.success) {
-        setBalance(result.data?.data?.balance || result.data?.balance || "0");
+        setBalance(result.data?.data?.cashBalance ?? result.data?.data?.balance ?? result.data?.cashBalance ?? result.data?.balance ?? "0");
         toast.success("Balance fetched successfully");
       } else {
         setError(result.error || "Failed to fetch balance");

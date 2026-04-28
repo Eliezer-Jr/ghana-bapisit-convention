@@ -70,7 +70,7 @@ export function SingleInviteForm({ sessionId, isSessionOpen, onInviteCreated }: 
       if (sendSms) {
         const message = `Dear ${inviteName.trim()}, please update your minister information using this link: ${link} - GBC Ministers' Conference`;
         
-        const { error: smsError } = await supabaseFunctions.functions.invoke("moolre-send-personalized", {
+        const { error: smsError } = await supabaseFunctions.functions.invoke("frogapi-send-personalized", {
           body: {
             senderid: MESSAGING_CONFIG.SENDER_ID,
             destinations: [{
