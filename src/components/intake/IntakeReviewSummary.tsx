@@ -144,7 +144,7 @@ export default function IntakeReviewSummary({ payload }: IntakeReviewSummaryProp
   const warnings: string[] = [];
   if (!payload.full_name?.trim()) warnings.push("Full name is required");
   if (!payload.phone?.trim()) warnings.push("Phone number is required");
-  if (!payload.role?.trim()) warnings.push("Role/Position is required");
+  if (!payload.ghana_card_number?.trim()) warnings.push("Ghana Card Number is required");
 
   return (
     <div className="space-y-6">
@@ -183,9 +183,6 @@ export default function IntakeReviewSummary({ payload }: IntakeReviewSummaryProp
                 <p className="text-muted-foreground">{payload.titles}</p>
               )}
               <div className="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
-                {payload.role && (
-                  <Badge variant="secondary">{payload.role}</Badge>
-                )}
                 {payload.association && (
                   <Badge variant="outline">{payload.association}</Badge>
                 )}
@@ -253,12 +250,10 @@ export default function IntakeReviewSummary({ payload }: IntakeReviewSummaryProp
         <SectionCard title="Convention Structure" icon={Church}>
           <InfoRow label="Association" value={payload.association} />
           <InfoRow label="Sector" value={payload.sector} />
-          <InfoRow label="Zone" value={payload.zone} />
         </SectionCard>
 
         {/* Current Ministry */}
         <SectionCard title="Current Ministry" icon={Church}>
-          <InfoRow label="Role/Position" value={payload.role} />
           <InfoRow
             label="Type of Ministry"
             value={

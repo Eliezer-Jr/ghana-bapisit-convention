@@ -65,6 +65,7 @@ interface MinisterDialogProps {
 
 const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDialogProps) => {
   const OTHER_CHURCH_VALUE = "__other__";
+  const OTHER_TITLE_VALUE = "__other_title__";
   const QUALIFICATION_DOCUMENT_BUCKET = "qualification-documents";
   const GHANA_CARD_DOCUMENT_BUCKET = "ghana-card-documents";
   const QUALIFICATION_DOCUMENT_MAX_SIZE = 2 * 1024 * 1024;
@@ -75,6 +76,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
   const [imageToCrop, setImageToCrop] = useState("");
   const [uploadingQualificationIndex, setUploadingQualificationIndex] = useState<number | null>(null);
   const [useCustomCurrentChurch, setUseCustomCurrentChurch] = useState(false);
+  const [useCustomTitle, setUseCustomTitle] = useState(false);
   const [customHistoryChurchRows, setCustomHistoryChurchRows] = useState<Record<number, boolean>>({});
   const [formData, setFormData] = useState({
     full_name: "",
@@ -139,6 +141,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
   const churchOptions = getChurchesForAssociation(formData.association);
   const isCustomCurrentChurch = useCustomCurrentChurch || (!!formData.current_church_name && !churchOptions.includes(formData.current_church_name));
   const isSingle = formData.marital_status === "single";
+  const isCustomTitle = useCustomTitle || (!!formData.titles && !TITLE_OPTIONS.includes(formData.titles));
 
   const handleMaritalStatusChange = (value: string) => {
     if (value === "single") {
@@ -225,6 +228,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         if (nonChurchData.data) setNonChurchWork(nonChurchData.data);
         if (conventionData.data) setConventionPositions(conventionData.data);
         if (childData.data) setChildren(childData.data);
+        setUseCustomTitle(false);
         setUseCustomCurrentChurch(false);
         setCustomHistoryChurchRows({});
         if (emergData.data) {
@@ -284,6 +288,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         setEmergencyContact({ contact_name: "", relationship: "", phone_number: "" });
         setPhotoPreview("");
         setPhotoFile(null);
+        setUseCustomTitle(false);
         setUseCustomCurrentChurch(false);
         setCustomHistoryChurchRows({});
       }
@@ -703,20 +708,39 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="titles">Title(s)</Label>
-                  <Select
-                    value={formData.titles}
-                    disabled={loading}
-                    onValueChange={(value) => setFormData({ ...formData, titles: value })}
-                  >
-                    <SelectTrigger id="titles">
-                      <SelectValue placeholder="Select title" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TITLE_OPTIONS.map((title) => (
-                        <SelectItem key={title} value={title}>{title}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-2">
+                    <Select
+                      value={isCustomTitle ? OTHER_TITLE_VALUE : formData.titles}
+                      disabled={loading}
+                      onValueChange={(value) => {
+                        if (value === OTHER_TITLE_VALUE) {
+                          setUseCustomTitle(true);
+                          setFormData({ ...formData, titles: "" });
+                          return;
+                        }
+                        setUseCustomTitle(false);
+                        setFormData({ ...formData, titles: value });
+                      }}
+                    >
+                      <SelectTrigger id="titles">
+                        <SelectValue placeholder="Select title" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TITLE_OPTIONS.map((title) => (
+                          <SelectItem key={title} value={title}>{title}</SelectItem>
+                        ))}
+                        <SelectItem value={OTHER_TITLE_VALUE}>Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {isCustomTitle && (
+                      <Input
+                        value={formData.titles}
+                        onChange={(e) => setFormData({ ...formData, titles: e.target.value })}
+                        disabled={loading}
+                        placeholder="Type title"
+                      />
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="date_of_birth">Date of Birth</Label>

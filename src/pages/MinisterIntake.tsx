@@ -58,13 +58,12 @@ function getMissingRequiredFields(payload: Record<string, any>): MissingField[] 
     { key: "phone", label: "Phone Number", tab: "bio" },
     { key: "whatsapp", label: "WhatsApp Number", tab: "bio" },
     { key: "email", label: "Email Address", tab: "bio" },
+    { key: "ghana_card_number", label: "Ghana Card Number", tab: "bio" },
     { key: "gps_address", label: "GPS Address", tab: "bio" },
     { key: "location", label: "Location/Area", tab: "bio" },
     { key: "marital_status", label: "Marital Status", tab: "bio" },
     { key: "sector", label: "Sector", tab: "ministerial" },
     { key: "association", label: "Association", tab: "ministerial" },
-    { key: "zone", label: "Zone", tab: "ministerial" },
-    { key: "role", label: "Role/Position", tab: "ministerial" },
     { key: "ministry_engagement", label: "Type of Ministry", tab: "ministerial" },
     { key: "current_church_name", label: "Current Church Name", tab: "ministerial" },
     { key: "position_at_church", label: "Position at Church", tab: "ministerial" },
@@ -328,8 +327,14 @@ export default function MinisterIntake() {
           spouse_occupation: "",
           number_of_children: 0,
           children: [],
+          role: "",
+          zone: "",
         }
-      : payload;
+      : {
+          ...payload,
+          role: "",
+          zone: "",
+        };
     setSaving(true);
     const nextStatus = submission.status === "rejected" ? "draft" : submission.status;
     const { error } = await supabase
@@ -376,8 +381,14 @@ export default function MinisterIntake() {
           spouse_occupation: "",
           number_of_children: 0,
           children: [],
+          role: "",
+          zone: "",
         }
-      : payload;
+      : {
+          ...payload,
+          role: "",
+          zone: "",
+        };
 
     setSubmitting(true);
     const { error } = await supabase

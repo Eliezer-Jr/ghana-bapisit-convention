@@ -26,6 +26,7 @@ interface IntakeFormTabsProps {
 
 export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChange, disabled, submissionId }: IntakeFormTabsProps) {
   const OTHER_CHURCH_VALUE = "__other__";
+  const OTHER_TITLE_VALUE = "__other_title__";
   const QUALIFICATION_DOCUMENT_BUCKET = "qualification-documents";
   const GHANA_CARD_DOCUMENT_BUCKET = "ghana-card-documents";
   const QUALIFICATION_DOCUMENT_MAX_SIZE = 2 * 1024 * 1024;
@@ -35,10 +36,12 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState("");
   const [useCustomCurrentChurch, setUseCustomCurrentChurch] = useState(false);
+  const [useCustomTitle, setUseCustomTitle] = useState(false);
   const [customHistoryChurchRows, setCustomHistoryChurchRows] = useState<Record<number, boolean>>({});
   const churchOptions = getChurchesForAssociation(payload.association || "");
   const isSingle = payload.marital_status === "single";
   const isCustomCurrentChurch = useCustomCurrentChurch || (!!payload.current_church_name && !churchOptions.includes(payload.current_church_name));
+  const isCustomTitle = useCustomTitle || (!!payload.titles && !TITLE_OPTIONS.includes(payload.titles));
 
   const updateField = (field: string, value: any) => {
     onChange({ ...payload, [field]: value });
@@ -320,21 +323,41 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
             </div>
             <div className="space-y-2">
               <Label>Title(s) <span className="text-destructive">*</span></Label>
-              <Select
-                value={payload.titles || ""}
-                onValueChange={(value) => updateField("titles", value)}
-                disabled={disabled}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select title" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TITLE_OPTIONS.map((title) => (
-                    <SelectItem key={title} value={title}>{title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Select
+                  value={isCustomTitle ? OTHER_TITLE_VALUE : payload.titles || ""}
+                  onValueChange={(value) => {
+                    if (value === OTHER_TITLE_VALUE) {
+                      setUseCustomTitle(true);
+                      updateField("titles", "");
+                      return;
+                    }
+                    setUseCustomTitle(false);
+                    updateField("titles", value);
+                  }}
+                  disabled={disabled}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select title" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TITLE_OPTIONS.map((title) => (
+                      <SelectItem key={title} value={title}>{title}</SelectItem>
+                    ))}
+                    <SelectItem value={OTHER_TITLE_VALUE}>Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                {isCustomTitle && (
+                  <Input
+                    value={payload.titles || ""}
+                    onChange={(e) => updateField("titles", e.target.value)}
+                    disabled={disabled}
+                    placeholder="Type title"
+                    required
+                  />
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Date of Birth <span className="text-destructive">*</span></Label>
@@ -347,12 +370,13 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
               />
             </div>
             <div className="space-y-2">
-              <Label>Ghana Card Number</Label>
+              <Label>Ghana Card Number <span className="text-destructive">*</span></Label>
               <Input
                 value={payload.ghana_card_number || ""}
                 onChange={(e) => updateField("ghana_card_number", e.target.value)}
                 disabled={disabled}
                 placeholder="e.g., GHA-123456789-0"
+                required
               />
             </div>
             <div className="space-y-2">
@@ -756,24 +780,6 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Zone <span className="text-destructive">*</span></Label>
-              <Select
-                value={payload.zone || ""}
-                onValueChange={(value) => updateField("zone", value)}
-                disabled={disabled}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select zone" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ZONES.map((z) => (
-                    <SelectItem key={z} value={z}>{z}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         </div>
 
@@ -781,16 +787,6 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
         <div className="space-y-4">
           <h3 className="font-semibold text-lg border-b pb-2">Current Ministry</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Role/Position <span className="text-destructive">*</span></Label>
-              <Input
-                value={payload.role || ""}
-                onChange={(e) => updateField("role", e.target.value)}
-                disabled={disabled}
-                placeholder="e.g., Pastor, Evangelist"
-                required
-              />
-            </div>
             <div className="space-y-2">
               <Label>Type of Ministry <span className="text-destructive">*</span></Label>
               <Select
