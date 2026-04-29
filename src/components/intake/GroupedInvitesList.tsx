@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Copy, Send, Loader2, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, Search, X } from "lucide-react";
+import { Copy, Send, Loader2, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, Search, X, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getIntakeInviteLink, sendIntakeInviteSms } from "@/services/intakeSms";
 
@@ -47,6 +47,7 @@ export function GroupedInvitesList({ invites, isLoading, onInviteUpdated }: Prop
   const [smsFilter, setSmsFilter] = useState("all");
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Filter invites
   const filteredInvites = useMemo(() => {
@@ -185,6 +186,23 @@ export function GroupedInvitesList({ invites, isLoading, onInviteUpdated }: Prop
       return;
     }
     toast.success(!revoked ? "Invite revoked" : "Invite re-enabled");
+    onInviteUpdated();
+  };
+
+  const deleteInvite = async (invite: IntakeInvite) => {
+    const label = invite.minister_full_name || invite.minister_phone || "this invite";
+    if (!window.confirm(`Delete invite for ${label}? This cannot be undone.`)) return;
+
+    setDeletingId(invite.id);
+    const { error } = await supabase.from("intake_invites").delete().eq("id", invite.id);
+    setDeletingId(null);
+
+    if (error) {
+      toast.error("Failed to delete invite");
+      return;
+    }
+
+    toast.success("Invite deleted");
     onInviteUpdated();
   };
 
@@ -335,6 +353,15 @@ export function GroupedInvitesList({ invites, isLoading, onInviteUpdated }: Prop
                             )}
                             <Button variant="outline" size="sm" onClick={() => revokeInvite(invite.id, invite.revoked)}>
                               {invite.revoked ? "Enable" : "Revoke"}
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => deleteInvite(invite)}
+                              disabled={deletingId === invite.id}
+                              title="Delete invite"
+                            >
+                              {deletingId === invite.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                             </Button>
                           </div>
                         </TableCell>

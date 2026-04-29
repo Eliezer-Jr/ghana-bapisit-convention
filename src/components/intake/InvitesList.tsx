@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Copy, Send, Loader2, Check } from "lucide-react";
+import { Copy, Send, Loader2, Check, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getIntakeInviteLink, sendIntakeInviteSms } from "@/services/intakeSms";
 
@@ -31,6 +31,7 @@ interface Props {
 export function InvitesList({ invites, isLoading, onInviteUpdated }: Props) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const copyLink = async (inviteId: string) => {
     const link = getIntakeInviteLink(inviteId);
@@ -80,6 +81,24 @@ export function InvitesList({ invites, isLoading, onInviteUpdated }: Props) {
       return;
     }
     toast.success(!revoked ? "Invite revoked" : "Invite re-enabled");
+    onInviteUpdated();
+  };
+
+  const deleteInvite = async (invite: IntakeInvite) => {
+    const label = invite.minister_full_name || invite.minister_phone || "this invite";
+    if (!window.confirm(`Delete invite for ${label}? This cannot be undone.`)) return;
+
+    setDeletingId(invite.id);
+    const { error } = await supabase.from("intake_invites").delete().eq("id", invite.id);
+    setDeletingId(null);
+
+    if (error) {
+      console.error(error);
+      toast.error("Failed to delete invite");
+      return;
+    }
+
+    toast.success("Invite deleted");
     onInviteUpdated();
   };
 
@@ -194,6 +213,19 @@ export function InvitesList({ invites, isLoading, onInviteUpdated }: Props) {
                           onClick={() => revokeInvite(invite.id, invite.revoked)}
                         >
                           {invite.revoked ? "Enable" : "Revoke"}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteInvite(invite)}
+                          disabled={deletingId === invite.id}
+                          title="Delete invite"
+                        >
+                          {deletingId === invite.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </TableCell>
