@@ -61,7 +61,14 @@ serve(async (req) => {
       }),
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data: Record<string, unknown> = {};
+    try {
+      data = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      data = { message: responseText };
+    }
+
     const accepted = response.ok && ['ACCEPTD', 'ACCEPTED', 'SUCCESS'].includes(String(data?.status ?? '').toUpperCase());
     const results = preparedDestinations.map((dest) => ({
       ok: accepted,
