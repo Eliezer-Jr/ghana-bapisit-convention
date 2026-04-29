@@ -45,7 +45,6 @@ export const sendIntakeInviteSms = async (recipients: IntakeSmsRecipient[]) => {
 
   const { data, error } = await supabaseFunctions.functions.invoke<FrogSmsResponse>("frogapi-send-personalized", {
     body: {
-      senderid: MESSAGING_CONFIG.SENDER_ID,
       destinations,
     },
   });
