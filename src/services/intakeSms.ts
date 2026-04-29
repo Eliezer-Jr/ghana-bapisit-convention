@@ -34,7 +34,7 @@ const getBaseDomain = () => {
 export const getIntakeInviteLink = (inviteId: string) => `${getBaseDomain()}/minister-intake/${inviteId}`;
 
 export const buildIntakeInviteMessage = (name: string, inviteId: string) =>
-  `Dear ${name || "Minister"}, please update your minister information using this link: ${getIntakeInviteLink(inviteId)} - GBC Ministers' Conference`;
+  `Dear ${name || "Minister"}, as resolved during the 63rd Annual Ministers' Conference, you are required to complete the data form. Click here URL: ${getIntakeInviteLink(inviteId)} - GBC Ministers' Conference`;
 
 export const sendIntakeInviteSms = async (recipients: IntakeSmsRecipient[]) => {
   const destinations = recipients.map((recipient) => ({
