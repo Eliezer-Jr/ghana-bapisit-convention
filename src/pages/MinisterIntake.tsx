@@ -331,9 +331,16 @@ export default function MinisterIntake() {
         }
       : payload;
     setSaving(true);
+    const nextStatus = submission.status === "rejected" ? "draft" : submission.status;
     const { error } = await supabase
       .from("intake_submissions")
-      .update({ payload: payloadToSave })
+      .update({
+        payload: payloadToSave,
+        status: nextStatus,
+        reviewed_at: submission.status === "rejected" ? null : undefined,
+        reviewed_by: submission.status === "rejected" ? null : undefined,
+        rejection_reason: submission.status === "rejected" ? null : undefined,
+      })
       .eq("id", submission.id);
     setSaving(false);
     if (error) {
@@ -341,7 +348,8 @@ export default function MinisterIntake() {
       toast.error("Unable to save (session may be closed)");
       return;
     }
-    toast.success("Draft saved successfully!");
+    setSubmission({ ...submission, payload: payloadToSave, status: nextStatus });
+    toast.success(submission.status === "rejected" ? "Corrections saved. Status changed to draft." : "Draft saved successfully!");
   };
 
   const submit = async () => {
@@ -374,7 +382,14 @@ export default function MinisterIntake() {
     setSubmitting(true);
     const { error } = await supabase
       .from("intake_submissions")
-      .update({ payload: payloadToSubmit, status: "submitted", submitted_at: new Date().toISOString() })
+      .update({
+        payload: payloadToSubmit,
+        status: "submitted",
+        submitted_at: new Date().toISOString(),
+        reviewed_at: null,
+        reviewed_by: null,
+        rejection_reason: null,
+      })
       .eq("id", submission.id);
     setSubmitting(false);
     if (error) {

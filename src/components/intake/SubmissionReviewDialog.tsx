@@ -267,6 +267,22 @@ export function SubmissionReviewDialog({
   const isSingle = payload.marital_status === "single";
   const targetMinister = existingMinister || (selectedMinisterId ? searchResults?.find(m => m.id === selectedMinisterId) : null);
 
+  const sendDecisionSms = async (phone: string | null | undefined, message: string) => {
+    if (!phone) return;
+
+    const { data, error } = await supabaseFunctions.functions.invoke("frogapi-send-general", {
+      body: {
+        destinations: [{ destination: phone }],
+        message,
+        smstype: MESSAGING_CONFIG.SMS_TYPE,
+      },
+    });
+
+    if (error || data?.success === false) {
+      throw new Error(data?.error || error?.message || "SMS provider rejected the message");
+    }
+  };
+
   const handleApprove = async () => {
     if (!submission) return;
     setIsApproving(true);
@@ -450,15 +466,7 @@ export function SubmissionReviewDialog({
       if (payload.phone && ministerIdNumber) {
         try {
           const smsMessage = `Ghana Baptist Convention: Your minister information has been approved. Your Minister ID is: ${ministerIdNumber}. Keep this for your records.`;
-          
-          await supabaseFunctions.functions.invoke("frogapi-send-general", {
-            body: {
-              senderid: MESSAGING_CONFIG.SENDER_ID,
-              destinations: [{ destination: payload.phone }],
-              message: smsMessage,
-              smstype: MESSAGING_CONFIG.SMS_TYPE,
-            },
-          });
+          await sendDecisionSms(payload.phone, smsMessage);
           
           toast.success(`Approval SMS sent to ${payload.phone}`);
         } catch (smsError) {
@@ -496,6 +504,20 @@ export function SubmissionReviewDialog({
         .eq("id", submission.id);
 
       if (error) throw error;
+
+      if (payload.phone) {
+        try {
+          const reasonText = rejectionReason?.trim() ? ` Reason: ${rejectionReason.trim()}` : " Please review and correct the highlighted information.";
+          await sendDecisionSms(
+            payload.phone,
+            `Ghana Baptist Convention: Your minister information submission was rejected.${reasonText}`,
+          );
+          toast.success(`Rejection SMS sent to ${payload.phone}`);
+        } catch (smsError) {
+          console.error("SMS sending failed:", smsError);
+          toast.warning("Submission rejected but SMS notification failed to send");
+        }
+      }
 
       toast.success("Submission rejected");
       onRejected();
