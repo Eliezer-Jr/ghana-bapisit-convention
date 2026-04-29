@@ -48,26 +48,38 @@ serve(async (req) => {
       smstype: dest.smstype || 'text',
     }));
 
-    const response = await fetch(FROG_SMS_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'API-KEY': apiKey,
-        'USERNAME': username,
-      },
-      body: JSON.stringify({
-        senderid: senderId,
-        destinations: preparedDestinations,
-      }),
-    });
+    const results = await Promise.all(preparedDestinations.map(async (dest) => {
+      const response = await fetch(FROG_SMS_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'API-KEY': apiKey,
+          'USERNAME': username,
+        },
+        body: JSON.stringify({
+          senderid: senderId,
+          destination: dest.destination,
+          msgid: dest.msgid,
+          message: dest.message,
+          smstype: dest.smstype,
+        }),
+      });
 
-    const data = await response.json();
-    const accepted = response.ok && ['ACCEPTD', 'ACCEPTED', 'SUCCESS'].includes(String(data?.status ?? '').toUpperCase());
-    const results = preparedDestinations.map((dest) => ({
-      ok: accepted,
-      status: response.status,
-      destination: dest.destination,
-      data: { ...data, msgid: dest.msgid },
+      const responseText = await response.text();
+      let data: Record<string, unknown> = {};
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        data = { message: responseText };
+      }
+
+      const accepted = response.ok && ['ACCEPTD', 'ACCEPTED', 'SUCCESS'].includes(String(data?.status ?? '').toUpperCase());
+      return {
+        ok: accepted,
+        status: response.status,
+        destination: dest.destination,
+        data: { ...data, msgid: dest.msgid },
+      };
     }));
 
     const failed = results.filter((result) => !result.ok || !['ACCEPTD', 'ACCEPTED', 'SUCCESS'].includes(String(result.data?.status ?? '').toUpperCase()));
