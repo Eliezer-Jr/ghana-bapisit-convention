@@ -449,6 +449,12 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         return;
       }
 
+      if (!photoFile && !minister?.photo_url) {
+        toast.error("Photo upload is required");
+        setLoading(false);
+        return;
+      }
+
       // Convert empty strings to null for optional fields
       const dataToSubmit = {
         ...validated,
@@ -661,7 +667,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                   <Label htmlFor="photo" className="cursor-pointer">
                     <div className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
                       <Upload className="h-4 w-4" />
-                      <span>{photoPreview ? "Change Photo" : "Upload Photo"}</span>
+                      <span>{photoPreview ? "Change Photo" : "Upload Photo *"}</span>
                     </div>
                   </Label>
                   <Input

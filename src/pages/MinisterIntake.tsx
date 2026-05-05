@@ -62,6 +62,7 @@ function getMissingRequiredFields(payload: Record<string, any>): MissingField[] 
     { key: "gps_address", label: "GPS Address", tab: "bio" },
     { key: "location", label: "Location/Area", tab: "bio" },
     { key: "marital_status", label: "Marital Status", tab: "bio" },
+    { key: "photo_url", label: "Photo Upload", tab: "bio" },
     { key: "sector", label: "Sector", tab: "ministerial" },
     { key: "association", label: "Association", tab: "ministerial" },
     { key: "ministry_engagement", label: "Type of Ministry", tab: "ministerial" },

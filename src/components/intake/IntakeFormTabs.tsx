@@ -289,7 +289,7 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
               <Label htmlFor="photo" className="cursor-pointer">
                 <div className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
                   <Camera className="h-4 w-4" />
-                  <span>{photoPreview || payload.photo_url ? "Change Photo" : "Upload Photo"}</span>
+                  <span>{photoPreview || payload.photo_url ? "Change Photo" : "Upload Photo *"}</span>
                 </div>
               </Label>
               <Input
