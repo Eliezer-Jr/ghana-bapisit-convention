@@ -441,6 +441,13 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
       // Validate data
       const validated = ministerSchema.parse(formData);
       const isValidatedSingle = validated.marital_status === "single";
+      const validQualifications = qualifications.filter((qualification) => qualification.qualification.trim() && qualification.document_url);
+
+      if (validQualifications.length === 0) {
+        toast.error("Educational Qualifications and upload are required");
+        setLoading(false);
+        return;
+      }
 
       // Convert empty strings to null for optional fields
       const dataToSubmit = {
@@ -553,10 +560,10 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
         // Insert new related data
         const insertPromises = [];
 
-        if (qualifications.length > 0) {
+        if (validQualifications.length > 0) {
           insertPromises.push(
             supabase.from("educational_qualifications").insert(
-              qualifications.filter(q => q.qualification).map(q => ({ ...q, minister_id: ministerId }))
+              validQualifications.map(q => ({ ...q, minister_id: ministerId }))
             )
           );
         }
@@ -973,7 +980,9 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
 
             <TabsContent value="education" className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label>Educational Qualifications (Starting with highest)</Label>
+                <Label>
+                  Educational Qualifications (Starting with highest) <span className="text-destructive">*</span>
+                </Label>
                 {qualifications.map((qual, idx) => (
                   <div key={idx} className="rounded-md border p-3 space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-[2fr_2fr_1fr_auto] gap-2 items-end">
@@ -986,6 +995,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                           setQualifications(newQuals);
                         }}
                         disabled={loading}
+                        required
                       />
                       <Input
                         placeholder="Institution"
@@ -1020,7 +1030,9 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <Label className="text-xs text-muted-foreground">Supporting Document</Label>
+                        <Label className="text-xs text-muted-foreground">
+                          Supporting Document <span className="text-destructive">*</span>
+                        </Label>
                         <p className="text-xs text-muted-foreground">Accepted: PDF and images, up to 2MB.</p>
                       </div>
                       <div className="flex flex-wrap gap-2">

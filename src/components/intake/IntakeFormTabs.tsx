@@ -608,7 +608,9 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
       {/* Education Tab */}
       <TabsContent value="education" className="mt-6 space-y-6">
         <div className="space-y-4">
-          <h3 className="font-semibold text-lg border-b pb-2">Educational Qualifications</h3>
+          <h3 className="font-semibold text-lg border-b pb-2">
+            Educational Qualifications <span className="text-destructive">*</span>
+          </h3>
           <p className="text-sm text-muted-foreground">List your qualifications starting with the highest</p>
           <div className="space-y-3">
             {(payload.qualifications || []).map((qual: any, idx: number) => (
@@ -619,6 +621,7 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                     value={qual.qualification || ""}
                     onChange={(e) => updateArrayField("qualifications", idx, "qualification", e.target.value)}
                     disabled={disabled}
+                    required
                   />
                   <Input
                     placeholder="Institution"
@@ -648,7 +651,9 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
                 </div>
                 <div className="mt-3 space-y-2">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <Label className="text-xs text-muted-foreground">Supporting Document</Label>
+                    <Label className="text-xs text-muted-foreground">
+                      Supporting Document <span className="text-destructive">*</span>
+                    </Label>
                     <div className="flex flex-wrap gap-2">
                       <Label htmlFor={`qualification-document-${idx}`} className="cursor-pointer">
                         <div className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">

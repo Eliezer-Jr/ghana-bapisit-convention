@@ -94,6 +94,9 @@ function getMissingRequiredFields(payload: Record<string, any>): MissingField[] 
   if (!payload.emergency_contact?.phone_number?.trim()) {
     missingFields.push({ key: "emergency_contact.phone_number", label: "Emergency Contact Phone Number", tab: "other" });
   }
+  if (!payload.qualifications?.some((qualification: any) => qualification?.qualification?.trim() && qualification?.document_url)) {
+    missingFields.push({ key: "qualifications", label: "Educational Qualifications and Upload", tab: "education" });
+  }
 
   return missingFields;
 }
