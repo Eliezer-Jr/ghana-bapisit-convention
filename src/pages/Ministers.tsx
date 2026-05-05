@@ -45,6 +45,11 @@ const Ministers = () => {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [ministerToView, setMinisterToView] = useState<any>(null);
   const [ministerQualifications, setMinisterQualifications] = useState<any[]>([]);
+  const [ministerChildren, setMinisterChildren] = useState<any[]>([]);
+  const [ministerEmergencyContacts, setMinisterEmergencyContacts] = useState<any[]>([]);
+  const [ministerHistory, setMinisterHistory] = useState<any[]>([]);
+  const [ministerNonChurchWork, setMinisterNonChurchWork] = useState<any[]>([]);
+  const [ministerConventionPositions, setMinisterConventionPositions] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [importPreview, setImportPreview] = useState<any[]>([]);
@@ -112,12 +117,51 @@ const Ministers = () => {
     setMinisterToView(minister);
     setViewDialogOpen(true);
     setMinisterQualifications([]);
-    const { data } = await supabase
-      .from("educational_qualifications")
-      .select("*")
-      .eq("minister_id", minister.id)
-      .order("year_obtained", { ascending: false });
-    setMinisterQualifications(data || []);
+    setMinisterChildren([]);
+    setMinisterEmergencyContacts([]);
+    setMinisterHistory([]);
+    setMinisterNonChurchWork([]);
+    setMinisterConventionPositions([]);
+
+    const [qualifications, children, emergencyContacts, history, nonChurchWork, conventionPositions] = await Promise.all([
+      supabase
+        .from("educational_qualifications")
+        .select("*")
+        .eq("minister_id", minister.id)
+        .order("year_obtained", { ascending: false }),
+      supabase
+        .from("minister_children")
+        .select("*")
+        .eq("minister_id", minister.id)
+        .order("child_name", { ascending: true }),
+      supabase
+        .from("emergency_contacts")
+        .select("*")
+        .eq("minister_id", minister.id)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("ministerial_history")
+        .select("*")
+        .eq("minister_id", minister.id)
+        .order("period_start", { ascending: false }),
+      supabase
+        .from("non_church_work")
+        .select("*")
+        .eq("minister_id", minister.id)
+        .order("period_start", { ascending: false }),
+      supabase
+        .from("convention_positions")
+        .select("*")
+        .eq("minister_id", minister.id)
+        .order("period_start", { ascending: false }),
+    ]);
+
+    setMinisterQualifications(qualifications.data || []);
+    setMinisterChildren(children.data || []);
+    setMinisterEmergencyContacts(emergencyContacts.data || []);
+    setMinisterHistory(history.data || []);
+    setMinisterNonChurchWork(nonChurchWork.data || []);
+    setMinisterConventionPositions(conventionPositions.data || []);
   };
 
   const handleDeleteClick = (minister: any) => {
@@ -761,6 +805,8 @@ const Ministers = () => {
                       <InfoField label="Ghana Card Number" value={ministerToView.ghana_card_number || "-"} />
                       <InfoField label="Marital Status" value={ministerToView.marital_status || "-"} />
                       <InfoField label="Spouse Name" value={ministerToView.spouse_name || "-"} />
+                      <InfoField label="Spouse Phone" value={ministerToView.spouse_phone_number || "-"} />
+                      <InfoField label="Spouse Occupation" value={ministerToView.spouse_occupation || "-"} />
                       <InfoField label="Marriage Type" value={ministerToView.marriage_type || "-"} />
                       <InfoField label="Number of Children" value={ministerToView.number_of_children || "0"} />
                     </div>
@@ -806,6 +852,28 @@ const Ministers = () => {
                     )}
                   </div>
 
+                  {/* Children */}
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-primary border-b pb-2">Children</h3>
+                    {ministerChildren.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No children recorded.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3">
+                        {ministerChildren.map((child) => (
+                          <div key={child.id} className="rounded-lg border p-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <InfoField label="Name" value={child.child_name || "-"} />
+                              <InfoField
+                                label="Date of Birth"
+                                value={child.date_of_birth ? new Date(child.date_of_birth).toLocaleDateString() : "-"}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Location Information */}
                   <div className="space-y-3">
                     <h3 className="text-lg font-semibold text-primary border-b pb-2">Location Information</h3>
@@ -834,6 +902,7 @@ const Ministers = () => {
                       <InfoField label="Position at Church" value={ministerToView.position_at_church || "-"} />
                       <InfoField label="Association" value={ministerToView.association || "-"} />
                       <InfoField label="Sector" value={ministerToView.sector || "-"} />
+                      <InfoField label="Zone" value={ministerToView.zone || "-"} />
                       <InfoField label="Date Joined" value={new Date(ministerToView.date_joined).toLocaleDateString()} />
                     </div>
                   </div>
@@ -847,6 +916,70 @@ const Ministers = () => {
                       <InfoField label="Licensing Year" value={ministerToView.licensing_year || "-"} />
                       <InfoField label="Commissioning Year" value={ministerToView.commissioning_year || "-"} />
                     </div>
+                  </div>
+
+                  {/* Ministerial History */}
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-primary border-b pb-2">Ministerial History</h3>
+                    {ministerHistory.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No ministerial history recorded.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {ministerHistory.map((history) => (
+                          <div key={history.id} className="rounded-lg border p-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <InfoField label="Church" value={history.church_name || "-"} />
+                              <InfoField label="Position" value={history.position || "-"} />
+                              <InfoField label="Association" value={history.association || "-"} />
+                              <InfoField label="Sector" value={history.sector || "-"} />
+                              <InfoField label="From Year" value={history.period_start || "-"} />
+                              <InfoField label="To Year" value={history.period_end || "-"} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Convention Positions */}
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-primary border-b pb-2">Convention Positions Held</h3>
+                    {ministerConventionPositions.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No convention positions recorded.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {ministerConventionPositions.map((position) => (
+                          <div key={position.id} className="rounded-lg border p-3">
+                            <div className="grid grid-cols-3 gap-3">
+                              <InfoField label="Position" value={position.position || "-"} />
+                              <InfoField label="From Year" value={position.period_start || "-"} />
+                              <InfoField label="To Year" value={position.period_end || "-"} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Non-Church Work */}
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-primary border-b pb-2">Other Work Experience</h3>
+                    {ministerNonChurchWork.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No other work experience recorded.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {ministerNonChurchWork.map((work) => (
+                          <div key={work.id} className="rounded-lg border p-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <InfoField label="Organization" value={work.organization || "-"} />
+                              <InfoField label="Job Title" value={work.job_title || "-"} />
+                              <InfoField label="From Year" value={work.period_start || "-"} />
+                              <InfoField label="To Year" value={work.period_end || "-"} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Educational Qualifications */}
@@ -890,6 +1023,26 @@ const Ministers = () => {
                                 </a>
                               </div>
                             )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Emergency Contacts */}
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-primary border-b pb-2">Emergency Contacts</h3>
+                    {ministerEmergencyContacts.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No emergency contacts recorded.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {ministerEmergencyContacts.map((contact) => (
+                          <div key={contact.id} className="rounded-lg border p-3">
+                            <div className="grid grid-cols-3 gap-3">
+                              <InfoField label="Name" value={contact.contact_name || "-"} />
+                              <InfoField label="Relationship" value={contact.relationship || "-"} />
+                              <InfoField label="Phone Number" value={contact.phone_number || "-"} />
+                            </div>
                           </div>
                         ))}
                       </div>
