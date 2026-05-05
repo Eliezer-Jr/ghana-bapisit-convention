@@ -849,6 +849,53 @@ const Ministers = () => {
                     </div>
                   </div>
 
+                  {/* Educational Qualifications */}
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-primary border-b pb-2">Educational Qualifications</h3>
+                    {ministerQualifications.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No qualifications recorded.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {ministerQualifications.map((q) => (
+                          <div key={q.id} className="rounded-lg border p-3 space-y-2">
+                            <div className="grid grid-cols-2 gap-3">
+                              <InfoField label="Qualification" value={q.qualification || "-"} />
+                              <InfoField label="Institution" value={q.institution || "-"} />
+                              <InfoField label="Year Obtained" value={q.year_obtained || "-"} />
+                              <InfoField label="Document" value={q.document_name || "-"} />
+                            </div>
+                            {q.document_url && (
+                              <div className="space-y-2">
+                                {q.document_type?.startsWith("image/") ? (
+                                  <img
+                                    src={q.document_url}
+                                    alt={q.document_name || "Qualification document"}
+                                    className="max-h-64 w-full rounded-md border object-contain bg-muted/30"
+                                  />
+                                ) : (
+                                  <iframe
+                                    src={q.document_url}
+                                    title={q.document_name || "Qualification document"}
+                                    className="h-64 w-full rounded-md border bg-background"
+                                  />
+                                )}
+                                <a
+                                  href={q.document_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                                >
+                                  <Download className="h-3 w-3" />
+                                  Open document
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Notes */}
                   {ministerToView.notes && (
                     <div className="space-y-3">
