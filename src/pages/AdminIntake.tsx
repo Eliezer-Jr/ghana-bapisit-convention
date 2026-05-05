@@ -176,7 +176,7 @@ export default function AdminIntake() {
           <TabsTrigger value="invites" disabled={!effectiveSessionId}>
             Invites {invites?.length ? `(${invites.length})` : ""}
           </TabsTrigger>
-          <TabsTrigger value="submissions" disabled={!effectiveSessionId}>
+          <TabsTrigger value="submissions">
             Submissions {submissions?.length ? `(${submissions.length})` : ""}
           </TabsTrigger>
         </TabsList>
