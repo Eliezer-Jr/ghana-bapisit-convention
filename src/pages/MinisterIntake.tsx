@@ -637,7 +637,7 @@ export default function MinisterIntake() {
 
             {/* Action Buttons */}
             {!isSubmitted && !sessionClosed && (
-              <Card className="border-2 sticky bottom-4 bg-background/95 backdrop-blur shadow-lg">
+              <Card className="border-2">
                 <CardContent className="flex flex-col-reverse sm:flex-row gap-3 py-4">
                   <Button 
                     variant="outline" 
