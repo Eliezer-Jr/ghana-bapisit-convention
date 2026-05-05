@@ -244,8 +244,10 @@ export default function AdminIntake() {
         <TabsContent value="submissions" className="space-y-4">
           <GroupedSubmissionsList
             submissions={submissions || []}
+            sessions={sessions || []}
             isLoading={submissionsLoading}
             onReview={openReviewDialog}
+            onDeleted={handleReviewComplete}
           />
         </TabsContent>
       </Tabs>
