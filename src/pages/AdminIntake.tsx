@@ -153,7 +153,7 @@ export default function AdminIntake() {
   };
 
   const handleReviewComplete = () => {
-    qc.invalidateQueries({ queryKey: ["intake-submissions", effectiveSessionId] });
+    qc.invalidateQueries({ queryKey: ["intake-submissions-all"] });
   };
 
   const handleInvitesChanged = () => {
