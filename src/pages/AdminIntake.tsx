@@ -97,13 +97,11 @@ export default function AdminIntake() {
   });
 
   const { data: submissions, isLoading: submissionsLoading } = useQuery({
-    queryKey: ["intake-submissions", effectiveSessionId],
-    enabled: !!effectiveSessionId,
+    queryKey: ["intake-submissions-all"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("intake_submissions")
         .select("id, session_id, invite_id, user_id, status, submitted_at, reviewed_at, rejection_reason, payload")
-        .eq("session_id", effectiveSessionId)
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return (data || []) as IntakeSubmission[];
