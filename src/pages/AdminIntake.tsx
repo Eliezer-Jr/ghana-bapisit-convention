@@ -97,13 +97,11 @@ export default function AdminIntake() {
   });
 
   const { data: submissions, isLoading: submissionsLoading } = useQuery({
-    queryKey: ["intake-submissions", effectiveSessionId],
-    enabled: !!effectiveSessionId,
+    queryKey: ["intake-submissions-all"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("intake_submissions")
         .select("id, session_id, invite_id, user_id, status, submitted_at, reviewed_at, rejection_reason, payload")
-        .eq("session_id", effectiveSessionId)
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return (data || []) as IntakeSubmission[];
@@ -155,7 +153,7 @@ export default function AdminIntake() {
   };
 
   const handleReviewComplete = () => {
-    qc.invalidateQueries({ queryKey: ["intake-submissions", effectiveSessionId] });
+    qc.invalidateQueries({ queryKey: ["intake-submissions-all"] });
   };
 
   const handleInvitesChanged = () => {
@@ -178,7 +176,7 @@ export default function AdminIntake() {
           <TabsTrigger value="invites" disabled={!effectiveSessionId}>
             Invites {invites?.length ? `(${invites.length})` : ""}
           </TabsTrigger>
-          <TabsTrigger value="submissions" disabled={!effectiveSessionId}>
+          <TabsTrigger value="submissions">
             Submissions {submissions?.length ? `(${submissions.length})` : ""}
           </TabsTrigger>
         </TabsList>
@@ -246,8 +244,10 @@ export default function AdminIntake() {
         <TabsContent value="submissions" className="space-y-4">
           <GroupedSubmissionsList
             submissions={submissions || []}
+            sessions={sessions || []}
             isLoading={submissionsLoading}
             onReview={openReviewDialog}
+            onDeleted={handleReviewComplete}
           />
         </TabsContent>
       </Tabs>
