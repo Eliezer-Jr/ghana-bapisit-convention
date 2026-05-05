@@ -44,6 +44,7 @@ const Ministers = () => {
   const [ministerToDelete, setMinisterToDelete] = useState<any>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [ministerToView, setMinisterToView] = useState<any>(null);
+  const [ministerQualifications, setMinisterQualifications] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [importPreview, setImportPreview] = useState<any[]>([]);
@@ -107,9 +108,16 @@ const Ministers = () => {
     setDialogOpen(true);
   };
 
-  const handleViewClick = (minister: any) => {
+  const handleViewClick = async (minister: any) => {
     setMinisterToView(minister);
     setViewDialogOpen(true);
+    setMinisterQualifications([]);
+    const { data } = await supabase
+      .from("educational_qualifications")
+      .select("*")
+      .eq("minister_id", minister.id)
+      .order("year_obtained", { ascending: false });
+    setMinisterQualifications(data || []);
   };
 
   const handleDeleteClick = (minister: any) => {
