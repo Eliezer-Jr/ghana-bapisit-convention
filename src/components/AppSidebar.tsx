@@ -16,6 +16,9 @@ import {
   BarChart3,
   Palette,
   FilePenLine,
+  Megaphone,
+  FileUp,
+  Wallet,
 } from "lucide-react";
 import {
   Sidebar,
