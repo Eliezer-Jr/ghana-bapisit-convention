@@ -74,6 +74,9 @@ export function AppSidebar() {
     { icon: Palette, label: "Letter Templates", path: "/letter-templates", show: isSuperAdmin },
     { icon: ClipboardCheck, label: "Review Admissions", path: "/admin/admissions", show: isSuperAdmin || isAdmissionReviewer },
     { icon: FilePenLine, label: "Minister Intake", path: "/admin/intake", show: isSuperAdmin },
+    { icon: Megaphone, label: "Announcements", path: "/admin/announcements", show: isSuperAdmin },
+    { icon: FileUp, label: "Document Requests", path: "/admin/document-requests", show: isSuperAdmin },
+    { icon: Wallet, label: "Dues Settings", path: "/admin/dues", show: isSuperAdmin },
     { icon: DollarSign, label: "Finance Portal", path: "/finance", show: isSuperAdmin || isFinanceManager },
   ];
 
