@@ -13,8 +13,8 @@ import { toast } from "sonner";
 import { useSignedUrl } from "@/hooks/useSignedUrl";
 
 function UploadLink({ path, name }: { path: string; name: string }) {
-  const { url } = useSignedUrl("application-documents", path);
-  return <a href={url || "#"} target="_blank" rel="noreferrer" className="text-primary underline text-sm">{name}</a>;
+  const { signedUrl } = useSignedUrl("application-documents", path);
+  return <a href={signedUrl || "#"} target="_blank" rel="noreferrer" className="text-primary underline text-sm">{name}</a>;
 }
 
 export default function AdminDocumentRequests() {
