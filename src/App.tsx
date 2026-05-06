@@ -28,6 +28,15 @@ import ResponsiveLayout from "./components/ResponsiveLayout";
 import MinisterIntake from "./pages/MinisterIntake";
 import AdminIntake from "./pages/AdminIntake";
 import ErrorLogs from "./pages/ErrorLogs";
+import { PortalAuthProvider } from "@/contexts/PortalAuthContext";
+import PortalLogin from "./pages/portal/PortalLogin";
+import PortalLayout from "./pages/portal/PortalLayout";
+import PortalDashboard from "./pages/portal/PortalDashboard";
+import PortalProfile from "./pages/portal/PortalProfile";
+import PortalAnnouncements from "./pages/portal/PortalAnnouncements";
+import PortalDocuments from "./pages/portal/PortalDocuments";
+import PortalDues from "./pages/portal/PortalDues";
+import VerifyMinister from "./pages/VerifyMinister";
 
 const queryClient = new QueryClient();
 
