@@ -88,6 +88,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
+        <PortalAuthProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -96,6 +97,15 @@ const App = () => (
 
             <Route path="/auth" element={<Auth />} />
             <Route path="/apply" element={<ApplyAuth />} />
+            <Route path="/myportal" element={<PortalLogin />} />
+            <Route path="/myportal/*" element={<PortalLayout />}>
+              <Route path="dashboard" element={<PortalDashboard />} />
+              <Route path="profile" element={<PortalProfile />} />
+              <Route path="announcements" element={<PortalAnnouncements />} />
+              <Route path="documents" element={<PortalDocuments />} />
+              <Route path="dues" element={<PortalDues />} />
+            </Route>
+            <Route path="/verify/:ministerId" element={<VerifyMinister />} />
             <Route path="/minister-intake/:inviteId" element={<MinisterIntake />} />
             <Route path="/applicant-info" element={<ApplicantInfo />} />
             <Route path="/applicant-portal" element={<ApplicantPortal />} />
