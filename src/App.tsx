@@ -233,6 +233,9 @@ const App = () => (
                 </SuperAdminRoute>
               }
             />
+            <Route path="/admin/announcements" element={<SuperAdminRoute><AdminAnnouncements /></SuperAdminRoute>} />
+            <Route path="/admin/document-requests" element={<SuperAdminRoute><AdminDocumentRequests /></SuperAdminRoute>} />
+            <Route path="/admin/dues" element={<SuperAdminRoute><AdminDues /></SuperAdminRoute>} />
             <Route
               path="/finance"
               element={
