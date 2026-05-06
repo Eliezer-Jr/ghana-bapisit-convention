@@ -37,6 +37,9 @@ import PortalAnnouncements from "./pages/portal/PortalAnnouncements";
 import PortalDocuments from "./pages/portal/PortalDocuments";
 import PortalDues from "./pages/portal/PortalDues";
 import VerifyMinister from "./pages/VerifyMinister";
+import AdminAnnouncements from "./pages/AdminAnnouncements";
+import AdminDocumentRequests from "./pages/AdminDocumentRequests";
+import AdminDues from "./pages/AdminDues";
 
 const queryClient = new QueryClient();
 
