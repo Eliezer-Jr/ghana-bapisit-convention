@@ -29,3 +29,29 @@ verify_jwt = true
 
 [functions.check-approval]
 verify_jwt = false
+[functions.minister-portal-otp-generate]
+verify_jwt = false
+
+[functions.minister-portal-otp-verify]
+verify_jwt = false
+
+[functions.minister-portal-me]
+verify_jwt = false
+
+[functions.minister-portal-announcements]
+verify_jwt = false
+
+[functions.minister-portal-document-requests]
+verify_jwt = false
+
+[functions.minister-portal-dues-pay]
+verify_jwt = false
+
+[functions.minister-portal-dues-history]
+verify_jwt = false
+
+[functions.moolre-payment-callback]
+verify_jwt = false
+
+[functions.verify-minister]
+verify_jwt = false
