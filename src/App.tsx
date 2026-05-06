@@ -28,6 +28,18 @@ import ResponsiveLayout from "./components/ResponsiveLayout";
 import MinisterIntake from "./pages/MinisterIntake";
 import AdminIntake from "./pages/AdminIntake";
 import ErrorLogs from "./pages/ErrorLogs";
+import { PortalAuthProvider } from "@/contexts/PortalAuthContext";
+import PortalLogin from "./pages/portal/PortalLogin";
+import PortalLayout from "./pages/portal/PortalLayout";
+import PortalDashboard from "./pages/portal/PortalDashboard";
+import PortalProfile from "./pages/portal/PortalProfile";
+import PortalAnnouncements from "./pages/portal/PortalAnnouncements";
+import PortalDocuments from "./pages/portal/PortalDocuments";
+import PortalDues from "./pages/portal/PortalDues";
+import VerifyMinister from "./pages/VerifyMinister";
+import AdminAnnouncements from "./pages/AdminAnnouncements";
+import AdminDocumentRequests from "./pages/AdminDocumentRequests";
+import AdminDues from "./pages/AdminDues";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +91,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
+        <PortalAuthProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -87,6 +100,15 @@ const App = () => (
 
             <Route path="/auth" element={<Auth />} />
             <Route path="/apply" element={<ApplyAuth />} />
+            <Route path="/myportal" element={<PortalLogin />} />
+            <Route path="/myportal/*" element={<PortalLayout />}>
+              <Route path="dashboard" element={<PortalDashboard />} />
+              <Route path="profile" element={<PortalProfile />} />
+              <Route path="announcements" element={<PortalAnnouncements />} />
+              <Route path="documents" element={<PortalDocuments />} />
+              <Route path="dues" element={<PortalDues />} />
+            </Route>
+            <Route path="/verify/:ministerId" element={<VerifyMinister />} />
             <Route path="/minister-intake/:inviteId" element={<MinisterIntake />} />
             <Route path="/applicant-info" element={<ApplicantInfo />} />
             <Route path="/applicant-portal" element={<ApplicantPortal />} />
@@ -211,6 +233,9 @@ const App = () => (
                 </SuperAdminRoute>
               }
             />
+            <Route path="/admin/announcements" element={<SuperAdminRoute><AdminAnnouncements /></SuperAdminRoute>} />
+            <Route path="/admin/document-requests" element={<SuperAdminRoute><AdminDocumentRequests /></SuperAdminRoute>} />
+            <Route path="/admin/dues" element={<SuperAdminRoute><AdminDues /></SuperAdminRoute>} />
             <Route
               path="/finance"
               element={
@@ -222,6 +247,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        </PortalAuthProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
