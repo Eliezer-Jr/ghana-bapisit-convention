@@ -52,6 +52,7 @@ export type Database = {
       announcements: {
         Row: {
           audience: string
+          audience_value: string | null
           body: string
           created_at: string
           created_by: string | null
@@ -62,6 +63,7 @@ export type Database = {
         }
         Insert: {
           audience?: string
+          audience_value?: string | null
           body: string
           created_at?: string
           created_by?: string | null
@@ -72,6 +74,7 @@ export type Database = {
         }
         Update: {
           audience?: string
+          audience_value?: string | null
           body?: string
           created_at?: string
           created_by?: string | null
