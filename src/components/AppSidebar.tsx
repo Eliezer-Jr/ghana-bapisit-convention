@@ -76,7 +76,7 @@ export function AppSidebar() {
     { icon: FilePenLine, label: "Minister Intake", path: "/admin/intake", show: isSuperAdmin },
     { icon: Megaphone, label: "Announcements", path: "/admin/announcements", show: isSuperAdmin },
     { icon: FileUp, label: "Document Requests", path: "/admin/document-requests", show: isSuperAdmin },
-    { icon: Wallet, label: "Dues Settings", path: "/admin/dues", show: isSuperAdmin },
+    
     { icon: DollarSign, label: "Finance Portal", path: "/finance", show: isSuperAdmin || isFinanceManager },
   ];
 
