@@ -13,6 +13,8 @@ import Layout from "@/components/Layout";
 import { CheckCircle, XCircle, Loader2, Upload, Edit, History } from "lucide-react";
 import { EditPhoneDialog } from "@/components/EditPhoneDialog";
 import { PhoneNumberHistoryDialog } from "@/components/PhoneNumberHistoryDialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AdminDues from "@/pages/AdminDues";
 
 export default function FinancePortal() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -153,12 +155,18 @@ export default function FinancePortal() {
     <Layout>
       <div className="container mx-auto py-8 px-4">
         <h1 className="text-3xl font-bold mb-6">Finance Portal</h1>
-        <p className="text-muted-foreground mb-8">
-          Approve applicants by adding their phone numbers to allow them to submit applications.
-        </p>
 
-        <div className="grid gap-6">
-          <div className="grid gap-6 md:grid-cols-2">
+        <Tabs defaultValue="approvals" className="w-full">
+          <TabsList>
+            <TabsTrigger value="approvals">Applicant Approvals</TabsTrigger>
+            <TabsTrigger value="dues">Annual Dues</TabsTrigger>
+          </TabsList>
+          <TabsContent value="approvals" className="mt-6">
+            <p className="text-muted-foreground mb-6">
+              Approve applicants by adding their phone numbers to allow them to submit applications.
+            </p>
+            <div className="grid gap-6">
+              <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle>Approve Single Applicant</CardTitle>
