@@ -363,6 +363,7 @@ export default function FinancePortal() {
                 </p>
               )}
             </CardContent>
+          </Card>
             </div>
           </TabsContent>
           <TabsContent value="dues" className="mt-6">
