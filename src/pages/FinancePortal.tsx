@@ -363,8 +363,12 @@ export default function FinancePortal() {
                 </p>
               )}
             </CardContent>
-          </Card>
-        </div>
+            </div>
+          </TabsContent>
+          <TabsContent value="dues" className="mt-6">
+            <AdminDues />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <EditPhoneDialog
