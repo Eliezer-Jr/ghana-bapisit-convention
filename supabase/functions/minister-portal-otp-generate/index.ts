@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, jsonResponse, formatGhanaPhone } from "../_shared/portalAuth.ts";
 
-const MOOLRE_SMS_URL = "https://api.moolre.com/open/sms/send";
+const FROG_SMS_URL = "https://frogapi.wigal.com.gh/api/v3/sms/send";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
