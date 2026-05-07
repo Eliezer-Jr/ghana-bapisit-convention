@@ -26,8 +26,9 @@ serve(async (req) => {
     if (error) throw error;
     if (!minister) return jsonResponse({ success: false, error: "Minister ID not found" }, 404);
 
-    const ministerPhone = (minister.phone || "").replace(/\s+/g, "");
-    if (ministerPhone !== formatted && ministerPhone !== local0) {
+    const rawMinisterPhone = (minister.phone || "").replace(/\s+/g, "").replace(/^\+/, "");
+    const ministerLocal0 = rawMinisterPhone.startsWith("233") ? "0" + rawMinisterPhone.slice(3) : rawMinisterPhone;
+    if (rawMinisterPhone !== formatted && ministerLocal0 !== local0 && rawMinisterPhone !== local0 && ministerLocal0 !== formatted) {
       return jsonResponse({ success: false, error: "Phone number does not match our records for this Minister ID" }, 403);
     }
 
