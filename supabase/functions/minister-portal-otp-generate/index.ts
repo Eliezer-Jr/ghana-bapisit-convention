@@ -32,28 +32,30 @@ serve(async (req) => {
       return jsonResponse({ success: false, error: "Phone number does not match our records for this Minister ID" }, 403);
     }
 
-    const apiVasKey = Deno.env.get("MOOLRE_API_VASKEY");
-    const senderId = Deno.env.get("MOOLRE_SENDER_ID");
-    if (!apiVasKey || !senderId) return jsonResponse({ success: false, error: "SMS provider not configured" }, 500);
+    const apiKey = Deno.env.get("FROGAPI_KEY");
+    const username = Deno.env.get("FROGAPI_USERNAME");
+    const senderId = Deno.env.get("FROGAPI_OTP_SENDER_ID") || "GBCC";
+    if (!apiKey || !username) return jsonResponse({ success: false, error: "SMS provider not configured" }, 500);
 
     const otpCode = String(Math.floor(100000 + Math.random() * 900000));
     const message = `Your GBCC Minister Portal verification code is: ${otpCode}. It will expire in 5 minutes.`;
 
-    const smsRes = await fetch(MOOLRE_SMS_URL, {
+    const smsRes = await fetch(FROG_SMS_URL, {
       method: "POST",
-      headers: { "X-API-VASKEY": apiVasKey, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "API-KEY": apiKey, "USERNAME": username },
       body: JSON.stringify({
-        type: 1,
         senderid: senderId,
-        messages: [{ recipient: formatted, message, ref: `mp-otp-${formatted}-${Date.now()}` }],
+        destinations: [{ destination: formatted, msgid: `mp-otp-${formatted}-${Date.now()}` }],
+        message,
+        smstype: "text",
       }),
     });
     const smsText = await smsRes.text();
     let smsData: any;
     try { smsData = JSON.parse(smsText); } catch { smsData = { raw: smsText }; }
-
-    if (!smsRes.ok || smsData.status === 0 || smsData.code === "AIN01") {
-      return jsonResponse({ success: false, error: `SMS delivery failed: ${smsData.message || smsText.substring(0, 200)}` });
+    const okStatus = ["ACCEPTD", "ACCEPTED", "SUCCESS"].includes(String(smsData?.status ?? "").toUpperCase());
+    if (!smsRes.ok || !okStatus) {
+      return jsonResponse({ success: false, error: `SMS delivery failed: ${smsData?.message || smsText.substring(0, 200)}` });
     }
 
     await supabase.from("otp_codes").upsert({
