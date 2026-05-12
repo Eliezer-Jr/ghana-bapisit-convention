@@ -1,12 +1,26 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Copy, Send, Loader2, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, Search, X, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  Loader2,
+  Search,
+  Send,
+  Trash2,
+  X,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getIntakeInviteLink, sendIntakeInviteSms } from "@/services/intakeSms";
 
@@ -24,8 +38,17 @@ type IntakeInvite = {
   sms_message_id: string | null;
 };
 
+type IntakeSession = {
+  id: string;
+  title: string;
+  starts_at: string;
+  ends_at: string;
+  manually_closed: boolean;
+};
+
 interface Props {
   invites: IntakeInvite[];
+  sessions: IntakeSession[];
   isLoading: boolean;
   onInviteUpdated: () => void;
 }
@@ -33,116 +56,113 @@ interface Props {
 type SortField = "name" | "phone" | "status" | "sms" | "created_at";
 type SortDirection = "asc" | "desc";
 
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const ROWS_PER_SESSION_OPTIONS = ["10", "25", "50", "100", "all"];
 const STATUS_OPTIONS = ["all", "active", "revoked"];
-const SMS_OPTIONS = ["all", "sent", "not_sent"];
 
-export function GroupedInvitesList({ invites, isLoading, onInviteUpdated }: Props) {
+export function GroupedInvitesList({ invites, sessions, isLoading, onInviteUpdated }: Props) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [openSessions, setOpenSessions] = useState<Record<string, boolean>>({});
+  const [rowsPerSession, setRowsPerSession] = useState("10");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [smsFilter, setSmsFilter] = useState("all");
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Filter invites
+  const sessionMap = useMemo(() => {
+    const map = new Map<string, IntakeSession>();
+    sessions.forEach((session) => map.set(session.id, session));
+    return map;
+  }, [sessions]);
+
   const filteredInvites = useMemo(() => {
-    return invites.filter((inv) => {
-      // Status filter
-      if (statusFilter === "active" && inv.revoked) return false;
-      if (statusFilter === "revoked" && !inv.revoked) return false;
-      // SMS filter
-      if (smsFilter === "sent" && !inv.sms_sent_at) return false;
-      if (smsFilter === "not_sent" && inv.sms_sent_at) return false;
-      // Search filter (name or phone)
+    return invites.filter((invite) => {
+      if (statusFilter === "active" && invite.revoked) return false;
+      if (statusFilter === "revoked" && !invite.revoked) return false;
+      if (smsFilter === "sent" && !invite.sms_sent_at) return false;
+      if (smsFilter === "not_sent" && invite.sms_sent_at) return false;
+
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
-        const name = (inv.minister_full_name || "").toLowerCase();
-        const phone = (inv.minister_phone || "").toLowerCase();
-        if (!name.includes(query) && !phone.includes(query)) {
+        const name = (invite.minister_full_name || "").toLowerCase();
+        const phone = (invite.minister_phone || "").toLowerCase();
+        const sessionTitle = (sessionMap.get(invite.session_id)?.title || "").toLowerCase();
+
+        if (!name.includes(query) && !phone.includes(query) && !sessionTitle.includes(query)) {
           return false;
         }
       }
+
       return true;
     });
-  }, [invites, searchQuery, statusFilter, smsFilter]);
+  }, [invites, searchQuery, sessionMap, smsFilter, statusFilter]);
 
-  // Sort invites
   const sortedInvites = useMemo(() => {
     return [...filteredInvites].sort((a, b) => {
-      let aValue: string | null = null;
-      let bValue: string | null = null;
+      const getValue = (invite: IntakeInvite) => {
+        switch (sortField) {
+          case "name":
+            return invite.minister_full_name || "";
+          case "phone":
+            return invite.minister_phone || "";
+          case "status":
+            return invite.revoked ? "revoked" : "active";
+          case "sms":
+            return invite.sms_sent_at || "";
+          case "created_at":
+            return invite.created_at || "";
+        }
+      };
 
-      switch (sortField) {
-        case "name":
-          aValue = a.minister_full_name || "";
-          bValue = b.minister_full_name || "";
-          break;
-        case "phone":
-          aValue = a.minister_phone || "";
-          bValue = b.minister_phone || "";
-          break;
-        case "status":
-          aValue = a.revoked ? "revoked" : "active";
-          bValue = b.revoked ? "revoked" : "active";
-          break;
-        case "sms":
-          aValue = a.sms_sent_at || "";
-          bValue = b.sms_sent_at || "";
-          break;
-        case "created_at":
-          aValue = a.created_at || "";
-          bValue = b.created_at || "";
-          break;
-      }
+      const aValue = getValue(a);
+      const bValue = getValue(b);
 
-      if (aValue === null || aValue === "") return 1;
-      if (bValue === null || bValue === "") return -1;
+      if (!aValue) return 1;
+      if (!bValue) return -1;
 
       const comparison = aValue.localeCompare(bValue);
       return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [filteredInvites, sortField, sortDirection]);
+  }, [filteredInvites, sortDirection, sortField]);
 
-  // Pagination
-  const totalPages = Math.ceil(sortedInvites.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedInvites = sortedInvites.slice(startIndex, endIndex);
+  const groupedInvites = useMemo(() => {
+    const groups = new Map<string, IntakeInvite[]>();
 
-  const goToPage = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
-  };
+    sortedInvites.forEach((invite) => {
+      const group = groups.get(invite.session_id) || [];
+      group.push(invite);
+      groups.set(invite.session_id, group);
+    });
 
-  const handlePageSizeChange = (value: string) => {
-    setPageSize(Number(value));
-    setCurrentPage(1);
-  };
+    return Array.from(groups.entries()).sort(([sessionA], [sessionB]) => {
+      const a = sessionMap.get(sessionA);
+      const b = sessionMap.get(sessionB);
+      return (b?.starts_at || "").localeCompare(a?.starts_at || "");
+    });
+  }, [sessionMap, sortedInvites]);
+
+  const hasActiveFilters = searchQuery.trim() || statusFilter !== "all" || smsFilter !== "all";
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
+      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
     }
-    setCurrentPage(1);
-  };
 
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    setCurrentPage(1);
+    setSortField(field);
+    setSortDirection("asc");
   };
 
   const clearFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
     setSmsFilter("all");
-    setCurrentPage(1);
+  };
+
+  const toggleSession = (id: string, defaultOpen: boolean) => {
+    setOpenSessions((current) => ({ ...current, [id]: !(current[id] ?? defaultOpen) }));
   };
 
   const copyLink = async (inviteId: string) => {
@@ -157,16 +177,20 @@ export function GroupedInvitesList({ invites, isLoading, onInviteUpdated }: Prop
       toast.error("No phone number for this invite");
       return;
     }
+
     setSendingId(invite.id);
     try {
       const name = invite.minister_full_name || "Minister";
       const [smsResult] = await sendIntakeInviteSms([{ id: invite.id, full_name: name, phone: invite.minister_phone }]);
 
-      await supabase.from("intake_invites").update({
-        sms_sent_at: new Date().toISOString(),
-        sms_status: "sent",
-        sms_message_id: smsResult.messageId,
-      }).eq("id", invite.id);
+      await supabase
+        .from("intake_invites")
+        .update({
+          sms_sent_at: new Date().toISOString(),
+          sms_status: "sent",
+          sms_message_id: smsResult.messageId,
+        })
+        .eq("id", invite.id);
 
       toast.success(`SMS sent to ${invite.minister_phone}`);
       onInviteUpdated();
@@ -185,6 +209,7 @@ export function GroupedInvitesList({ invites, isLoading, onInviteUpdated }: Prop
       toast.error("Failed to update invite");
       return;
     }
+
     toast.success(!revoked ? "Invite revoked" : "Invite re-enabled");
     onInviteUpdated();
   };
@@ -208,21 +233,15 @@ export function GroupedInvitesList({ invites, isLoading, onInviteUpdated }: Prop
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) {
-      return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
+      return <ArrowUpDown className="ml-1 h-3 w-3 opacity-50" />;
     }
-    return sortDirection === "asc" ? (
-      <ArrowUp className="h-3 w-3 ml-1" />
-    ) : (
-      <ArrowDown className="h-3 w-3 ml-1" />
-    );
+
+    return sortDirection === "asc" ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />;
   };
 
   const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
     <TableHead>
-      <button
-        className="flex items-center hover:text-foreground transition-colors"
-        onClick={() => handleSort(field)}
-      >
+      <button className="flex items-center transition-colors hover:text-foreground" onClick={() => handleSort(field)}>
         {children}
         <SortIcon field={field} />
       </button>
@@ -233,39 +252,34 @@ export function GroupedInvitesList({ invites, isLoading, onInviteUpdated }: Prop
     return (
       <Card>
         <CardContent className="py-8">
-          <div className="text-sm text-muted-foreground text-center">Loading invites…</div>
+          <div className="text-center text-sm text-muted-foreground">Loading invites...</div>
         </CardContent>
       </Card>
     );
   }
 
-  const hasActiveFilters = searchQuery.trim() || statusFilter !== "all" || smsFilter !== "all";
-
   return (
     <Card>
       <CardHeader>
         <CardTitle>Invites ({invites.length})</CardTitle>
-        <CardDescription>Manage minister intake invitations.</CardDescription>
+        <CardDescription>Manage minister intake invitations grouped by session.</CardDescription>
       </CardHeader>
       <CardContent>
         {invites.length === 0 ? (
-          <div className="text-sm text-muted-foreground text-center py-4">
-            No invites yet. Create one above or bulk upload.
-          </div>
+          <div className="py-4 text-center text-sm text-muted-foreground">No invites yet. Create one above or bulk upload.</div>
         ) : (
           <div className="space-y-4">
-            {/* Search and Filter Controls */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name or phone..."
+                  placeholder="Search by name, phone, or session..."
                   value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
+                  onChange={(event) => setSearchQuery(event.target.value)}
                   className="pl-9"
                 />
               </div>
-              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-[130px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -277,7 +291,7 @@ export function GroupedInvitesList({ invites, isLoading, onInviteUpdated }: Prop
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={smsFilter} onValueChange={(v) => { setSmsFilter(v); setCurrentPage(1); }}>
+              <Select value={smsFilter} onValueChange={setSmsFilter}>
                 <SelectTrigger className="w-full sm:w-[130px]">
                   <SelectValue placeholder="SMS" />
                 </SelectTrigger>
@@ -295,150 +309,130 @@ export function GroupedInvitesList({ invites, isLoading, onInviteUpdated }: Prop
               )}
             </div>
 
-            {/* Results info */}
-            {hasActiveFilters && (
-              <div className="text-sm text-muted-foreground">
-                Showing {sortedInvites.length} of {invites.length} invites
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Rows per session:</span>
+              <Select value={rowsPerSession} onValueChange={setRowsPerSession}>
+                <SelectTrigger className="h-8 w-[70px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROWS_PER_SESSION_OPTIONS.map((size) => (
+                    <SelectItem key={size} value={size}>
+                      {size === "all" ? "All" : size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {hasActiveFilters && (
+                <span>
+                  Showing {sortedInvites.length} of {invites.length} invites
+                </span>
+              )}
+            </div>
+
+            {groupedInvites.length === 0 ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">No invites match your filters.</div>
+            ) : (
+              <div className="space-y-3">
+                {groupedInvites.map(([sessionId, sessionInvites], index) => {
+                  const session = sessionMap.get(sessionId);
+                  const isOpen = openSessions[sessionId] ?? index === 0;
+                  const visibleInvites = rowsPerSession === "all" ? sessionInvites : sessionInvites.slice(0, Number(rowsPerSession));
+                  const hiddenCount = sessionInvites.length - visibleInvites.length;
+
+                  return (
+                    <Collapsible key={sessionId} open={isOpen} onOpenChange={() => toggleSession(sessionId, index === 0)}>
+                      <CollapsibleTrigger asChild>
+                        <button className="flex w-full items-center justify-between rounded-md border bg-muted/30 px-4 py-3 transition-colors hover:bg-muted/50">
+                          <div className="flex items-center gap-2 text-left">
+                            {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            <span className="font-medium">{session?.title || "Unknown session"}</span>
+                            <Badge variant="secondary">{sessionInvites.length}</Badge>
+                          </div>
+                          {session && (
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(session.starts_at).toLocaleDateString()} - {new Date(session.ends_at).toLocaleDateString()}
+                            </span>
+                          )}
+                        </button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="mt-2 overflow-auto rounded-md border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <SortableHeader field="name">Minister</SortableHeader>
+                                <SortableHeader field="phone">Phone</SortableHeader>
+                                <SortableHeader field="status">Status</SortableHeader>
+                                <SortableHeader field="sms">SMS</SortableHeader>
+                                <SortableHeader field="created_at">Created</SortableHeader>
+                                <TableHead className="text-right">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {visibleInvites.map((invite) => (
+                                <TableRow key={invite.id} className={invite.revoked ? "opacity-50" : ""}>
+                                  <TableCell className="font-medium">{invite.minister_full_name || "(not set)"}</TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">{invite.minister_phone || "-"}</TableCell>
+                                  <TableCell>
+                                    <Badge variant={invite.revoked ? "destructive" : "default"}>
+                                      {invite.revoked ? "Revoked" : "Active"}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    {invite.sms_sent_at ? (
+                                      <Badge variant="outline" className="border-green-600 text-green-600">
+                                        Sent
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="text-muted-foreground">
+                                        Not sent
+                                      </Badge>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">
+                                    {new Date(invite.created_at).toLocaleString()}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-1">
+                                      <Button variant="ghost" size="sm" onClick={() => copyLink(invite.id)} title="Copy Link">
+                                        {copiedId === invite.id ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                                      </Button>
+                                      {invite.minister_phone && !invite.revoked && (
+                                        <Button variant="ghost" size="sm" onClick={() => sendSMS(invite)} disabled={sendingId === invite.id} title="Send SMS">
+                                          {sendingId === invite.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                        </Button>
+                                      )}
+                                      <Button variant="outline" size="sm" onClick={() => revokeInvite(invite.id, invite.revoked)}>
+                                        {invite.revoked ? "Enable" : "Revoke"}
+                                      </Button>
+                                      <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => deleteInvite(invite)}
+                                        disabled={deletingId === invite.id}
+                                        title="Delete invite"
+                                      >
+                                        {deletingId === invite.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                        {hiddenCount > 0 && (
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Showing first {rowsPerSession} invites in this session. Increase rows per session to see {hiddenCount} more.
+                          </p>
+                        )}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  );
+                })}
               </div>
             )}
-
-            <div className="border rounded-md overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <SortableHeader field="name">Minister</SortableHeader>
-                    <SortableHeader field="phone">Phone</SortableHeader>
-                    <SortableHeader field="status">Status</SortableHeader>
-                    <SortableHeader field="sms">SMS</SortableHeader>
-                    <SortableHeader field="created_at">Created</SortableHeader>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedInvites.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        No invites match your filters.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    paginatedInvites.map((invite) => (
-                      <TableRow key={invite.id} className={invite.revoked ? "opacity-50" : ""}>
-                        <TableCell className="font-medium">{invite.minister_full_name || "(not set)"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{invite.minister_phone || "—"}</TableCell>
-                        <TableCell>
-                          <Badge variant={invite.revoked ? "destructive" : "default"}>
-                            {invite.revoked ? "Revoked" : "Active"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {invite.sms_sent_at ? (
-                            <Badge variant="outline" className="text-green-600 border-green-600">Sent</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-muted-foreground">Not sent</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(invite.created_at).toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => copyLink(invite.id)} title="Copy Link">
-                              {copiedId === invite.id ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                            </Button>
-                            {invite.minister_phone && !invite.revoked && (
-                              <Button variant="ghost" size="sm" onClick={() => sendSMS(invite)} disabled={sendingId === invite.id} title="Send SMS">
-                                {sendingId === invite.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                              </Button>
-                            )}
-                            <Button variant="outline" size="sm" onClick={() => revokeInvite(invite.id, invite.revoked)}>
-                              {invite.revoked ? "Enable" : "Revoke"}
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => deleteInvite(invite)}
-                              disabled={deletingId === invite.id}
-                              title="Delete invite"
-                            >
-                              {deletingId === invite.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination Controls */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Rows per page:</span>
-                <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-                  <SelectTrigger className="w-[70px] h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAGE_SIZE_OPTIONS.map((size) => (
-                      <SelectItem key={size} value={String(size)}>
-                        {size}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  {sortedInvites.length > 0
-                    ? `${startIndex + 1}–${Math.min(endIndex, sortedInvites.length)} of ${sortedInvites.length}`
-                    : "0 results"}
-                </span>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => goToPage(1)}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronsLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => goToPage(currentPage - 1)}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm px-2">
-                    Page {currentPage} of {totalPages || 1}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => goToPage(currentPage + 1)}
-                    disabled={currentPage === totalPages || totalPages === 0}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => goToPage(totalPages)}
-                    disabled={currentPage === totalPages || totalPages === 0}
-                  >
-                    <ChevronsRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
           </div>
         )}
       </CardContent>

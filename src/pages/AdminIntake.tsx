@@ -83,13 +83,11 @@ export default function AdminIntake() {
   }, [activeSessionId, sessions]);
 
   const { data: invites, isLoading: invitesLoading } = useQuery({
-    queryKey: ["intake-invites", effectiveSessionId],
-    enabled: !!effectiveSessionId,
+    queryKey: ["intake-invites"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("intake_invites")
         .select("id, session_id, minister_full_name, minister_phone, minister_email, expires_at, revoked, created_at, sms_sent_at, sms_status, sms_message_id")
-        .eq("session_id", effectiveSessionId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []) as IntakeInvite[];
@@ -157,7 +155,7 @@ export default function AdminIntake() {
   };
 
   const handleInvitesChanged = () => {
-    qc.invalidateQueries({ queryKey: ["intake-invites", effectiveSessionId] });
+    qc.invalidateQueries({ queryKey: ["intake-invites"] });
   };
 
   const selectedSession = sessions?.find((s) => s.id === effectiveSessionId) ?? null;
@@ -234,6 +232,7 @@ export default function AdminIntake() {
               </div>
               <GroupedInvitesList
                 invites={invites || []}
+                sessions={sessions || []}
                 isLoading={invitesLoading}
                 onInviteUpdated={handleInvitesChanged}
               />
