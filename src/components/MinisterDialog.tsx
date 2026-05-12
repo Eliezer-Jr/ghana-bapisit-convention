@@ -1562,7 +1562,7 @@ const MinisterDialog = ({ open, onOpenChange, minister, onSuccess }: MinisterDia
               </div>
 
               <div className="space-y-2 mt-6">
-                <Label>KEY Positions Held Within the Convention</Label>
+                <Label>KEY Positions Held Within the Convention/Conference</Label>
                 {conventionPositions.map((pos, idx) => (
                   <div key={idx} className="grid grid-cols-[3fr_1fr_1fr_auto] gap-2 items-end border p-2 rounded">
                     <Input
