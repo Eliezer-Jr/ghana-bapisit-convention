@@ -138,38 +138,12 @@ export default function PortalDocuments() {
       </Card>
 
       {/* Educational */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <CardTitle className="text-lg flex items-center gap-2"><GraduationCap className="h-5 w-5" /> Educational Information</CardTitle>
-            <Button onClick={submitForReview} disabled={submittingReview} size="sm">
-              <Send className="h-4 w-4 mr-2" />
-              {submittingReview ? "Submitting..." : "Submit for Review"}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {quals.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No educational qualifications on record.</p>
-          ) : (
-            <div className="space-y-3">
-              {quals.map((q: any) => (
-                <div key={q.id} className="border rounded-md p-3">
-                  <div className="grid sm:grid-cols-3 gap-3">
-                    <Field label="Qualification" value={q.qualification} />
-                    <Field label="Institution" value={q.institution} />
-                    <Field label="Year" value={q.year_obtained} />
-                  </div>
-                  {q.document_name && <p className="text-xs text-muted-foreground mt-2">📎 {q.document_name}</p>}
-                </div>
-              ))}
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground mt-3">
-            Click <strong>Submit for Review</strong> to ask the GBCC office to review or update your educational information.
-          </p>
-        </CardContent>
-      </Card>
+      <EducationSection
+        initialQuals={quals}
+        onChanged={loadAll}
+        onSubmitReview={submitForReview}
+        submittingReview={submittingReview}
+      />
 
       {/* Document Requests */}
       <Card>
@@ -207,5 +181,171 @@ export default function PortalDocuments() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+interface EduItem {
+  id?: string;
+  qualification: string;
+  institution: string;
+  year_obtained: string;
+  document_name?: string;
+  _file?: File | null;
+  _new?: boolean;
+}
+
+function EducationSection({ initialQuals, onChanged, onSubmitReview, submittingReview }: {
+  initialQuals: any[];
+  onChanged: () => void;
+  onSubmitReview: () => void;
+  submittingReview: boolean;
+}) {
+  const [editMode, setEditMode] = useState(false);
+  const [items, setItems] = useState<EduItem[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  const reset = () => setItems(
+    (initialQuals || []).map(q => ({
+      id: q.id,
+      qualification: q.qualification || "",
+      institution: q.institution || "",
+      year_obtained: q.year_obtained ? String(q.year_obtained) : "",
+      document_name: q.document_name,
+    }))
+  );
+
+  useEffect(() => { reset(); /* eslint-disable-next-line */ }, [initialQuals]);
+
+  const startEdit = () => { reset(); setEditMode(true); };
+  const cancel = () => { reset(); setEditMode(false); };
+
+  const updateItem = (idx: number, patch: Partial<EduItem>) => {
+    setItems(prev => prev.map((it, i) => i === idx ? { ...it, ...patch } : it));
+  };
+
+  const addRow = () => setItems(prev => [...prev, { qualification: "", institution: "", year_obtained: "", _new: true }]);
+
+  const removeRow = async (idx: number) => {
+    const it = items[idx];
+    if (it.id) {
+      if (!confirm("Delete this qualification?")) return;
+      try {
+        await portalFetch("minister-portal-education", { body: { action: "delete", id: it.id } });
+        toast.success("Deleted");
+        onChanged();
+      } catch (e: any) { toast.error(e.message); return; }
+    }
+    setItems(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const saveAll = async () => {
+    setSaving(true);
+    try {
+      for (const it of items) {
+        if (!it.qualification.trim()) continue;
+        const payload: any = {
+          id: it.id,
+          qualification: it.qualification,
+          institution: it.institution,
+          year_obtained: it.year_obtained,
+        };
+        if (it._file) {
+          payload.fileName = it._file.name;
+          payload.mimeType = it._file.type;
+          payload.base64 = await fileToBase64(it._file);
+        }
+        await portalFetch("minister-portal-education", { body: { action: "upsert", item: payload } });
+      }
+      toast.success("Saved");
+      setEditMode(false);
+      onChanged();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <CardTitle className="text-lg flex items-center gap-2"><GraduationCap className="h-5 w-5" /> Educational Information</CardTitle>
+          <div className="flex gap-2 flex-wrap">
+            {!editMode && (
+              <>
+                <Button variant="outline" size="sm" onClick={startEdit}>Edit</Button>
+                <Button onClick={onSubmitReview} disabled={submittingReview} size="sm">
+                  <Send className="h-4 w-4 mr-2" />
+                  {submittingReview ? "Submitting..." : "Submit for Review"}
+                </Button>
+              </>
+            )}
+            {editMode && (
+              <>
+                <Button variant="outline" size="sm" onClick={cancel} disabled={saving}>Cancel</Button>
+                <Button size="sm" onClick={saveAll} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+              </>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {items.length === 0 && !editMode && (
+          <p className="text-sm text-muted-foreground">No educational qualifications on record.</p>
+        )}
+
+        {!editMode && items.map((q, i) => (
+          <div key={q.id || i} className="border rounded-md p-3">
+            <div className="grid sm:grid-cols-3 gap-3">
+              <Field label="Qualification" value={q.qualification} />
+              <Field label="Institution" value={q.institution} />
+              <Field label="Year" value={q.year_obtained} />
+            </div>
+            {q.document_name && <p className="text-xs text-muted-foreground mt-2">📎 {q.document_name}</p>}
+          </div>
+        ))}
+
+        {editMode && items.map((q, i) => (
+          <div key={q.id || `new-${i}`} className="border rounded-md p-3 space-y-2">
+            <div className="grid sm:grid-cols-3 gap-2">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Qualification</p>
+                <Input value={q.qualification} onChange={(e) => updateItem(i, { qualification: e.target.value })} placeholder="e.g. BA Theology" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Institution</p>
+                <Input value={q.institution} onChange={(e) => updateItem(i, { institution: e.target.value })} />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Year Obtained</p>
+                <Input type="number" value={q.year_obtained} onChange={(e) => updateItem(i, { year_obtained: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Input type="file" className="max-w-xs" onChange={(e) => updateItem(i, { _file: e.target.files?.[0] || null })} />
+                {q._file ? (
+                  <span className="text-xs text-muted-foreground">{q._file.name}</span>
+                ) : q.document_name ? (
+                  <span className="text-xs text-muted-foreground">📎 {q.document_name}</span>
+                ) : null}
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => removeRow(i)} className="text-destructive">Remove</Button>
+            </div>
+          </div>
+        ))}
+
+        {editMode && (
+          <Button variant="outline" size="sm" onClick={addRow}>+ Add Qualification</Button>
+        )}
+
+        {!editMode && (
+          <p className="text-xs text-muted-foreground">
+            Click <strong>Edit</strong> to update entries or attach supporting documents, then <strong>Submit for Review</strong> so the GBCC office can verify your changes.
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }

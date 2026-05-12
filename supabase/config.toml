@@ -58,3 +58,6 @@ verify_jwt = false
 
 [functions.minister-portal-submit-review]
 verify_jwt = false
+
+[functions.minister-portal-education]
+verify_jwt = false
