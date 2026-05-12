@@ -2,14 +2,14 @@ import { ReactNode } from "react";
 import { NavLink, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { usePortalAuth } from "@/contexts/PortalAuthContext";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, User, Megaphone, FileUp, CreditCard, LogOut } from "lucide-react";
+import { LayoutDashboard, User, Megaphone, FolderOpen, CreditCard, LogOut } from "lucide-react";
 import logoGbcc from "@/assets/logo-gbcc.png";
 
 const items = [
   { to: "/myportal/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/myportal/profile", label: "My ID Card", icon: User },
   { to: "/myportal/announcements", label: "Announcements", icon: Megaphone },
-  { to: "/myportal/documents", label: "Documents", icon: FileUp },
+  { to: "/myportal/documents", label: "My Data", icon: FolderOpen },
   { to: "/myportal/dues", label: "Dues & Payments", icon: CreditCard },
 ];
 
