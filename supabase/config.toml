@@ -55,3 +55,6 @@ verify_jwt = false
 
 [functions.verify-minister]
 verify_jwt = false
+
+[functions.minister-portal-submit-review]
+verify_jwt = false
