@@ -5,8 +5,7 @@ import { decodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 // Manage the minister's educational_qualifications.
 // GET                                  -> list
-// POST { action: "upsert", item: { id?, qualification, institution, year_obtained, fileName?, mimeType?, base64? } }
-// POST { action: "delete", id }
+// POST { action: "upsert", item: { qualification, institution, year_obtained, fileName?, mimeType?, base64? } }
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
@@ -20,16 +19,12 @@ serve(async (req) => {
 
     const body = await req.json();
 
-    if (body.action === "delete") {
-      // Verify ownership
-      const { data: row } = await supabase.from("educational_qualifications").select("id, minister_id").eq("id", body.id).maybeSingle();
-      if (!row || row.minister_id !== session.sub) return jsonResponse({ success: false, error: "Not allowed" }, 403);
-      await supabase.from("educational_qualifications").delete().eq("id", body.id);
-      return jsonResponse({ success: true });
-    }
+    if (body.action === "delete") return jsonResponse({ success: false, error: "Existing records cannot be edited from the portal" }, 403);
 
     if (body.action === "upsert") {
       const item = body.item || {};
+      if (item.id) return jsonResponse({ success: false, error: "Existing records cannot be edited from the portal" }, 403);
+
       const qualification = (item.qualification || "").trim();
       if (!qualification) return jsonResponse({ success: false, error: "Qualification is required" }, 400);
 
@@ -53,17 +48,9 @@ serve(async (req) => {
         update.document_type = item.mimeType || null;
       }
 
-      if (item.id) {
-        const { data: row } = await supabase.from("educational_qualifications").select("id, minister_id").eq("id", item.id).maybeSingle();
-        if (!row || row.minister_id !== session.sub) return jsonResponse({ success: false, error: "Not allowed" }, 403);
-        const { error } = await supabase.from("educational_qualifications").update(update).eq("id", item.id);
-        if (error) throw error;
-        return jsonResponse({ success: true, id: item.id });
-      } else {
-        const { data, error } = await supabase.from("educational_qualifications").insert({ ...update, minister_id: session.sub }).select("id").maybeSingle();
-        if (error) throw error;
-        return jsonResponse({ success: true, id: data?.id });
-      }
+      const { data, error } = await supabase.from("educational_qualifications").insert({ ...update, minister_id: session.sub }).select("id").maybeSingle();
+      if (error) throw error;
+      return jsonResponse({ success: true, id: data?.id });
     }
 
     return jsonResponse({ success: false, error: "Unknown action" }, 400);

@@ -3,6 +3,21 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, jsonResponse, requirePortalSession } from "../_shared/portalAuth.ts";
 import { decodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
+async function withSignedUploadUrls(supabase: any, rows: any[]) {
+  return Promise.all((rows || []).map(async (row) => {
+    if (!row.file_url || row.file_url.startsWith("http")) return row;
+
+    const { data } = await supabase.storage
+      .from("application-documents")
+      .createSignedUrl(row.file_url, 3600);
+
+    return {
+      ...row,
+      file_preview_url: data?.signedUrl || null,
+    };
+  }));
+}
+
 // Actions:
 // GET ?  -> list requests + uploads for current minister
 // POST { action: "upload", requestId, fileName, mimeType, base64 } -> upload + mark submitted
@@ -22,7 +37,8 @@ serve(async (req) => {
       const { data: uploads } = ids.length
         ? await supabase.from("document_request_uploads").select("*").in("request_id", ids)
         : { data: [] as any[] };
-      return jsonResponse({ success: true, requests: requests || [], uploads: uploads || [] });
+      const signedUploads = await withSignedUploadUrls(supabase, uploads || []);
+      return jsonResponse({ success: true, requests: requests || [], uploads: signedUploads });
     }
 
     const body = await req.json();

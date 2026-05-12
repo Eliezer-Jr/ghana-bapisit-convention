@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { portalFetch } from "@/lib/portalApi";
 import { toast } from "sonner";
-import { Upload, Send, GraduationCap, User, Church, FileText } from "lucide-react";
+import { Upload, Send, GraduationCap, User, Church, FileText, ExternalLink } from "lucide-react";
 
 const STATUS_VARIANTS: Record<string, any> = {
   pending: "secondary",
@@ -31,6 +31,70 @@ function Field({ label, value }: { label: string; value: any }) {
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-sm font-medium">{value || "—"}</p>
+    </div>
+  );
+}
+
+function getPreviewUrl(documentUrl?: string | null, previewUrl?: string | null) {
+  if (previewUrl) return previewUrl;
+  if (documentUrl?.startsWith("http")) return documentUrl;
+  return null;
+}
+
+function isImageFile(url?: string | null, type?: string | null, name?: string | null) {
+  const source = `${type || ""} ${name || ""} ${url || ""}`.toLowerCase();
+  return source.includes("image/") || /\.(png|jpe?g|webp|gif|bmp)(\?|$)/.test(source);
+}
+
+function isPdfFile(url?: string | null, type?: string | null, name?: string | null) {
+  const source = `${type || ""} ${name || ""} ${url || ""}`.toLowerCase();
+  return source.includes("application/pdf") || /\.pdf(\?|$)/.test(source);
+}
+
+function DocumentPreview({
+  title,
+  name,
+  url,
+  previewUrl,
+  type,
+}: {
+  title: string;
+  name?: string | null;
+  url?: string | null;
+  previewUrl?: string | null;
+  type?: string | null;
+}) {
+  const src = getPreviewUrl(url, previewUrl);
+
+  if (!src) {
+    return (
+      <div className="rounded-md border p-3 text-sm text-muted-foreground">
+        <p className="font-medium text-foreground">{title}</p>
+        <p>{name || "No preview available"}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-md border p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium">{title}</p>
+          {name && <p className="text-xs text-muted-foreground">{name}</p>}
+        </div>
+        <Button asChild variant="ghost" size="sm">
+          <a href={src} target="_blank" rel="noreferrer" aria-label={`Open ${title}`}>
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        </Button>
+      </div>
+      {isImageFile(src, type, name) ? (
+        <img src={src} alt={name || title} className="max-h-72 w-full rounded-md bg-muted/30 object-contain" />
+      ) : isPdfFile(src, type, name) ? (
+        <iframe src={src} title={name || title} className="h-72 w-full rounded-md bg-background" />
+      ) : (
+        <p className="text-sm text-muted-foreground">Preview not available for this file type.</p>
+      )}
     </div>
   );
 }
@@ -97,20 +161,39 @@ export default function PortalDocuments() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2"><User className="h-5 w-5" /> Personal Information</CardTitle>
         </CardHeader>
-        <CardContent className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <Field label="Full Name" value={m.full_name} />
-          <Field label="Minister ID" value={m.minister_id} />
-          <Field label="Titles" value={m.titles} />
-          <Field label="Phone" value={m.phone} />
-          <Field label="WhatsApp" value={m.whatsapp} />
-          <Field label="Email" value={m.email} />
-          <Field label="Date of Birth" value={m.date_of_birth} />
-          <Field label="Marital Status" value={m.marital_status} />
-          <Field label="Spouse" value={m.spouse_name} />
-          <Field label="Children" value={m.number_of_children} />
-          <Field label="Location" value={m.location} />
-          <Field label="GPS Address" value={m.gps_address} />
-          <Field label="Ghana Card #" value={m.ghana_card_number} />
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="h-32 w-32 shrink-0 overflow-hidden rounded-md border bg-muted">
+              {m.photo_url ? (
+                <img src={m.photo_url} alt="Profile photo" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                  <User className="h-10 w-10" />
+                </div>
+              )}
+            </div>
+            <div className="grid flex-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <Field label="Full Name" value={m.full_name} />
+              <Field label="Minister ID" value={m.minister_id} />
+              <Field label="Titles" value={m.titles} />
+              <Field label="Phone" value={m.phone} />
+              <Field label="WhatsApp" value={m.whatsapp} />
+              <Field label="Email" value={m.email} />
+              <Field label="Date of Birth" value={m.date_of_birth} />
+              <Field label="Marital Status" value={m.marital_status} />
+              <Field label="Spouse" value={m.spouse_name} />
+              <Field label="Children" value={m.number_of_children} />
+              <Field label="Location" value={m.location} />
+              <Field label="GPS Address" value={m.gps_address} />
+              <Field label="Ghana Card #" value={m.ghana_card_number} />
+            </div>
+          </div>
+          {(m.ghana_card_front_url || m.ghana_card_back_url) && (
+            <div className="grid gap-3 md:grid-cols-2">
+              <DocumentPreview title="Ghana Card Front" name={m.ghana_card_front_name} url={m.ghana_card_front_url} type={m.ghana_card_front_type} />
+              <DocumentPreview title="Ghana Card Back" name={m.ghana_card_back_name} url={m.ghana_card_back_url} type={m.ghana_card_back_type} />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -164,9 +247,18 @@ export default function PortalDocuments() {
                 {r.due_date && <p className="text-xs text-muted-foreground">Due: {r.due_date}</p>}
                 {r.reviewer_notes && <p className="text-sm bg-muted p-2 rounded">Note: {r.reviewer_notes}</p>}
                 {myUploads.length > 0 && (
-                  <ul className="text-sm space-y-1">
-                    {myUploads.map(u => <li key={u.id} className="text-muted-foreground">• {u.file_name}</li>)}
-                  </ul>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {myUploads.map(u => (
+                      <DocumentPreview
+                        key={u.id}
+                        title="Uploaded Document"
+                        name={u.file_name}
+                        url={u.file_url}
+                        previewUrl={u.file_preview_url}
+                        type={u.mime_type}
+                      />
+                    ))}
+                  </div>
                 )}
                 {(r.status === "pending" || r.status === "rejected") && (
                   <label className="inline-flex items-center gap-2 cursor-pointer">
@@ -190,8 +282,10 @@ interface EduItem {
   institution: string;
   year_obtained: string;
   document_name?: string;
+  document_url?: string;
+  document_preview_url?: string | null;
+  document_type?: string | null;
   _file?: File | null;
-  _new?: boolean;
 }
 
 function EducationSection({ initialQuals, onChanged, onSubmitReview, submittingReview }: {
@@ -201,50 +295,44 @@ function EducationSection({ initialQuals, onChanged, onSubmitReview, submittingR
   submittingReview: boolean;
 }) {
   const [editMode, setEditMode] = useState(false);
-  const [items, setItems] = useState<EduItem[]>([]);
+  const [newItems, setNewItems] = useState<EduItem[]>([]);
   const [saving, setSaving] = useState(false);
 
-  const reset = () => setItems(
-    (initialQuals || []).map(q => ({
-      id: q.id,
-      qualification: q.qualification || "",
-      institution: q.institution || "",
-      year_obtained: q.year_obtained ? String(q.year_obtained) : "",
-      document_name: q.document_name,
-    }))
-  );
+  const items: EduItem[] = (initialQuals || []).map(q => ({
+    id: q.id,
+    qualification: q.qualification || "",
+    institution: q.institution || "",
+    year_obtained: q.year_obtained ? String(q.year_obtained) : "",
+    document_name: q.document_name,
+    document_url: q.document_url,
+    document_preview_url: q.document_preview_url,
+    document_type: q.document_type,
+  }));
 
-  useEffect(() => { reset(); /* eslint-disable-next-line */ }, [initialQuals]);
+  useEffect(() => { if (!editMode) setNewItems([]); }, [editMode, initialQuals]);
 
-  const startEdit = () => { reset(); setEditMode(true); };
-  const cancel = () => { reset(); setEditMode(false); };
+  const startEdit = () => {
+    setNewItems([{ qualification: "", institution: "", year_obtained: "" }]);
+    setEditMode(true);
+  };
+  const cancel = () => {
+    setNewItems([]);
+    setEditMode(false);
+  };
 
   const updateItem = (idx: number, patch: Partial<EduItem>) => {
-    setItems(prev => prev.map((it, i) => i === idx ? { ...it, ...patch } : it));
+    setNewItems(prev => prev.map((it, i) => i === idx ? { ...it, ...patch } : it));
   };
 
-  const addRow = () => setItems(prev => [...prev, { qualification: "", institution: "", year_obtained: "", _new: true }]);
-
-  const removeRow = async (idx: number) => {
-    const it = items[idx];
-    if (it.id) {
-      if (!confirm("Delete this qualification?")) return;
-      try {
-        await portalFetch("minister-portal-education", { body: { action: "delete", id: it.id } });
-        toast.success("Deleted");
-        onChanged();
-      } catch (e: any) { toast.error(e.message); return; }
-    }
-    setItems(prev => prev.filter((_, i) => i !== idx));
-  };
+  const addRow = () => setNewItems(prev => [...prev, { qualification: "", institution: "", year_obtained: "" }]);
+  const removeRow = (idx: number) => setNewItems(prev => prev.filter((_, i) => i !== idx));
 
   const saveAll = async () => {
     setSaving(true);
     try {
-      for (const it of items) {
+      for (const it of newItems) {
         if (!it.qualification.trim()) continue;
         const payload: any = {
-          id: it.id,
           qualification: it.qualification,
           institution: it.institution,
           year_obtained: it.year_obtained,
@@ -257,6 +345,7 @@ function EducationSection({ initialQuals, onChanged, onSubmitReview, submittingR
         await portalFetch("minister-portal-education", { body: { action: "upsert", item: payload } });
       }
       toast.success("Saved");
+      setNewItems([]);
       setEditMode(false);
       onChanged();
     } catch (e: any) {
@@ -274,17 +363,17 @@ function EducationSection({ initialQuals, onChanged, onSubmitReview, submittingR
           <div className="flex gap-2 flex-wrap">
             {!editMode && (
               <>
-                <Button variant="outline" size="sm" onClick={startEdit}>Edit</Button>
+                <Button variant="outline" size="sm" onClick={startEdit}>Add</Button>
                 <Button onClick={onSubmitReview} disabled={submittingReview} size="sm">
                   <Send className="h-4 w-4 mr-2" />
-                  {submittingReview ? "Submitting..." : "Submit for Review"}
+                  {submittingReview ? "Submitting..." : "Submit and Review"}
                 </Button>
               </>
             )}
             {editMode && (
               <>
                 <Button variant="outline" size="sm" onClick={cancel} disabled={saving}>Cancel</Button>
-                <Button size="sm" onClick={saveAll} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+                <Button size="sm" onClick={saveAll} disabled={saving}>{saving ? "Saving..." : "Save New"}</Button>
               </>
             )}
           </div>
@@ -295,19 +384,28 @@ function EducationSection({ initialQuals, onChanged, onSubmitReview, submittingR
           <p className="text-sm text-muted-foreground">No educational qualifications on record.</p>
         )}
 
-        {!editMode && items.map((q, i) => (
+        {items.map((q, i) => (
           <div key={q.id || i} className="border rounded-md p-3">
-            <div className="grid sm:grid-cols-3 gap-3">
+            <div className="grid sm:grid-cols-3 gap-3 mb-3">
               <Field label="Qualification" value={q.qualification} />
               <Field label="Institution" value={q.institution} />
               <Field label="Year" value={q.year_obtained} />
             </div>
             {q.document_name && <p className="text-xs text-muted-foreground mt-2">📎 {q.document_name}</p>}
+            {q.document_name && (
+              <DocumentPreview
+                title="Supporting Document"
+                name={q.document_name}
+                url={q.document_url}
+                previewUrl={q.document_preview_url}
+                type={q.document_type}
+              />
+            )}
           </div>
         ))}
 
-        {editMode && items.map((q, i) => (
-          <div key={q.id || `new-${i}`} className="border rounded-md p-3 space-y-2">
+        {editMode && newItems.map((q, i) => (
+          <div key={`new-${i}`} className="border rounded-md p-3 space-y-2">
             <div className="grid sm:grid-cols-3 gap-2">
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Qualification</p>
@@ -342,7 +440,7 @@ function EducationSection({ initialQuals, onChanged, onSubmitReview, submittingR
 
         {!editMode && (
           <p className="text-xs text-muted-foreground">
-            Click <strong>Edit</strong> to update entries or attach supporting documents, then <strong>Submit for Review</strong> so the GBCC office can verify your changes.
+            Click <strong>Add</strong> to submit new entries or attach supporting documents, then <strong>Submit and Review</strong> so the GBCC office can verify your changes. Existing records cannot be edited here.
           </p>
         )}
       </CardContent>

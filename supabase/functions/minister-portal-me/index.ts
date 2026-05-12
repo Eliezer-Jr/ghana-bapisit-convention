@@ -2,6 +2,21 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, jsonResponse, requirePortalSession } from "../_shared/portalAuth.ts";
 
+async function withSignedDocumentUrls(supabase: any, rows: any[]) {
+  return Promise.all((rows || []).map(async (row) => {
+    if (!row.document_url || row.document_url.startsWith("http")) return row;
+
+    const { data } = await supabase.storage
+      .from("application-documents")
+      .createSignedUrl(row.document_url, 3600);
+
+    return {
+      ...row,
+      document_preview_url: data?.signedUrl || null,
+    };
+  }));
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
@@ -16,10 +31,12 @@ serve(async (req) => {
       supabase.from("dues_settings").select("*").order("year", { ascending: false }).limit(1).maybeSingle(),
     ]);
 
+    const qualifications = await withSignedDocumentUrls(supabase, quals || []);
+
     return jsonResponse({
       success: true,
       minister,
-      qualifications: quals || [],
+      qualifications,
       latestPayment,
       pendingDocs: pendingDocs || [],
       duesSettings: settings,
