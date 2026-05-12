@@ -138,38 +138,12 @@ export default function PortalDocuments() {
       </Card>
 
       {/* Educational */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <CardTitle className="text-lg flex items-center gap-2"><GraduationCap className="h-5 w-5" /> Educational Information</CardTitle>
-            <Button onClick={submitForReview} disabled={submittingReview} size="sm">
-              <Send className="h-4 w-4 mr-2" />
-              {submittingReview ? "Submitting..." : "Submit for Review"}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {quals.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No educational qualifications on record.</p>
-          ) : (
-            <div className="space-y-3">
-              {quals.map((q: any) => (
-                <div key={q.id} className="border rounded-md p-3">
-                  <div className="grid sm:grid-cols-3 gap-3">
-                    <Field label="Qualification" value={q.qualification} />
-                    <Field label="Institution" value={q.institution} />
-                    <Field label="Year" value={q.year_obtained} />
-                  </div>
-                  {q.document_name && <p className="text-xs text-muted-foreground mt-2">📎 {q.document_name}</p>}
-                </div>
-              ))}
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground mt-3">
-            Click <strong>Submit for Review</strong> to ask the GBCC office to review or update your educational information.
-          </p>
-        </CardContent>
-      </Card>
+      <EducationSection
+        initialQuals={quals}
+        onChanged={loadAll}
+        onSubmitReview={submitForReview}
+        submittingReview={submittingReview}
+      />
 
       {/* Document Requests */}
       <Card>
