@@ -119,7 +119,7 @@ serve(async (req) => {
     }
 
     // Try multiple matching strategies to find existing user
-    const existingUser = users.find(u => {
+    let existingUser = users.find(u => {
       return u.phone === phoneNumber || 
         u.phone === formattedNumber ||
         u.email === email ||
@@ -127,6 +127,25 @@ serve(async (req) => {
         (u.phone && u.phone.endsWith(phoneNumber.substring(1))) ||
         (u.email && u.email.startsWith(phoneNumber + '@'));
     });
+
+    // Fallback: look up via profiles table by phone_number (admin-created users
+    // often have only email in auth, with the phone stored on the profile).
+    if (!existingUser) {
+      const phoneVariants = [
+        phoneNumber,
+        formattedNumber,
+        formattedNumber.substring(1),
+        phoneNumber.startsWith('0') ? phoneNumber.substring(1) : phoneNumber,
+      ];
+      const { data: profileMatch } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .in('phone_number', phoneVariants)
+        .maybeSingle();
+      if (profileMatch?.id) {
+        existingUser = users.find(u => u.id === profileMatch.id) || existingUser;
+      }
+    }
 
     if (isSignup && !existingUser) {
       console.log("Creating user with phone:", formattedNumber, "email:", email);
