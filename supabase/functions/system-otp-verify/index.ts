@@ -217,7 +217,7 @@ serve(async (req) => {
         success: false, 
         error: (error as Error).message || 'An unexpected error occurred' 
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   }
 });
