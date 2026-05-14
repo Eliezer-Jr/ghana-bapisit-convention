@@ -53,12 +53,12 @@ export default function ImageCropDialog({
 
   return (
     <Dialog open={open} onOpenChange={onCancel}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-2xl w-[95vw] max-h-[95vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Crop Your Photo</DialogTitle>
         </DialogHeader>
         
-        <div className="relative w-full h-[400px] bg-muted rounded-lg overflow-hidden">
+        <div className="relative w-full h-[240px] sm:h-[400px] bg-muted rounded-lg overflow-hidden">
           <Cropper
             image={imageSrc}
             crop={crop}
