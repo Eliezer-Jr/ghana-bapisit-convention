@@ -164,9 +164,9 @@ export default function IntakeFormTabs({ payload, onChange, activeTab, onTabChan
   const handleQualificationDocumentUpload = async (index: number, file: File | null) => {
     if (!file) return;
 
-    const isAcceptedType = file.type.startsWith("image/");
+    const isAcceptedType = file.type === "application/pdf" || file.type.startsWith("image/");
     if (!isAcceptedType) {
-      toast.error("Only image files are allowed");
+      toast.error("Only PDF or image files are allowed");
       return;
     }
 
