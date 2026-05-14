@@ -111,11 +111,11 @@ export default function ImageCropDialog({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
+        <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+          <Button variant="outline" onClick={onCancel} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button onClick={createCroppedImage}>
+          <Button onClick={createCroppedImage} className="w-full sm:w-auto">
             Apply Crop
           </Button>
         </DialogFooter>
