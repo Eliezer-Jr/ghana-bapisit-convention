@@ -131,19 +131,36 @@ serve(async (req) => {
     // Fallback: look up via profiles table by phone_number (admin-created users
     // often have only email in auth, with the phone stored on the profile).
     if (!existingUser) {
-      const phoneVariants = [
+      const phoneVariants = Array.from(new Set([
         phoneNumber,
+        phoneNumber.trim(),
         formattedNumber,
         formattedNumber.substring(1),
+        formattedNumber.replace('+233', '0'),
         phoneNumber.startsWith('0') ? phoneNumber.substring(1) : phoneNumber,
-      ];
-      const { data: profileMatch } = await supabaseAdmin
+      ]));
+      const { data: profileMatch, error: profileLookupError } = await supabaseAdmin
         .from('profiles')
         .select('id')
         .in('phone_number', phoneVariants)
+        .limit(1)
         .maybeSingle();
+
+      if (profileLookupError) {
+        console.error("Profile phone lookup error:", profileLookupError);
+      }
+
       if (profileMatch?.id) {
+        console.log("Profile phone lookup matched user id:", profileMatch.id);
         existingUser = users.find(u => u.id === profileMatch.id) || existingUser;
+
+        if (!existingUser) {
+          const { data: userById, error: userByIdError } = await supabaseAdmin.auth.admin.getUserById(profileMatch.id);
+          if (userByIdError) {
+            console.error("Auth user lookup by profile id failed:", userByIdError);
+          }
+          existingUser = userById?.user || existingUser;
+        }
       }
     }
 
